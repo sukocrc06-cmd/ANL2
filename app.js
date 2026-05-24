@@ -1536,40 +1536,51 @@ document.addEventListener('DOMContentLoaded', () => {
     const user = document.getElementById('login-username').value.trim();
     const pass = document.getElementById('login-password').value;
 
-    function handleLoginFailure(isExpired) {
-      if (isExpired) {
-        loginErrorMsg.innerHTML = currentLang === 'tr'
-          ? "❌ Bu geçici giriş kartının 10 dakikalık süresi dolmuş!"
-          : "❌ This temporary entry card has expired after 10 minutes!";
-        loginErrorMsg.style.display = 'block';
-        return;
-      }
-
-      loginFailedAttempts++;
-      if (loginFailedAttempts >= 3) {
-        tempCredentials = null;
-        if (countdownInterval) {
-          clearInterval(countdownInterval);
-          countdownInterval = null;
-        }
-        document.getElementById('company-name-input').value = '';
-        document.getElementById('sector-select').value = '';
-        validateCardForm();
-        tempCard.style.display = 'none';
-
-        loginErrorMsg.innerHTML = translations.login_error_limit[currentLang];
-        loginErrorMsg.style.display = 'block';
-      } else {
-        loginErrorMsg.innerHTML = translations.login_error[currentLang];
-        loginErrorMsg.style.display = 'block';
-      }
+    function showInvalidCredentialsError() {
+      loginErrorMsg.innerHTML = currentLang === 'tr'
+        ? "❌ Geçersiz Kullanıcı Adı veya Şifre!"
+        : "❌ Invalid Username or Password!";
+      loginErrorMsg.style.display = 'block';
     }
 
     const rememberCheckbox = document.getElementById('login-remember');
     const remember = rememberCheckbox ? rememberCheckbox.checked : false;
 
+    // 1. Direct local credential match check (bypassing all time checks)
+    if (tempCredentials && user === tempCredentials.username && pass === tempCredentials.password) {
+      if (countdownInterval) {
+        clearInterval(countdownInterval);
+        countdownInterval = null;
+      }
+      
+      const cardData = {
+        username: tempCredentials.username,
+        password: tempCredentials.password,
+        company: tempCredentials.company,
+        sector: tempCredentials.sector,
+        userId: tempCredentials.username,
+        sessionToken: 'token_' + tempCredentials.username + '_' + Date.now(),
+        expiresAt: Date.now() + 7 * 24 * 60 * 60 * 1000,
+        remember: remember
+      };
+      localStorage.setItem('isLoggedIn', 'true');
+      localStorage.setItem('userCardData', JSON.stringify(cardData));
+      sessionStorage.setItem('sessionActive', 'true');
+
+      // Send activation to server
+      fetch('/api/activate-card', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username: user })
+      }).catch(err => console.error('Error activating card on server:', err));
+
+      // Immediately transition to dashboard
+      transitionToDashboard();
+      return;
+    }
+
+    // 2. Direct server credential match check (bypassing all time checks)
     try {
-      // Async server verification to check credentials against system core, ignoring 10-minute constraints
       const res = await fetch('/api/login', {
         method: 'POST',
         headers: { 
@@ -1583,16 +1594,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
       if (res.status === 200) {
         const data = await res.json();
-        loginFailedAttempts = 0;
-        currentCompany = data.company;
-        currentSector = data.sector;
-
+        
         if (countdownInterval) {
           clearInterval(countdownInterval);
           countdownInterval = null;
         }
 
-        // Store persistent normalized session using unique userId and sessionToken
         const cardData = {
           username: user,
           password: pass,
@@ -1600,21 +1607,21 @@ document.addEventListener('DOMContentLoaded', () => {
           sector: data.sector,
           userId: data.userId || user,
           sessionToken: data.sessionToken,
-          expiresAt: Date.now() + 7 * 24 * 60 * 60 * 1000, // 1 week
+          expiresAt: Date.now() + 7 * 24 * 60 * 60 * 1000,
           remember: remember
         };
         localStorage.setItem('isLoggedIn', 'true');
         localStorage.setItem('userCardData', JSON.stringify(cardData));
         sessionStorage.setItem('sessionActive', 'true');
 
-        // Immediately grant access and transition to dashboard
+        // Immediately transition to dashboard
         transitionToDashboard();
       } else {
-        handleLoginFailure(false);
+        showInvalidCredentialsError();
       }
     } catch (err) {
       console.error('Async login verification failed:', err);
-      handleLoginFailure(false);
+      showInvalidCredentialsError();
     }
   });
 
