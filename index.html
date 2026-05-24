@@ -499,9 +499,13 @@
       </div>
 
       <nav class="sidebar-menu">
-        <a href="#" class="menu-item active" data-i18n="menu_dashboard">
+        <a href="#" class="menu-item active" id="menu-btn-insights" data-i18n="menu_dashboard">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/></svg>
           Genel Analiz Paneli
+        </a>
+        <a href="#" class="menu-item" id="menu-btn-schema-intel" data-i18n="menu_schema_intel" style="margin-top: 0.5rem;">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+          Schema Intelligence
         </a>
       </nav>
 
@@ -548,7 +552,8 @@
 
     <!-- Main Content Area -->
     <main class="dashboard-main">
-      <header class="dashboard-header">
+      <div id="dashboard-insights-section">
+        <header class="dashboard-header">
         <div>
           <h1 id="dash-title">Finansal Kredi Karar Analizi</h1>
           <p style="color: var(--text-secondary); font-size: 0.9rem;" data-i18n="dash_subtitle">
@@ -900,6 +905,221 @@
           
         </div>
 
+      </div>
+      </div><!-- End of dashboard-insights-section -->
+
+      <!-- ================= SCHEMA INTELLIGENCE SECTION ================= -->
+      <div id="dashboard-schema-intel-section" style="display: none;">
+        <header class="dashboard-header">
+          <div>
+            <h1 data-i18n="schema_title">Schema Intelligence Engine</h1>
+            <p style="color: var(--text-secondary); font-size: 0.9rem;" data-i18n="schema_subtitle">
+              Yapay zeka destekli otonom veri yapısı haritalama ve veri kümesi zafiyet tespit motoru.
+            </p>
+          </div>
+        </header>
+
+        <!-- Initial Upload View -->
+        <div id="schema-upload-view" class="glass-card" style="padding: 2.5rem; text-align: center; margin-bottom: 2rem;">
+          <div class="drop-zone" id="schema-drop-zone">
+            <!-- Floating particles inside drag zone -->
+            <div class="particle-container" id="upload-particles"></div>
+            <div class="drop-zone-icon">📥</div>
+            <h3 style="margin-bottom: 0.5rem;" data-i18n="upload_title">Veri Kümesini Buraya Sürükleyin veya Dosya Seçin</h3>
+            <p style="color: var(--text-secondary); font-size: 0.88rem; margin-bottom: 1.5rem;" data-i18n="upload_desc">
+              CSV, TXT veya JSON formatındaki veri kümenizi sürükleyip bırakarak AI analizini başlatın.
+            </p>
+            <button type="button" class="btn-primary" id="btn-browse-schema-file" style="width: auto; padding: 0.7rem 2rem;" data-i18n="btn_browse_file">Dosya Seçin</button>
+            <input type="file" id="schema-file-input" style="display: none;" accept=".csv,.txt,.json">
+          </div>
+
+          <!-- Sample Files to try instantly -->
+          <div style="margin-top: 2rem; border-top: 1px dashed var(--border-color); padding-top: 1.5rem;">
+            <p style="font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 0.8rem;" data-i18n="quick_samples_title">Dosyanız yok mu? Örnek şablonlar ile anında test edin:</p>
+            <div style="display: flex; justify-content: center; gap: 0.8rem; flex-wrap: wrap;">
+              <button class="btn-secondary btn-sample-dataset" data-dataset="credit" style="padding: 0.4rem 1rem; font-size: 0.78rem;">📊 kredi_tahmin.csv (Finans)</button>
+              <button class="btn-secondary btn-sample-dataset" data-dataset="logistics" style="padding: 0.4rem 1rem; font-size: 0.78rem;">🚚 kurye_lojistik.csv (Lojistik)</button>
+              <button class="btn-secondary btn-sample-dataset" data-dataset="retail" style="padding: 0.4rem 1rem; font-size: 0.78rem;">🛍️ tekstil_retail.csv (Tekstil)</button>
+              <button class="btn-secondary btn-sample-dataset" data-dataset="food" style="padding: 0.4rem 1rem; font-size: 0.78rem;">🍕 restoran_siparis.csv (Gıda)</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Analyzing / Scanning View -->
+        <div id="schema-scanning-view" class="glass-card" style="display: none; padding: 3rem; text-align: center; margin-bottom: 2rem;">
+          <div class="scanning-container">
+            <div class="radar-circle">
+              <div class="radar-circle-center"></div>
+            </div>
+            <h3 style="margin-bottom: 0.5rem; color: var(--primary);" data-i18n="scanning_title">AI Otonom Tarayıcı Çalışıyor...</h3>
+            <p style="color: var(--text-secondary); font-size: 0.88rem; margin-bottom: 2rem;" data-i18n="scanning_desc">
+              Veri kümesi satırları okunuyor, sütun tipleri ve zafiyetler yapay zeka ile haritalandırılıyor.
+            </p>
+
+            <!-- Live AI Log console -->
+            <div style="width: 100%; display: flex; justify-content: center;">
+              <div class="terminal-console" id="schema-terminal-logs">
+                <span class="terminal-cursor"></span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Analysis Results View -->
+        <div id="schema-results-view" style="display: none;">
+          <!-- Top Row: Overview, Sector Detection & ML Profile -->
+          <div class="schema-grid">
+            <!-- Dataset Overview (Quality Score) -->
+            <div class="glass-card" id="card-dataset-overview" style="display: flex; flex-direction: column; justify-content: space-between;">
+              <div>
+                <h3 style="margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem;">
+                  <span>📊</span> <span data-i18n="panel_overview">Veri Seti Genel Analizi</span>
+                </h3>
+                <div style="display: flex; flex-direction: column; gap: 0.6rem; font-size: 0.85rem; color: var(--text-secondary);">
+                  <div style="display: flex; justify-content: space-between; border-bottom: 1px solid rgba(255,255,255,0.03); padding-bottom: 0.3rem;">
+                    <span>Toplam Satır:</span>
+                    <strong style="color: var(--text-primary);" id="res-rows">-</strong>
+                  </div>
+                  <div style="display: flex; justify-content: space-between; border-bottom: 1px solid rgba(255,255,255,0.03); padding-bottom: 0.3rem;">
+                    <span>Toplam Sütun:</span>
+                    <strong style="color: var(--text-primary);" id="res-cols">-</strong>
+                  </div>
+                  <div style="display: flex; justify-content: space-between; border-bottom: 1px solid rgba(255,255,255,0.03); padding-bottom: 0.3rem;">
+                    <span>Boş (Null) Hücre Oranı:</span>
+                    <strong style="color: var(--text-primary);" id="res-nulls">-</strong>
+                  </div>
+                  <div style="display: flex; justify-content: space-between;">
+                    <span>Tahmini Dosya Boyutu:</span>
+                    <strong style="color: var(--text-primary);" id="res-size">-</strong>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Quality Score Circular Dial -->
+              <div style="display: flex; align-items: center; gap: 1.5rem; border-top: 1px dashed var(--border-color); padding-top: 1rem; margin-top: 1.5rem;">
+                <div class="score-circle-container">
+                  <svg class="score-circle-svg">
+                    <circle class="score-circle-bg" cx="55" cy="55" r="45" />
+                    <circle class="score-circle-fill" id="res-score-circle" cx="55" cy="55" r="45" />
+                  </svg>
+                  <div class="score-circle-text" id="res-score-val">0%</div>
+                </div>
+                <div>
+                  <h4 style="margin: 0 0 0.2rem 0; font-size: 0.9rem;" data-i18n="score_title">Veri Kalite Puanı</h4>
+                  <p style="margin: 0; font-size: 0.72rem; color: var(--text-muted); line-height: 1.35;" data-i18n="score_desc">
+                    Hücre doluluk oranları, tip kararlılığı ve anormalliklere göre hesaplanan genel sağlık skoru.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <!-- AI Sector Classification -->
+            <div class="glass-card" id="card-sector-detection">
+              <h3 style="margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem;">
+                <span>🧠</span> <span data-i18n="panel_sector_detect">AI Sektör Sınıflandırması</span>
+              </h3>
+              <p style="font-size: 0.78rem; color: var(--text-secondary); margin-bottom: 1.2rem; line-height: 1.4;" data-i18n="sector_detect_desc">
+                Sütun isimleri ve veri karakteristikleri analiz edilerek en olası ticari kullanım senaryosu eşleştirildi.
+              </p>
+
+              <!-- Progress bar of detected sector confidence -->
+              <div style="background: rgba(0,0,0,0.25); border: 1px solid var(--border-color); padding: 1.2rem; border-radius: 8px; margin-bottom: 1.2rem;">
+                <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.88rem; font-weight: bold;">
+                  <span style="color: var(--primary); text-transform: uppercase;" id="res-sector-name">FİNANS / KREDİ TAHMİN</span>
+                  <span id="res-sector-confidence">0% Confidence</span>
+                </div>
+                <div class="confidence-bar-outer">
+                  <div class="confidence-bar-inner" id="res-sector-bar"></div>
+                </div>
+              </div>
+
+              <!-- Sector compatibility info -->
+              <div style="font-size: 0.75rem; color: var(--text-muted); line-height: 1.4;">
+                <strong style="color: var(--text-secondary); display: block; margin-bottom: 0.2rem;" data-i18n="sec_comp_title">Sektörel Uyumluluk:</strong>
+                <span id="res-sector-details">Bu veri kümesi, finansal kredi risk ağırlığı hesaplama modeliyle (Vakıf/Dernek) tam uyumluluk göstermektedir.</span>
+              </div>
+            </div>
+
+            <!-- Suggested ML Profile (Features, Target & Problem Type) -->
+            <div class="glass-card">
+              <h3 style="margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem;">
+                <span>🎯</span> <span data-i18n="panel_ml_profile">AI Makine Öğrenimi Profili</span>
+              </h3>
+              
+              <div style="display: flex; flex-direction: column; gap: 0.8rem; font-size: 0.8rem;">
+                <div>
+                  <span style="font-size: 0.72rem; color: var(--text-secondary); text-transform: uppercase; font-weight: 700; display: block; margin-bottom: 0.25rem;">Önerilen Target (Hedef Değişken):</span>
+                  <div style="background: rgba(239, 68, 68, 0.08); border: 1px solid rgba(239, 68, 68, 0.15); padding: 0.4rem 0.8rem; border-radius: 6px; color: #ef4444; font-family: monospace; font-weight: bold; font-size: 0.82rem;" id="res-ml-target">
+                    -
+                  </div>
+                </div>
+
+                <div>
+                  <span style="font-size: 0.72rem; color: var(--text-secondary); text-transform: uppercase; font-weight: 700; display: block; margin-bottom: 0.25rem;">Önerilen Öznitelikler (Input Features):</span>
+                  <div style="max-height: 80px; overflow-y: auto; background: rgba(255,255,255,0.02); border: 1px solid var(--border-color); padding: 0.5rem; border-radius: 6px; font-family: monospace; font-size: 0.75rem; color: var(--text-primary); line-height: 1.4;" id="res-ml-features">
+                    -
+                  </div>
+                </div>
+
+                <div>
+                  <span style="font-size: 0.72rem; color: var(--text-secondary); text-transform: uppercase; font-weight: 700; display: block; margin-bottom: 0.25rem;">Makine Öğrenimi Problem Türü:</span>
+                  <span class="badge badge-success" style="font-size: 0.72rem; padding: 0.25rem 0.6rem; border-radius: 4px;" id="res-ml-type">Supervised Classification</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Column Intelligence Table (Full Width) -->
+            <div class="glass-card schema-full-width" id="card-column-intelligence">
+              <h3 style="margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem;">
+                <span>🧬</span> <span data-i18n="panel_column_intel">Sütun Tipi ve Veri Dağılım Analizi</span>
+              </h3>
+              
+              <div class="intel-table-container">
+                <table class="intel-table">
+                  <thead>
+                    <tr>
+                      <th data-i18n="col_name">Sütun Adı</th>
+                      <th data-i18n="col_type">Veri Tipi (Detected)</th>
+                      <th data-i18n="col_nulls">Boş Hücre (Null %)</th>
+                      <th data-i18n="col_stats">İstatistiksel Dağılım / Benzersiz Değerler</th>
+                      <th data-i18n="col_anomaly">Sistem Zafiyet Analizi</th>
+                    </tr>
+                  </thead>
+                  <tbody id="res-columns-table-body">
+                    <!-- Dynamic column rows -->
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <!-- Risk Warnings Warnings -->
+            <div class="glass-card glow-card-orange" id="card-risk-warnings">
+              <h3 style="margin-bottom: 1rem; color: #f97316; display: flex; align-items: center; gap: 0.5rem;">
+                <span>⚠️</span> <span data-i18n="panel_warnings">Veri Güvenliği ve Risk Uyarıları</span>
+              </h3>
+              <ul style="padding-left: 1.2rem; margin: 0; display: flex; flex-direction: column; gap: 0.6rem; font-size: 0.82rem; line-height: 1.45; color: var(--text-secondary);" id="res-warnings-list">
+                <!-- Dynamic risk items -->
+              </ul>
+            </div>
+
+            <!-- AI Recommendations -->
+            <div class="glass-card glow-card-green" id="card-ai-recommendations">
+              <h3 style="margin-bottom: 1rem; color: #10b981; display: flex; align-items: center; gap: 0.5rem;">
+                <span>💡</span> <span data-i18n="panel_recommendations">AI Stratejik Temizlik Önerileri</span>
+              </h3>
+              <ul style="padding-left: 1.2rem; margin: 0; display: flex; flex-direction: column; gap: 0.6rem; font-size: 0.82rem; line-height: 1.45; color: var(--text-secondary);" id="res-recommendations-list">
+                <!-- Dynamic recommendations -->
+              </ul>
+            </div>
+
+            <!-- Controls footer -->
+            <div class="schema-full-width" style="display: flex; gap: 1rem; justify-content: flex-end; margin-top: 1rem; margin-bottom: 2rem;">
+              <button type="button" class="btn-secondary" id="btn-reanalyze-schema" style="width: auto; padding: 0.7rem 1.8rem;" data-i18n="btn_reanalyze">Başka Veri Seti Yükle</button>
+              <button type="button" class="btn-primary" id="btn-apply-schema" style="width: auto; padding: 0.7rem 1.8rem; box-shadow: 0 4px 14px var(--primary-glow);" data-i18n="btn_apply_schema">Veri Şemasını Modele Uygula</button>
+            </div>
+
+          </div>
+        </div>
       </div>
     </main>
   </div>
