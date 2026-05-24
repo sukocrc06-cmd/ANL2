@@ -763,6 +763,46 @@ document.addEventListener('DOMContentLoaded', () => {
   let whatIfBaseline = null;
   let activePerformanceMetrics = null;
 
+  function transitionToDashboard() {
+    const userCardDataRaw = localStorage.getItem('userCardData');
+    if (userCardDataRaw) {
+      try {
+        const cardData = JSON.parse(userCardDataRaw);
+        if (cardData && cardData.company && cardData.sector) {
+          currentCompany = cardData.company;
+          currentSector = cardData.sector;
+          
+          tempCredentials = {
+            username: cardData.username || '',
+            password: cardData.password || '',
+            company: cardData.company,
+            sector: cardData.sector,
+            expiresAt: cardData.expiresAt || (Date.now() + 7 * 24 * 60 * 60 * 1000)
+          };
+          
+          if (countdownInterval) {
+            clearInterval(countdownInterval);
+            countdownInterval = null;
+          }
+          
+          const timerProgress = document.getElementById('timer-progress');
+          const countdownTimer = document.getElementById('countdown-timer');
+          if (timerProgress) timerProgress.style.width = '0%';
+          if (countdownTimer) countdownTimer.textContent = '00:00';
+          
+          history.replaceState({ pageId: 'dashboard' }, '', '#dashboard');
+          switchPage('dashboard', false);
+        }
+      } catch (e) {
+        console.error('Failed to parse session data in transitionToDashboard:', e);
+      }
+    }
+  }
+
+  if (localStorage.getItem('isLoggedIn') === 'true') {
+    transitionToDashboard();
+  }
+
   const sectorLabelsCard = {
     tr: {
       vakif: 'Dernek ve Vakıf',
@@ -5198,13 +5238,6 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
           }
 
-          // Check if session has expired
-          if (cardData.expiresAt && Date.now() > cardData.expiresAt) {
-            localStorage.removeItem('isLoggedIn');
-            localStorage.removeItem('userCardData');
-            return;
-          }
-
           currentCompany = cardData.company;
           currentSector = cardData.sector;
           
@@ -5214,7 +5247,7 @@ document.addEventListener('DOMContentLoaded', () => {
             password: cardData.password || '',
             company: cardData.company,
             sector: cardData.sector,
-            expiresAt: cardData.expiresAt // keep original expiry
+            expiresAt: cardData.expiresAt || (Date.now() + 7 * 24 * 60 * 60 * 1000)
           };
 
           // Mark session active in sessionStorage since we validated it
