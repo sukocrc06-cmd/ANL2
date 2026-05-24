@@ -1568,68 +1568,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const rememberCheckbox = document.getElementById('login-remember');
     const remember = rememberCheckbox ? rememberCheckbox.checked : false;
 
-    // 1. Check if there is a valid session in localStorage matching the entered credentials
-    const storedSessionRaw = localStorage.getItem('userCardData');
-    let hasValidStoredSession = false;
-    let storedSessionData = null;
-
-    if (storedSessionRaw) {
-      try {
-        const parsed = JSON.parse(storedSessionRaw);
-        if (parsed && 
-            parsed.username === user && 
-            parsed.password === pass && 
-            parsed.expiresAt && 
-            Date.now() < parsed.expiresAt) {
-          hasValidStoredSession = true;
-          storedSessionData = parsed;
-        }
-      } catch (e) {
-        console.error("Error parsing stored session in login form submit:", e);
-      }
-    }
-
-    if (hasValidStoredSession && storedSessionData) {
-      // Successfully authenticated via local storage session (bypassing 10-minute check!)
-      loginFailedAttempts = 0;
-      currentCompany = storedSessionData.company;
-      currentSector = storedSessionData.sector;
-      
-      if (countdownInterval) {
-        clearInterval(countdownInterval);
-        countdownInterval = null;
-      }
-      
-      // Update session data in localStorage with the new 'remember' state and 1 week expiry
-      const cardData = {
-        username: storedSessionData.username,
-        password: storedSessionData.password,
-        company: storedSessionData.company,
-        sector: storedSessionData.sector,
-        expiresAt: Date.now() + 7 * 24 * 60 * 60 * 1000, // 1 week
-        remember: remember
-      };
-      localStorage.setItem('isLoggedIn', 'true');
-      localStorage.setItem('userCardData', JSON.stringify(cardData));
-      sessionStorage.setItem('sessionActive', 'true');
-      
-      // Send activation to server to make it permanent (activated)
-      fetch('/api/activate-card', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username: user })
-      }).catch(err => console.error('Error activating card on server:', err));
-
-      history.replaceState({ pageId: 'dashboard' }, '', '#dashboard');
-      switchPage('dashboard', false);
-      return;
-    }
-
-    // 2. Fall back to checking tempCredentials (first-time login check)
+    // Check if credentials match (even if the initial 10-minute timer has expired)
     if (tempCredentials && 
         user === tempCredentials.username && 
-        pass === tempCredentials.password && 
-        Date.now() < tempCredentials.expiresAt) {
+        pass === tempCredentials.password) {
       
       // Successfully Authenticated locally!
       loginFailedAttempts = 0; // reset failed counter
@@ -1662,9 +1604,8 @@ document.addEventListener('DOMContentLoaded', () => {
         body: JSON.stringify({ username: user })
       }).catch(err => console.error('Error activating card on server:', err));
 
-      // Replace #login with #dashboard in history to prevent back button from returning to the login modal
-      history.replaceState({ pageId: 'dashboard' }, '', '#dashboard');
-      switchPage('dashboard', false);
+      // Immediately transition to dashboard
+      transitionToDashboard();
     } else {
       // Check server-side credentials (handles login in different browser or after closing site)
       fetch('/api/login', {
@@ -1706,9 +1647,8 @@ document.addEventListener('DOMContentLoaded', () => {
               body: JSON.stringify({ username: user })
             }).catch(err => console.error('Error activating card on server:', err));
 
-            // Replace #login with #dashboard in history to prevent back button from returning to the login modal
-            history.replaceState({ pageId: 'dashboard' }, '', '#dashboard');
-            switchPage('dashboard', false);
+            // Immediately transition to dashboard
+            transitionToDashboard();
           });
         } else if (res.status === 403) {
           // Expired on the server
