@@ -760,10 +760,10 @@ document.addEventListener('DOMContentLoaded', () => {
   let tempCredentials = null;
   let countdownInterval = null;
   let loginFailedAttempts = 0;
-  let whatIfBaseline = null;
   let activePerformanceMetrics = null;
   let sectorDataLoaded = false;
   let sectorDataJSON = null;
+  let baseline_state = null;
 
   function transitionToDashboard() {
     const userCardDataRaw = localStorage.getItem('userCardData');
@@ -2143,7 +2143,7 @@ document.addEventListener('DOMContentLoaded', () => {
     renderXaiWeights();
 
     // Step 6: Reset What-If Scenario baseline
-    whatIfBaseline = null;
+    baseline_state = null;
     updateWhatIfComparison();
 
     // Step 7: Initialize Aura AI Chatbot Dialog
@@ -2959,6 +2959,13 @@ document.addEventListener('DOMContentLoaded', () => {
         newCustomer[key] = input.value;
       }
     });
+
+    // If a baseline state is locked, calculate delta and update comparison UI
+    if (baseline_state) {
+      const currentState = { ...newCustomer, sector: currentSector };
+      currentState.riskScore = calculateRiskScoreForState(currentState);
+      updateScenarioComparison(baseline_state, currentState);
+    }
 
     // Append to dataset and update UI
     databases[currentSector].push(newCustomer);
@@ -4447,50 +4454,241 @@ document.addEventListener('DOMContentLoaded', () => {
     modal.classList.add('active');
   }
 
+  function calculateRiskScoreForState(state) {
+    const avg = getSectorAverages(state.sector);
+    if (state.sector === 'vakif') {
+      const credit = state.credit || 6;
+      const income = state.income || 100;
+      const dti = state.dti || 2;
+      const cCredit = 45 * (credit - (avg.credit || 8)) / 24;
+      const cIncome = 35 * (income - (avg.income || 150)) / 990;
+      const cDti = 20 * (dti - (avg.dti || 3)) / 14;
+      return 50 + cCredit + cIncome + cDti;
+    } else if (state.sector === 'egitim') {
+      const glucose = state.glucose || 15;
+      const bmi = state.bmi || 80;
+      const age = state.age || 70;
+      const z = 5.5 - (0.12 * glucose) - (0.04 * bmi) - (0.03 * age);
+      return (1.0 / (1.0 + Math.exp(-z))) * 100;
+    } else if (state.sector === 'gida') {
+      const size = state.size || 1000;
+      const beds = state.beds || 4.0;
+      const loc = state.location === 'Evet' || state.location === true;
+      const cSize = 55 * (size - (avg.size || 1500)) / 3900;
+      const cBeds = 25 * (beds - (avg.beds || 4.2)) / 4;
+      const cLoc = 20 * ((loc ? 1 : 0) - (avg.location || 0));
+      return 50 + cSize + cBeds + cLoc;
+    } else if (state.sector === 'lojistik') {
+      const days = state.days || 15;
+      const sessions = state.sessions || 4;
+      const tickets = state.tickets || 2;
+      const daysImpact = Math.min(100, (days / 150) * 100);
+      const sessionImpact = (sessions / 10) * 100;
+      const supportImpact = (tickets / 10) * 100;
+      return (daysImpact * 0.45) + (sessionImpact * 0.3) + (supportImpact * 0.25);
+    } else if (state.sector === 'tekstil') {
+      const days = state.days || 4;
+      const sessions = state.sessions || 1200;
+      const tickets = state.tickets || 30;
+      const cFreq = 40 * (days - (avg.days || 5)) / 29;
+      const cBasket = 35 * (sessions - (avg.sessions || 1500)) / 4900;
+      const cDiscount = -25 * (tickets - (avg.tickets || 40)) / 100;
+      return 50 + cFreq + cBasket + cDiscount;
+    }
+    return 50;
+  }
+
+  function updateScenarioComparison(baseline, active) {
+    const compBox = document.getElementById('whatif-comparison-box');
+    if (!compBox) return;
+
+    if (!baseline || baseline.sector !== currentSector) {
+      compBox.innerHTML = `
+        <p style="font-size: 0.8rem; color: var(--text-muted); text-align: center; line-height: 1.5; margin-top: 1.2rem;">
+          ${currentLang === 'tr' 
+            ? 'Karşılaştırmayı başlatmak için "Referans Olarak Kilitle" butonuna tıklayın, ardından formu değiştirip gönderin.'
+            : 'To start comparison, click "Lock as Baseline" button, then change and submit the form.'}
+        </p>
+      `;
+      return;
+    }
+
+    const featureMapping = {
+      vakif: {
+        credit: { tr: "Katılım Sıklığı", en: "Attendance Freq" },
+        income: { tr: "Bağış Tutarı", en: "Donation Amount" },
+        dti: { tr: "Üyelik Süresi", en: "Membership" },
+        donationType: { tr: "Bağış Türü", en: "Donation Type" }
+      },
+      egitim: {
+        glucose: { tr: "Çalışma Süresi", en: "Study Time" },
+        bmi: { tr: "Devam Oranı", en: "Attendance Rate" },
+        age: { tr: "Sınav Puanı", en: "Exam Score" },
+        grade_level: { tr: "Sınıf Seviyesi", en: "Grade Level" }
+      },
+      gida: {
+        size: { tr: "Sipariş Adedi", en: "Order Qty" },
+        beds: { tr: "Restoran Puanı", en: "Rest. Rating" },
+        location: { tr: "Kampanya", en: "Campaign" },
+        restaurant_type: { tr: "Konsept", en: "Concept" }
+      },
+      lojistik: {
+        days: { tr: "Mesafe", en: "Distance" },
+        sessions: { tr: "Trafik", en: "Traffic" },
+        tickets: { tr: "Paket Yükü", en: "Package Load" },
+        vehicle_type: { tr: "Taşıt", en: "Vehicle" }
+      },
+      tekstil: {
+        days: { tr: "Alışveriş Sıklığı", en: "Shopping Freq" },
+        sessions: { tr: "Sepet Tutarı", en: "Basket Amount" },
+        tickets: { tr: "İndirim Hassas.", en: "Discount Sens." },
+        promo_code: { tr: "Promosyon Kodu", en: "Promo Code" }
+      }
+    };
+
+    const sectorFeatures = featureMapping[currentSector] || {};
+    let deltasHtml = '';
+
+    const keysToCompare = Object.keys(baseline).filter(k => k !== 'name' && k !== 'sector' && k !== 'riskScore');
+    const compareState = active || baseline;
+
+    keysToCompare.forEach(key => {
+      const baseVal = baseline[key];
+      const activeVal = compareState[key];
+      const name = sectorFeatures[key]?.[currentLang] || key;
+
+      let deltaText = '';
+      let deltaColor = 'var(--text-muted)';
+      let displayValue = '';
+
+      if (typeof baseVal === 'number') {
+        const diff = activeVal - baseVal;
+        const sign = diff > 0 ? '+' : '';
+        deltaText = `${sign}${diff.toFixed(1)}`;
+        deltaColor = diff > 0 ? '#10b981' : (diff < 0 ? '#ef4444' : 'var(--text-secondary)');
+        displayValue = `${baseVal} ➔ ${activeVal} (${deltaText})`;
+      } else if (typeof baseVal === 'boolean') {
+        if (activeVal !== baseVal) {
+          const baseStr = currentLang === 'tr' ? (baseVal ? 'Evet' : 'Hayır') : (baseVal ? 'Yes' : 'No');
+          const activeStr = currentLang === 'tr' ? (activeVal ? 'Evet' : 'Hayır') : (activeVal ? 'Yes' : 'No');
+          deltaText = currentLang === 'tr' ? 'Değişti' : 'Changed';
+          deltaColor = 'var(--primary)';
+          displayValue = `${baseStr} ➔ ${activeStr}`;
+        } else {
+          const baseStr = currentLang === 'tr' ? (baseVal ? 'Evet' : 'Hayır') : (baseVal ? 'Yes' : 'No');
+          deltaText = currentLang === 'tr' ? 'Aynı' : 'Same';
+          displayValue = `${baseStr}`;
+        }
+      } else {
+        if (activeVal !== baseVal) {
+          let baseLabel = baseVal;
+          let activeLabel = activeVal;
+          const fieldDef = (sectorDataJSON?.[currentSector] || []).find(f => f.key === key);
+          if (fieldDef && fieldDef.options) {
+            const optBase = fieldDef.options.find(o => o.value === baseVal);
+            if (optBase) baseLabel = optBase.label[currentLang] || optBase.label.en;
+            const optActive = fieldDef.options.find(o => o.value === activeVal);
+            if (optActive) activeLabel = optActive.label[currentLang] || optActive.label.en;
+          }
+          deltaText = currentLang === 'tr' ? 'Değişti' : 'Changed';
+          deltaColor = 'var(--primary)';
+          displayValue = `${baseLabel} ➔ ${activeLabel}`;
+        } else {
+          let baseLabel = baseVal;
+          const fieldDef = (sectorDataJSON?.[currentSector] || []).find(f => f.key === key);
+          if (fieldDef && fieldDef.options) {
+            const optBase = fieldDef.options.find(o => o.value === baseVal);
+            if (optBase) baseLabel = optBase.label[currentLang] || optBase.label.en;
+          }
+          deltaText = currentLang === 'tr' ? 'Aynı' : 'Same';
+          displayValue = `${baseLabel}`;
+        }
+      }
+
+      deltasHtml += `
+        <div style="display: flex; justify-content: space-between; font-size: 0.8rem; border-bottom: 1px solid rgba(255,255,255,0.03); padding: 0.35rem 0; align-items: center;">
+          <span style="color: var(--text-secondary); font-weight: 500;">${name}</span>
+          <span style="color: ${deltaColor === 'var(--text-muted)' ? 'var(--text-primary)' : deltaColor}; font-weight: 600; font-family: monospace;">${displayValue}</span>
+        </div>
+      `;
+    });
+
+    const activeScore = active ? active.riskScore : (baseline.riskScore || 50);
+    const baseScore = baseline.riskScore || 50;
+    const scoreDelta = activeScore - baseScore;
+    const percentChange = baseScore !== 0 ? ((activeScore - baseScore) / baseScore) * 100 : 0;
+    const scoreSign = percentChange > 0 ? '+' : '';
+    const isOrders = currentSector === 'gida';
+
+    let scoreColor = 'var(--text-secondary)';
+    if (percentChange > 0) {
+      scoreColor = isOrders ? '#10b981' : '#ef4444';
+    } else if (percentChange < 0) {
+      scoreColor = isOrders ? '#ef4444' : '#10b981';
+    }
+
+    const titleText = active 
+      ? (currentLang === 'tr' ? 'Senaryo Karşılaştırma Sonuçları' : 'Scenario Comparison Results')
+      : (currentLang === 'tr' ? 'Referans Durum Kilitlendi' : 'Baseline State Locked');
+    const subtitleText = active 
+      ? (currentLang === 'tr' ? `Karşılaştırılan: ${active.name || 'Yeni Girdi'}` : `Compared with: ${active.name || 'New Input'}`)
+      : (currentLang === 'tr' ? `Referans: ${baseline.name || 'Referans Girdi'}` : `Baseline: ${baseline.name || 'Baseline Input'}`);
+
+    const labelText = isOrders
+      ? (currentLang === 'tr' ? 'Talep Etkisi (Değişim):' : 'Demand Impact (Change):')
+      : (currentLang === 'tr' ? 'Risk Skoru Etkisi (Değişim):' : 'Risk Score Impact (Change):');
+
+    const formattedPercent = `${scoreSign}${percentChange.toFixed(1)}%`;
+    const formattedScoreDelta = `${scoreDelta > 0 ? '+' : ''}${scoreDelta.toFixed(1)}${isOrders ? (currentLang === 'tr' ? ' Sipariş' : ' Orders') : '%'}`;
+
+    compBox.innerHTML = `
+      <div style="display: flex; flex-direction: column; gap: 0.5rem; width: 100%;">
+        <div style="display: flex; justify-content: space-between; align-items: baseline;">
+          <h4 style="margin: 0; font-size: 0.85rem; color: var(--primary); font-weight: 700;">
+            ${titleText}
+          </h4>
+          <span style="font-size: 0.7rem; color: var(--text-muted);">${subtitleText}</span>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 0.1rem; max-height: 120px; overflow-y: auto; padding-right: 4px; margin-top: 0.3rem;">
+          ${deltasHtml}
+        </div>
+        <div style="border-top: 1px dashed var(--border-color); padding-top: 0.5rem; display: flex; justify-content: space-between; align-items: center; font-weight: bold; font-size: 0.82rem; margin-top: 0.2rem;">
+          <span style="color: var(--text-primary);">${labelText}</span>
+          <div style="text-align: right;">
+            <span style="color: ${scoreColor}; font-family: monospace; font-size: 0.95rem; font-weight: 800;">${formattedPercent}</span>
+            <span style="color: var(--text-muted); font-size: 0.75rem; font-weight: normal; margin-left: 0.25rem;">(${formattedScoreDelta})</span>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
   function setWhatIfBaseline() {
     const btn = document.getElementById('btn-whatif-set-baseline');
     if (!btn) return;
 
-    let inputs = {};
-    if (currentSector === 'vakif') {
-      inputs = {
-        credit: parseInt(document.getElementById('slider-credit').value),
-        income: parseInt(document.getElementById('slider-income').value),
-        dti: parseInt(document.getElementById('slider-dti').value)
-      };
-    } else if (currentSector === 'egitim') {
-      inputs = {
-        glucose: parseInt(document.getElementById('slider-glucose').value),
-        bmi: parseFloat(document.getElementById('slider-bmi').value),
-        age: parseInt(document.getElementById('slider-age').value)
-      };
-    } else if (currentSector === 'gida') {
-      inputs = {
-        size: parseInt(document.getElementById('slider-size').value),
-        beds: parseFloat(document.getElementById('slider-beds').value),
-        location: document.getElementById('toggle-location').checked
-      };
-    } else if (currentSector === 'lojistik') {
-      inputs = {
-        days: parseInt(document.getElementById('slider-days').value),
-        sessions: parseInt(document.getElementById('slider-sessions').value),
-        tickets: parseInt(document.getElementById('slider-tickets').value)
-      };
-    } else if (currentSector === 'tekstil') {
-      inputs = {
-        days: parseInt(document.getElementById('slider-days').value),
-        sessions: parseInt(document.getElementById('slider-sessions').value),
-        tickets: parseInt(document.getElementById('slider-tickets').value)
-      };
-    }
+    const form = document.getElementById('add-customer-form');
+    if (!form) return;
 
-    const output = document.getElementById('dash-output-result').textContent;
-
-    whatIfBaseline = {
+    baseline_state = {
       sector: currentSector,
-      inputs: inputs,
-      output: output
+      name: document.getElementById('cust-name-input')?.value.trim() || 'Baseline Customer'
     };
+
+    const inputs = form.querySelectorAll('input, select');
+    inputs.forEach(input => {
+      if (input.id === 'cust-name-input') return;
+      const key = input.id.replace('add-', '');
+      if (input.type === 'checkbox') {
+        baseline_state[key] = input.checked;
+      } else if (input.type === 'number') {
+        baseline_state[key] = Number(input.value);
+      } else {
+        baseline_state[key] = input.value;
+      }
+    });
+
+    baseline_state.riskScore = calculateRiskScoreForState(baseline_state);
 
     const origText = btn.textContent;
     btn.textContent = currentLang === 'tr' ? '✓ Kilitlendi (Senaryo A)' : '✓ Locked (Scenario A)';
@@ -4507,157 +4705,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function updateWhatIfComparison() {
-    const compBox = document.getElementById('whatif-comparison-box');
-    if (!compBox) return;
-
-    if (!whatIfBaseline || whatIfBaseline.sector !== currentSector) {
-      compBox.innerHTML = `
-        <p style="font-size: 0.8rem; color: var(--text-muted); text-align: center; line-height: 1.5; margin-top: 1.2rem;" data-i18n="whatif_empty_state">
-          ${translations.whatif_empty_state[currentLang]}
-        </p>
-      `;
-      return;
-    }
-
-    let currentInputs = {};
-    let labels = {};
-    let formatters = {};
-
-    if (currentSector === 'vakif') {
-      currentInputs = {
-        credit: parseInt(document.getElementById('slider-credit').value),
-        income: parseInt(document.getElementById('slider-income').value),
-        dti: parseInt(document.getElementById('slider-dti').value)
-      };
-      labels = {
-        credit: { tr: "Aylık Katılım Sıklığı", en: "Monthly Attendance Frequency" },
-        income: { tr: "Geçmiş Bağış Tutarı ($)", en: "Past Donation Amount ($)" },
-        dti: { tr: "Üyelik Süresi (Yıl)", en: "Membership Duration (Years)" }
-      };
-      formatters = {
-        credit: val => val,
-        income: val => `$${val}`,
-        dti: val => val
-      };
-    } else if (currentSector === 'egitim') {
-      currentInputs = {
-        glucose: parseInt(document.getElementById('slider-glucose').value),
-        bmi: parseFloat(document.getElementById('slider-bmi').value),
-        age: parseInt(document.getElementById('slider-age').value)
-      };
-      labels = {
-        glucose: { tr: "Haftalık Çalışma Süresi", en: "Weekly Study Time" },
-        bmi: { tr: "Ders Devam Oranı (%)", en: "Course Attendance Rate (%)" },
-        age: { tr: "Deneme Sınav Puanı", en: "Mock Exam Score" }
-      };
-      formatters = {
-        glucose: val => `${val} ${currentLang === 'tr' ? 'Saat' : 'Hrs'}`,
-        bmi: val => `%${val}`,
-        age: val => val
-      };
-    } else if (currentSector === 'gida') {
-      currentInputs = {
-        size: parseInt(document.getElementById('slider-size').value),
-        beds: parseFloat(document.getElementById('slider-beds').value),
-        location: document.getElementById('toggle-location').checked
-      };
-      labels = {
-        size: { tr: "Ortalama Sipariş Adedi", en: "Avg. Order Quantity" },
-        beds: { tr: "Restoran Değerlendirme Puanı", en: "Restaurant Rating Score" },
-        location: { tr: "Kampanya Uygulaması", en: "Campaign Application" }
-      };
-      formatters = {
-        size: val => val,
-        beds: val => val.toFixed(1),
-        location: val => currentLang === 'tr' ? (val ? "Evet" : "Hayır") : (val ? "Yes" : "No")
-      };
-    } else if (currentSector === 'lojistik') {
-      currentInputs = {
-        days: parseInt(document.getElementById('slider-days').value),
-        sessions: parseInt(document.getElementById('slider-sessions').value),
-        tickets: parseInt(document.getElementById('slider-tickets').value)
-      };
-      labels = {
-        days: { tr: "Mesafe Uzunluğu", en: "Distance Length" },
-        sessions: { tr: "Trafik Yoğunluğu", en: "Traffic Density" },
-        tickets: { tr: "Paket Yükü Adedi", en: "Package Load Quantity" }
-      };
-      formatters = {
-        days: val => `${val} km`,
-        sessions: val => val,
-        tickets: val => val
-      };
-    } else if (currentSector === 'tekstil') {
-      currentInputs = {
-        days: parseInt(document.getElementById('slider-days').value),
-        sessions: parseInt(document.getElementById('slider-sessions').value),
-        tickets: parseInt(document.getElementById('slider-tickets').value)
-      };
-      labels = {
-        days: { tr: "Aylık Alışveriş Sıklığı", en: "Monthly Shopping Frequency" },
-        sessions: { tr: "Ortalama Sepet Tutarı", en: "Average Basket Amount" },
-        tickets: { tr: "İndirim Hassasiyeti", en: "Discount Sensitivity" }
-      };
-      formatters = {
-        days: val => `${val} ${currentLang === 'tr' ? 'Kez' : 'Times'}`,
-        sessions: val => `${val} ${currentLang === 'tr' ? 'TL' : 'TRY'}`,
-        tickets: val => `%${val}`
-      };
-    }
-
-    const currentOutput = document.getElementById('dash-output-result').textContent;
-
-    let compareRowsHtml = '';
-    for (let key in currentInputs) {
-      const baseVal = whatIfBaseline.inputs[key];
-      const activeVal = currentInputs[key];
-      const label = labels[key][currentLang];
-      
-      let diffHtml = '';
-      if (typeof activeVal === 'number') {
-        const diff = activeVal - baseVal;
-        const diffSign = diff > 0 ? '+' : '';
-        const diffText = Number.isInteger(diff) ? diff : diff.toFixed(1);
-        const diffColor = diff > 0 ? 'var(--success)' : (diff < 0 ? 'var(--error)' : 'var(--text-muted)');
-        diffHtml = `<span style="color: ${diffColor}; font-weight: bold;">${diffSign}${diffText}</span>`;
-      } else {
-        diffHtml = `<span style="color: var(--text-muted); font-size: 0.75rem;">-</span>`;
-      }
-
-      const formattedBase = formatters[key] ? formatters[key](baseVal) : baseVal;
-      const formattedActive = formatters[key] ? formatters[key](activeVal) : activeVal;
-
-      compareRowsHtml += `
-        <div style="display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 0.5rem; align-items: center; font-size: 0.8rem; border-bottom: 1px solid rgba(255,255,255,0.03); padding-bottom: 0.3rem;">
-          <div style="color: var(--text-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${label}">${label}</div>
-          <div style="text-align: center; color: rgba(255,255,255,0.6); font-family: monospace; font-size: 0.75rem;">${formattedBase}</div>
-          <div style="text-align: center; color: var(--text-primary); font-family: monospace; font-size: 0.75rem; font-weight: 500;">${formattedActive}</div>
-          <div style="text-align: center; font-family: monospace; font-size: 0.75rem;">${diffHtml}</div>
-        </div>
-      `;
-    }
-
-    compBox.innerHTML = `
-      <div style="display: flex; flex-direction: column; gap: 0.8rem; width: 100%;">
-        <div style="display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 0.5rem; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 0.4rem; font-size: 0.75rem; color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em;">
-          <div>${currentLang === 'tr' ? 'Değişken' : 'Feature'}</div>
-          <div style="text-align: center;">Sen. A</div>
-          <div style="text-align: center;">Sen. B</div>
-          <div style="text-align: center;">${currentLang === 'tr' ? 'Değişim' : 'Change'}</div>
-        </div>
-        <div style="display: flex; flex-direction: column; gap: 0.5rem; max-height: 120px; overflow-y: auto;">
-          ${compareRowsHtml}
-        </div>
-        <div style="margin-top: 0.6rem; padding-top: 0.6rem; border-top: 1px dashed rgba(255,255,255,0.15); display: flex; justify-content: space-between; align-items: center; font-size: 0.8rem;">
-          <span style="font-weight: 600; color: var(--text-secondary);">${currentLang === 'tr' ? 'Model Kararı (A ➔ B):' : 'Model Decision (A ➔ B):'}</span>
-          <div style="font-weight: bold; display: flex; gap: 0.5rem; align-items: center;">
-            <span style="color: rgba(255,255,255,0.6); text-decoration: line-through;">${whatIfBaseline.output}</span>
-            <span style="color: var(--accent); font-size: 0.9rem;">➔</span>
-            <span style="color: var(--accent-light); text-shadow: 0 0 8px var(--accent);">${currentOutput}</span>
-          </div>
-        </div>
-      </div>
-    `;
+    updateScenarioComparison(baseline_state, null);
   }
    function _updateAuraBadge(mode) {
     const badge = document.getElementById('aura-mode-badge');
