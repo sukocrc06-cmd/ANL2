@@ -869,6 +869,100 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   };
 
+  // Dynamic Form Renderer Function
+  function renderDynamicFormFields(fields) {
+    const container = document.getElementById('dynamic-form-fields');
+    if (!container) return;
+    container.innerHTML = '';
+
+    fields.forEach(field => {
+      const group = document.createElement('div');
+      group.className = 'control-group';
+
+      // 1. Create label
+      const label = document.createElement('label');
+      label.className = 'control-label';
+      label.setAttribute('for', `add-${field.key}`);
+      label.textContent = (field.label[currentLang] || field.label.en || field.label) + ":";
+      group.appendChild(label);
+
+      // Determine field type
+      const type = field.type || (field.hasOwnProperty('min') ? 'number' : 'text');
+
+      if (type === 'select') {
+        const select = document.createElement('select');
+        select.className = 'select-input';
+        select.id = `add-${field.key}`;
+        select.required = field.required !== false;
+        
+        if (field.options) {
+          field.options.forEach(opt => {
+            const option = document.createElement('option');
+            option.value = opt.value;
+            option.textContent = opt.label[currentLang] || opt.label.en || opt.label;
+            if (opt.value === field.value) option.selected = true;
+            select.appendChild(option);
+          });
+        }
+        group.appendChild(select);
+      } else if (type === 'toggle') {
+        // Switch style container
+        const toggleContainer = document.createElement('div');
+        toggleContainer.className = 'toggle-container';
+        toggleContainer.style.marginBottom = '1rem';
+        
+        const labelSpan = document.createElement('span');
+        labelSpan.style.fontSize = '0.85rem';
+        labelSpan.style.color = 'var(--text-secondary)';
+        labelSpan.textContent = field.label[currentLang] || field.label.en;
+        
+        label.style.display = 'none'; // hide the standard label
+        
+        const switchLabel = document.createElement('label');
+        switchLabel.className = 'switch';
+        
+        const input = document.createElement('input');
+        input.type = 'checkbox';
+        input.id = `add-${field.key}`;
+        input.checked = !!field.value;
+        
+        const spanToggle = document.createElement('span');
+        spanToggle.className = 'slider-toggle';
+        
+        switchLabel.appendChild(input);
+        switchLabel.appendChild(spanToggle);
+        
+        toggleContainer.appendChild(labelSpan);
+        toggleContainer.appendChild(switchLabel);
+        group.appendChild(toggleContainer);
+      } else if (type === 'number') {
+        const input = document.createElement('input');
+        input.type = 'number';
+        input.className = 'text-input';
+        input.id = `add-${field.key}`;
+        input.value = field.value !== undefined ? field.value : '';
+        input.required = field.required !== false;
+        
+        if (field.min !== undefined) input.min = field.min;
+        if (field.max !== undefined) input.max = field.max;
+        if (field.step !== undefined) input.step = field.step;
+        
+        group.appendChild(input);
+      } else {
+        const input = document.createElement('input');
+        input.type = 'text';
+        input.className = 'text-input';
+        input.id = `add-${field.key}`;
+        input.value = field.value !== undefined ? field.value : '';
+        input.required = field.required !== false;
+        
+        group.appendChild(input);
+      }
+
+      container.appendChild(group);
+    });
+  }
+
   function updateThemeColor(sector) {
     const theme = themeColors[sector] || themeColors.default;
 
@@ -1819,20 +1913,7 @@ document.addEventListener('DOMContentLoaded', () => {
       `;
 
       // 4. Setup Dynamic customer registry form fields
-      dynamicFormFields.innerHTML = `
-        <div class="control-group">
-          <label class="control-label" for="add-credit">${currentLang === 'tr' ? 'Aylık Katılım Sıklığı (1-30):' : 'Monthly Attendance Frequency (1-30):'}</label>
-          <input type="number" id="add-credit" class="text-input" min="1" max="30" value="6" required>
-        </div>
-        <div class="control-group">
-          <label class="control-label" for="add-income">${currentLang === 'tr' ? 'Geçmiş Bağış Tutarı ($):' : 'Past Donation Amount ($):'}</label>
-          <input type="number" id="add-income" class="text-input" min="10" max="10000" value="100" required>
-        </div>
-        <div class="control-group">
-          <label class="control-label" for="add-dti">${currentLang === 'tr' ? 'Üyelik Süresi (Yıl):' : 'Membership Duration (Years):'}</label>
-          <input type="number" id="add-dti" class="text-input" min="0" max="30" value="2" required>
-        </div>
-      `;
+      renderDynamicFormFields(sectorSchemas.vakif.formFields);
 
       // 5. Build Headers
       tableHeaders.innerHTML = `
@@ -1873,20 +1954,7 @@ document.addEventListener('DOMContentLoaded', () => {
         </div>
       `;
 
-      dynamicFormFields.innerHTML = `
-        <div class="control-group">
-          <label class="control-label" for="add-glucose">${currentLang === 'tr' ? 'Çalışma Süresi (Saat):' : 'Study Time (Hours):'}</label>
-          <input type="number" id="add-glucose" class="text-input" min="0" max="80" value="15" required>
-        </div>
-        <div class="control-group">
-          <label class="control-label" for="add-bmi">${currentLang === 'tr' ? 'Devam Oranı (%):' : 'Attendance Rate (%):'}</label>
-          <input type="number" id="add-bmi" class="text-input" min="0" max="100" value="80" required>
-        </div>
-        <div class="control-group">
-          <label class="control-label" for="add-age">${currentLang === 'tr' ? 'Deneme Sınav Puanı (0-100):' : 'Mock Exam Score (0-100):'}</label>
-          <input type="number" id="add-age" class="text-input" min="0" max="100" value="70" required>
-        </div>
-      `;
+      renderDynamicFormFields(sectorSchemas.egitim.formFields);
 
       tableHeaders.innerHTML = `
         <th>${currentLang === 'tr' ? 'Öğrenci Adı' : 'Student Name'}</th>
@@ -1925,23 +1993,7 @@ document.addEventListener('DOMContentLoaded', () => {
         </div>
       `;
 
-      dynamicFormFields.innerHTML = `
-        <div class="control-group">
-          <label class="control-label" for="add-size">${currentLang === 'tr' ? 'Ort. Sipariş Adedi:' : 'Avg. Order Quantity:'}</label>
-          <input type="number" id="add-size" class="text-input" min="10" max="10000" value="1000" required>
-        </div>
-        <div class="control-group">
-          <label class="control-label" for="add-beds">${currentLang === 'tr' ? 'Restoran Puanı (1-5):' : 'Restaurant Score (1-5):'}</label>
-          <input type="number" id="add-beds" class="text-input" min="1" max="5" step="0.1" value="4.0" required>
-        </div>
-        <div class="toggle-container" style="margin-bottom:1rem;">
-          <span style="font-size:0.85rem; color:var(--text-secondary);">${currentLang === 'tr' ? 'Kampanya Uygulandı Mı?' : 'Was Campaign Applied?'}</span>
-          <label class="switch">
-            <input type="checkbox" id="add-location">
-            <span class="slider-toggle"></span>
-          </label>
-        </div>
-      `;
+      renderDynamicFormFields(sectorSchemas.gida.formFields);
 
       tableHeaders.innerHTML = `
         <th>${currentLang === 'tr' ? 'Restoran Kodu / Sipariş' : 'Restaurant Code / Order'}</th>
@@ -2018,20 +2070,7 @@ document.addEventListener('DOMContentLoaded', () => {
         </div>
       `;
 
-      dynamicFormFields.innerHTML = `
-        <div class="control-group">
-          <label class="control-label" for="add-days">${currentLang === 'tr' ? 'Mesafe Uzunluğu (km):' : 'Distance (km):'}</label>
-          <input type="number" id="add-days" class="text-input" min="1" max="500" value="15" required>
-        </div>
-        <div class="control-group">
-          <label class="control-label" for="add-sessions">${currentLang === 'tr' ? 'Trafik Yoğunluğu (1-10):' : 'Traffic Density (1-10):'}</label>
-          <input type="number" id="add-sessions" class="text-input" min="1" max="10" value="4" required>
-        </div>
-        <div class="control-group">
-          <label class="control-label" for="add-tickets">${currentLang === 'tr' ? 'Paket Yük Adedi:' : 'Package Load Quantity:'}</label>
-          <input type="number" id="add-tickets" class="text-input" min="1" max="50" value="2" required>
-        </div>
-      `;
+      renderDynamicFormFields(sectorSchemas.lojistik.formFields);
 
       tableHeaders.innerHTML = `
         <th>${currentLang === 'tr' ? 'Teslimat Kodu' : 'Delivery Code'}</th>
@@ -2063,20 +2102,7 @@ document.addEventListener('DOMContentLoaded', () => {
         </div>
       `;
 
-      dynamicFormFields.innerHTML = `
-        <div class="control-group">
-          <label class="control-label" for="add-days">${currentLang === 'tr' ? 'Alışveriş Sıklığı (Kez):' : 'Shopping Frequency (Times):'}</label>
-          <input type="number" id="add-days" class="text-input" min="1" max="50" value="4" required>
-        </div>
-        <div class="control-group">
-          <label class="control-label" for="add-sessions">${currentLang === 'tr' ? 'Sepet Tutarı (TL):' : 'Basket Amount (TRY):'}</label>
-          <input type="number" id="add-sessions" class="text-input" min="100" max="10000" value="1200" required>
-        </div>
-        <div class="control-group">
-          <label class="control-label" for="add-tickets">${currentLang === 'tr' ? 'İndirim Hassasiyeti (%):' : 'Discount Sensitivity (%):'}</label>
-          <input type="number" id="add-tickets" class="text-input" min="0" max="100" value="30" required>
-        </div>
-      `;
+      renderDynamicFormFields(sectorSchemas.tekstil.formFields);
 
       tableHeaders.innerHTML = `
         <th>${currentLang === 'tr' ? 'Müşteri Adı' : 'Customer Name'}</th>
