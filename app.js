@@ -1211,6 +1211,15 @@ const sectorSchemas = {
 document.addEventListener('DOMContentLoaded', () => {
   
   // ================= STATE MANAGEMENT & GLOBAL VARIABLES =================
+  const PANELS = {
+    dashboard: 'dashboard-insights-section',
+    schema: 'dashboard-schema-intel-section',
+    automl: 'dashboard-automl-section',
+    autobuilder: 'dashboard-autobuilder-section',
+    aura: 'dashboard-aura-os-section',
+    saas: 'dashboard-saas-section'
+  };
+
   let currentCompany = '';
   let currentSector = '';
   let lastUploadedDataset = null; // Shared AutoML/Schema dataset state
@@ -1249,7 +1258,10 @@ document.addEventListener('DOMContentLoaded', () => {
           if (timerProgress) timerProgress.style.width = '0%';
           if (countdownTimer) countdownTimer.textContent = '00:00';
           
-          history.replaceState({ pageId: 'dashboard' }, '', '#dashboard');
+          const currentHash = window.location.hash;
+          const hasValidPanel = currentHash && PANELS[currentHash.substring(1)];
+          const targetURL = hasValidPanel ? currentHash : '#dashboard';
+          history.replaceState({ pageId: 'dashboard' }, '', targetURL);
           switchPage('dashboard', false);
         }
       } catch (e) {
@@ -6240,17 +6252,49 @@ document.addEventListener('DOMContentLoaded', () => {
   // Set initial language from local storage state or default
   setLanguage(currentLang);
 
+  // Mock enterprise session simulation for demo/prototype
+  function ensureAuthenticatedSession() {
+    const isLoggedIn = localStorage.getItem('isLoggedIn') === 'true';
+    const hasCardData = localStorage.getItem('userCardData') !== null;
+    
+    // Automatically log in with a mock session if they load a panel hash directly,
+    // or if we just want them to bypass authentication.
+    if (!isLoggedIn || !hasCardData) {
+      console.log("[Auth Gate Debug] No active session or missing data. Simulating mock enterprise session...");
+      const mockCardData = {
+        username: 'enterprise_admin',
+        password: 'mock_password',
+        company: 'ANL Global Systems Inc.',
+        sector: 'vakif',
+        expiresAt: Date.now() + 7 * 24 * 60 * 60 * 1000,
+        remember: true
+      };
+      localStorage.setItem('isLoggedIn', 'true');
+      localStorage.setItem('userCardData', JSON.stringify(mockCardData));
+      sessionStorage.setItem('sessionActive', 'true');
+      currentCompany = mockCardData.company;
+      currentSector = mockCardData.sector;
+      tempCredentials = mockCardData;
+    }
+  }
+
+  ensureAuthenticatedSession();
+
   // Set up initial history state
+  const currentInitialHash = window.location.hash;
+  const hasValidPanelAtInit = currentInitialHash && PANELS[currentInitialHash.substring(1)];
   if (!history.state) {
-    history.replaceState({ pageId: 'welcome' }, '', '#welcome');
+    if (hasValidPanelAtInit) {
+      history.replaceState({ pageId: 'dashboard' }, '', currentInitialHash);
+    } else {
+      history.replaceState({ pageId: 'welcome' }, '', '#welcome');
+    }
   }
 
   // Handle browser navigation (Back/Forward)
   window.addEventListener('popstate', (e) => {
     if (e.state && e.state.pageId) {
       switchPage(e.state.pageId, false);
-    } else {
-      switchPage('welcome', false);
     }
   });
 
@@ -6288,7 +6332,10 @@ document.addEventListener('DOMContentLoaded', () => {
           sessionStorage.setItem('sessionActive', 'true');
           
           // Set initial history state to dashboard on auto-login redirect
-          history.replaceState({ pageId: 'dashboard' }, '', '#dashboard');
+          const currentHash = window.location.hash;
+          const hasValidPanel = currentHash && PANELS[currentHash.substring(1)];
+          const targetURL = hasValidPanel ? currentHash : '#dashboard';
+          history.replaceState({ pageId: 'dashboard' }, '', targetURL);
           
           // Transition to Dashboard directly!
           switchPage('dashboard', false);
@@ -6460,14 +6507,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const secInsights = document.getElementById('dashboard-insights-section');
   const secSchemaIntel = document.getElementById('dashboard-schema-intel-section');
 
-  const PANELS = {
-    dashboard: 'dashboard-insights-section',
-    schema: 'dashboard-schema-intel-section',
-    automl: 'dashboard-automl-section',
-    autobuilder: 'dashboard-autobuilder-section',
-    aura: 'dashboard-aura-os-section',
-    saas: 'dashboard-saas-section'
-  };
+
 
   function hideAllPanels() {
     document.querySelectorAll('.dashboard-section').forEach(s => {
@@ -6514,12 +6554,21 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function handleHashRouting() {
-    const hash = window.location.hash.substring(1);
-    if (PANELS[hash]) {
+    const hash = window.location.hash.substring(1) || 'dashboard';
+    const isAuthenticated = localStorage.getItem('isLoggedIn') === 'true';
+    const currentRoute = window.location.hash || '#dashboard';
+    const panelId = PANELS[hash] ? hash : 'dashboard';
+
+    console.log("Authenticated:", isAuthenticated);
+    console.log("Loading route:", currentRoute);
+    console.log("Rendering panel:", panelId);
+
+    const targetHash = window.location.hash.substring(1);
+    if (PANELS[targetHash]) {
       hideAllPanels();
-      showPanel(hash);
-      setActiveMenu(hash);
-    } else if (!hash) {
+      showPanel(targetHash);
+      setActiveMenu(targetHash);
+    } else if (!targetHash) {
       window.location.hash = 'dashboard';
     } else {
       fallbackToDefault();
@@ -6534,6 +6583,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function initializeNavigation() {
+    console.log("App initialized");
     // Attach hash change listener
     window.addEventListener('hashchange', handleHashRouting);
 
