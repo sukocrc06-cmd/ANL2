@@ -1474,7 +1474,6 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
 
-  // Login Submit Event
   loginForm.addEventListener('submit', (e) => {
     e.preventDefault();
     const user = document.getElementById('login-username').value.trim();
@@ -1496,6 +1495,10 @@ document.addEventListener('DOMContentLoaded', () => {
         clearInterval(countdownInterval);
         countdownInterval = null;
       }
+      
+      // Persist session
+      localStorage.setItem('isLoggedIn', 'true');
+      localStorage.setItem('userCardData', JSON.stringify(tempCredentials));
       
       hideLoginModal();
       transitionToDashboard();
@@ -3382,6 +3385,10 @@ document.addEventListener('DOMContentLoaded', () => {
       countdownInterval = null;
     }
 
+    // Clear session persistence
+    localStorage.removeItem('isLoggedIn');
+    localStorage.removeItem('userCardData');
+
     // Reset dynamic theme color scheme and promo selection indicators
     updateThemeColor('default');
     document.querySelectorAll('.sector-promo-card').forEach(card => {
@@ -4742,34 +4749,64 @@ document.addEventListener('DOMContentLoaded', () => {
     ctx.fillText(`${n} runs`, W - PAD.right - 38, H - 3);
   }
 
+  // Check persisted session from localStorage
+  function checkSession() {
+    const isLoggedIn = localStorage.getItem('isLoggedIn');
+    const userCardDataStr = localStorage.getItem('userCardData');
+    if (isLoggedIn === 'true' && userCardDataStr) {
+      try {
+        const cardData = JSON.parse(userCardDataStr);
+        if (cardData) {
+          tempCredentials = cardData;
+          currentCompany = cardData.company;
+          currentSector = cardData.sector;
+          transitionToDashboard();
+          return true;
+        }
+      } catch (e) {
+        console.error("Error parsing session data", e);
+      }
+    }
+    return false;
+  }
+
   // Set initial language from local storage state or default
   setLanguage(currentLang);
 
-  // Auto-login via QR Code scan query parameters
-  const urlParams = new URLSearchParams(window.location.search);
-  if (urlParams.get('qrLogin') === 'true') {
-    const u = urlParams.get('u');
-    const p = urlParams.get('p');
-    const s = urlParams.get('s');
-    const c = urlParams.get('c');
-    if (u && p && s && c) {
-      currentCompany = c;
-      currentSector = s;
-      
-      // Store credentials as valid for 10 mins
-      tempCredentials = {
-        username: u,
-        password: p,
-        company: c,
-        sector: s,
-        expiresAt: Date.now() + 10 * 60 * 1000
-      };
-      
-      // Clear URL params silently so refreshing doesn't loop
-      window.history.replaceState({}, document.title, window.location.pathname);
-      
-      // Transition to Dashboard directly!
-      transitionToDashboard();
+  // Check if session is already active
+  const hasSession = checkSession();
+
+  // Auto-login via QR Code scan query parameters (only if no active session already loaded)
+  if (!hasSession) {
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('qrLogin') === 'true') {
+      const u = urlParams.get('u');
+      const p = urlParams.get('p');
+      const s = urlParams.get('s');
+      const c = urlParams.get('c');
+      if (u && p && s && c) {
+        currentCompany = c;
+        currentSector = s;
+        
+        // Store credentials as valid for 10 mins
+        tempCredentials = {
+          username: u,
+          password: p,
+          company: c,
+          sector: s,
+          expiresAt: Date.now() + 10 * 60 * 1000
+        };
+        
+        // Persist session
+        localStorage.setItem('isLoggedIn', 'true');
+        localStorage.setItem('userCardData', JSON.stringify(tempCredentials));
+        
+        // Clear URL params silently so refreshing doesn't loop
+        window.history.replaceState({}, document.title, window.location.pathname);
+        
+        // Transition to Dashboard directly!
+        transitionToDashboard();
+      }
     }
   }
 
