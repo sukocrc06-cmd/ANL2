@@ -832,40 +832,40 @@ document.addEventListener('DOMContentLoaded', () => {
   // Dynamic Theme Color Accent Config per Sector
   const themeColors = {
     vakif: {
-      primary:    'hsl(217, 91%, 60%)',
-      glow:       'hsla(217, 91%, 60%, 0.25)',
-      bgA:        'hsla(217, 100%, 15%, 0.20)',  // top-left deep gradient
-      bgB:        'hsla(245,  80%, 15%, 0.18)'   // bottom-right deep gradient
+      primary:    'hsl(215, 68%, 53%)',
+      glow:       'hsla(215, 68%, 53%, 0.18)',
+      bgA:        'hsla(215, 70%, 12%, 0.20)',  // top-left deep gradient
+      bgB:        'hsla(230, 60%, 12%, 0.18)'   // bottom-right deep gradient
     },
     egitim: {
-      primary:    'hsl(270, 91%, 65%)',
-      glow:       'hsla(270, 91%, 65%, 0.25)',
-      bgA:        'hsla(270, 100%, 14%, 0.20)',
-      bgB:        'hsla(300,  75%, 14%, 0.18)'
+      primary:    'hsl(255, 50%, 62%)',
+      glow:       'hsla(255, 50%, 62%, 0.15)',
+      bgA:        'hsla(255, 60%, 12%, 0.20)',
+      bgB:        'hsla(285, 50%, 12%, 0.18)'
     },
     gida: {
-      primary:    'hsl(28, 95%, 55%)',
-      glow:       'hsla(28, 95%, 55%, 0.25)',
-      bgA:        'hsla(28,  100%, 14%, 0.22)',
-      bgB:        'hsla(48,   97%, 14%, 0.18)'
+      primary:    'hsl(32, 65%, 50%)',
+      glow:       'hsla(32, 65%, 50%, 0.15)',
+      bgA:        'hsla(32,  65%, 12%, 0.20)',
+      bgB:        'hsla(45,   60%, 12%, 0.18)'
     },
     lojistik: {
-      primary:    'hsl(350, 89%, 60%)',
-      glow:       'hsla(350, 89%, 60%, 0.25)',
-      bgA:        'hsla(350, 100%, 14%, 0.22)',
-      bgB:        'hsla(10,   85%, 14%, 0.18)'
+      primary:    'hsl(350, 62%, 55%)',
+      glow:       'hsla(350, 62%, 55%, 0.15)',
+      bgA:        'hsla(350, 65%, 12%, 0.20)',
+      bgB:        'hsla(10,   60%, 12%, 0.18)'
     },
     tekstil: {
-      primary:    'hsl(38, 92%, 50%)',
-      glow:       'hsla(38, 92%, 50%, 0.25)',
-      bgA:        'hsla(38,  100%, 13%, 0.20)',
-      bgB:        'hsla(174,  72%, 12%, 0.18)'
+      primary:    'hsl(172, 60%, 46%)',
+      glow:       'hsla(172, 60%, 46%, 0.15)',
+      bgA:        'hsla(172,  60%, 12%, 0.20)',
+      bgB:        'hsla(145,  50%, 12%, 0.18)'
     },
     default: {
-      primary:    'hsl(217, 91%, 60%)',
-      glow:       'hsla(217, 91%, 60%, 0.25)',
-      bgA:        'hsla(217, 100%, 15%, 0.15)',
-      bgB:        'hsla(270, 100%, 15%, 0.15)'
+      primary:    'hsl(215, 68%, 53%)',
+      glow:       'hsla(215, 68%, 53%, 0.18)',
+      bgA:        'hsla(215, 70%, 12%, 0.15)',
+      bgB:        'hsla(255, 50%, 12%, 0.15)'
     }
   };
 

@@ -3,31 +3,32 @@
 :root {
   /* Colors */
   --bg-dark: hsl(222, 47%, 7%);
-  --bg-card: hsla(223, 47%, 12%, 0.6);
-  --bg-card-hover: hsla(223, 47%, 16%, 0.8);
-  --border-color: hsla(217, 30%, 30%, 0.3);
-  --border-focus: hsla(217, 91%, 60%, 0.6);
+  --bg-card: rgba(13, 20, 38, 0.45);
+  --bg-card-hover: rgba(18, 26, 48, 0.55);
+  --border-color: rgba(255, 255, 255, 0.08);
+  --border-focus: rgba(255, 255, 255, 0.2);
   
-  --primary: hsl(217, 91%, 60%);
-  --primary-glow: hsla(217, 91%, 60%, 0.25);
-  --secondary: hsl(270, 91%, 65%);
-  --secondary-glow: hsla(270, 91%, 65%, 0.2);
+  --primary: hsl(215, 68%, 53%);
+  --primary-glow: hsla(215, 68%, 53%, 0.18);
+  --secondary: hsl(255, 50%, 62%);
+  --secondary-glow: hsla(255, 50%, 62%, 0.15);
   
-  --success: hsl(142, 71%, 45%);
-  --success-glow: hsla(142, 71%, 45%, 0.2);
-  --danger: hsl(350, 89%, 60%);
-  --danger-glow: hsla(350, 89%, 60%, 0.2);
-  --warning: hsl(38, 92%, 50%);
+  --success: hsl(145, 45%, 45%);
+  --success-glow: hsla(145, 45%, 45%, 0.15);
+  --danger: hsl(350, 62%, 55%);
+  --danger-glow: hsla(350, 62%, 55%, 0.15);
+  --warning: hsl(32, 65%, 50%);
+  --warning-glow: hsla(32, 65%, 50%, 0.15);
   --text-primary: hsl(210, 40%, 98%);
-  --text-secondary: hsl(215, 20%, 65%);
-  --text-muted: hsl(215, 16%, 47%);
+  --text-secondary: hsl(215, 20%, 75%);
+  --text-muted: hsl(215, 16%, 50%);
 
   /* Typography */
-  --font-display: 'Outfit', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-display: 'Inter', 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, sans-serif;
+  --font-sans: 'Inter', 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, sans-serif;
 
   /* Shadows & Blur */
-  --card-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+  --card-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.1);
   --glass-blur: blur(12px);
   --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
@@ -88,13 +89,15 @@ h2, h3, h4 {
   -webkit-backdrop-filter: var(--glass-blur);
   border: 1px solid var(--border-color);
   border-radius: 20px;
-  padding: 2rem;
+  padding: 2.25rem;
   box-shadow: var(--card-shadow);
   transition: var(--transition-smooth);
 }
 
 .glass-card:hover {
   border-color: var(--border-focus);
+  transform: translateY(-2px);
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.15);
 }
 
 /* Badges */
@@ -147,6 +150,11 @@ h2, h3, h4 {
   transition: var(--transition-smooth);
 }
 
+.text-input:hover, .select-input:hover {
+  border-color: rgba(255, 255, 255, 0.25);
+  background: rgba(255, 255, 255, 0.03);
+}
+
 .text-input:focus, .select-input:focus {
   border-color: var(--primary);
   box-shadow: 0 0 10px var(--primary-glow);
@@ -185,6 +193,10 @@ h2, h3, h4 {
   transition: background 0.3s;
 }
 
+.slider-input:hover {
+  background: rgba(255, 255, 255, 0.15);
+}
+
 .slider-input::-webkit-slider-thumb {
   -webkit-appearance: none;
   appearance: none;
@@ -194,11 +206,38 @@ h2, h3, h4 {
   background: var(--primary);
   cursor: pointer;
   box-shadow: 0 0 10px var(--primary-glow);
-  transition: transform 0.1s;
+  transition: transform 0.1s, background-color 0.15s;
 }
 
 .slider-input::-webkit-slider-thumb:hover {
-  transform: scale(1.2);
+  transform: scale(1.25);
+}
+
+.slider-input::-webkit-slider-thumb:active {
+  transform: scale(1.4);
+  background: #ffffff;
+  box-shadow: 0 0 15px var(--primary);
+}
+
+.slider-input::-moz-range-thumb {
+  width: 16px;
+  height: 16px;
+  border: none;
+  border-radius: 50%;
+  background: var(--primary);
+  cursor: pointer;
+  box-shadow: 0 0 10px var(--primary-glow);
+  transition: transform 0.1s, background-color 0.15s;
+}
+
+.slider-input::-moz-range-thumb:hover {
+  transform: scale(1.25);
+}
+
+.slider-input::-moz-range-thumb:active {
+  transform: scale(1.4);
+  background: #ffffff;
+  box-shadow: 0 0 15px var(--primary);
 }
 
 /* Toggle Switches */
@@ -232,6 +271,11 @@ h2, h3, h4 {
   transition: 0.3s;
 }
 
+.slider-toggle:hover {
+  background-color: rgba(255, 255, 255, 0.15);
+  border-color: rgba(255, 255, 255, 0.25);
+}
+
 .slider-toggle:before {
   position: absolute;
   content: "";
@@ -241,7 +285,11 @@ h2, h3, h4 {
   bottom: 3px;
   background-color: var(--text-secondary);
   border-radius: 50%;
-  transition: 0.3s;
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), width 0.3s, background-color 0.3s;
+}
+
+.switch:active .slider-toggle:before {
+  width: 18px;
 }
 
 input:checked + .slider-toggle {
@@ -621,24 +669,24 @@ input:checked + .slider-toggle:before {
 
 /* Sector-specific overrides — applied when data-sector attr is set */
 /* Vakıf (Associations): cool blue + indigo */
-#login-modal[data-sector="vakif"] .glow-cyan   { background: radial-gradient(circle, hsl(217,91%,60%) 0%, transparent 70%); }
-#login-modal[data-sector="vakif"] .glow-violet  { background: radial-gradient(circle, hsl(245,80%,65%) 0%, transparent 70%); }
+#login-modal[data-sector="vakif"] .glow-cyan   { background: radial-gradient(circle, hsl(215,68%,53%) 0%, transparent 70%); }
+#login-modal[data-sector="vakif"] .glow-violet  { background: radial-gradient(circle, hsl(230,60%,60%) 0%, transparent 70%); }
 
 /* Eğitim (Education): violet + fuchsia */
-#login-modal[data-sector="egitim"] .glow-cyan   { background: radial-gradient(circle, hsl(270,91%,65%) 0%, transparent 70%); }
-#login-modal[data-sector="egitim"] .glow-violet  { background: radial-gradient(circle, hsl(300,75%,60%) 0%, transparent 70%); }
+#login-modal[data-sector="egitim"] .glow-cyan   { background: radial-gradient(circle, hsl(255,50%,62%) 0%, transparent 70%); }
+#login-modal[data-sector="egitim"] .glow-violet  { background: radial-gradient(circle, hsl(285,55%,60%) 0%, transparent 70%); }
 
 /* Gıda (Food): warm orange + amber */
-#login-modal[data-sector="gida"] .glow-cyan   { background: radial-gradient(circle, hsl(28,95%,55%)  0%, transparent 70%); }
-#login-modal[data-sector="gida"] .glow-violet  { background: radial-gradient(circle, hsl(48,97%,52%)  0%, transparent 70%); }
+#login-modal[data-sector="gida"] .glow-cyan   { background: radial-gradient(circle, hsl(32,65%,50%)  0%, transparent 70%); }
+#login-modal[data-sector="gida"] .glow-violet  { background: radial-gradient(circle, hsl(45,60%,52%)  0%, transparent 70%); }
 
 /* Lojistik (Logistics): crimson + rose */
-#login-modal[data-sector="lojistik"] .glow-cyan   { background: radial-gradient(circle, hsl(350,89%,60%) 0%, transparent 70%); }
-#login-modal[data-sector="lojistik"] .glow-violet  { background: radial-gradient(circle, hsl(10,85%,58%)  0%, transparent 70%); }
+#login-modal[data-sector="lojistik"] .glow-cyan   { background: radial-gradient(circle, hsl(350,62%,55%) 0%, transparent 70%); }
+#login-modal[data-sector="lojistik"] .glow-violet  { background: radial-gradient(circle, hsl(10,65%,55%)  0%, transparent 70%); }
 
 /* Tekstil (Textile): gold + teal */
-#login-modal[data-sector="tekstil"] .glow-cyan   { background: radial-gradient(circle, hsl(38,92%,50%)  0%, transparent 70%); }
-#login-modal[data-sector="tekstil"] .glow-violet  { background: radial-gradient(circle, hsl(174,72%,46%) 0%, transparent 70%); }
+#login-modal[data-sector="tekstil"] .glow-cyan   { background: radial-gradient(circle, hsl(172,60%,46%)  0%, transparent 70%); }
+#login-modal[data-sector="tekstil"] .glow-violet  { background: radial-gradient(circle, hsl(145,50%,48%) 0%, transparent 70%); }
 
 @keyframes floatGlowCyan {
   0%   { transform: translate(0, 0) scale(1);       opacity: 0.28; }
@@ -1052,12 +1100,52 @@ canvas {
   font-weight: 600;
 }
 
+.data-table tbody tr {
+  transition: background-color 0.2s ease;
+}
+
 .data-table tbody tr:hover {
-  background: rgba(255, 255, 255, 0.02);
+  background: rgba(255, 255, 255, 0.04);
+  cursor: pointer;
 }
 
 .data-table tbody tr:last-child td {
   border-bottom: none;
+}
+
+/* Card Height Unification & Layout */
+.dashboard-actions-card,
+.dashboard-chat-card {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  height: 480px; /* Aligned height on desktop */
+}
+
+#aura-chat-logs {
+  flex: 1;
+  overflow-y: auto;
+  background: rgba(0, 0, 0, 0.25);
+  border-radius: 8px;
+  padding: 0.8rem;
+  border: 1px solid var(--border-color);
+  margin-bottom: 0.8rem;
+  font-size: 0.82rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+/* Mobile responsive card overrides */
+@media (max-width: 768px) {
+  .dashboard-actions-card,
+  .dashboard-chat-card {
+    height: auto;
+    min-height: 380px;
+  }
+  .glass-card {
+    padding: 1.5rem;
+  }
 }
 
 /* Recommended Actions */
@@ -1066,6 +1154,8 @@ canvas {
   display: flex;
   flex-direction: column;
   gap: 0.8rem;
+  flex: 1;
+  overflow-y: auto;
 }
 
 .action-item {
