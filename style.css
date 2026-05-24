@@ -2642,3 +2642,108 @@ canvas {
   animation: pulse 1.5s infinite alternate;
 }
 
+/* ================= AURA AI COPILOT & AUTONOMOUS OS STYLES ================= */
+.agent-node {
+  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+  cursor: pointer;
+  overflow: hidden;
+}
+
+.agent-node:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(255, 255, 255, 0.05);
+}
+
+.agent-node.active-risk {
+  border-color: #ef4444 !important;
+  background: rgba(239, 68, 68, 0.08) !important;
+  box-shadow: 0 0 15px rgba(239, 68, 68, 0.25);
+}
+.agent-node.active-finance {
+  border-color: #f59e0b !important;
+  background: rgba(245, 158, 11, 0.08) !important;
+  box-shadow: 0 0 15px rgba(245, 158, 11, 0.25);
+}
+.agent-node.active-operations {
+  border-color: #06b6d4 !important;
+  background: rgba(6, 182, 212, 0.08) !important;
+  box-shadow: 0 0 15px rgba(6, 182, 212, 0.25);
+}
+.agent-node.active-churn {
+  border-color: #f97316 !important;
+  background: rgba(249, 115, 22, 0.08) !important;
+  box-shadow: 0 0 15px rgba(249, 115, 22, 0.25);
+}
+.agent-node.active-strategy {
+  border-color: #3b82f6 !important;
+  background: rgba(59, 130, 246, 0.08) !important;
+  box-shadow: 0 0 15px rgba(59, 130, 246, 0.25);
+}
+.agent-node.active-forecast {
+  border-color: #8b5cf6 !important;
+  background: rgba(139, 92, 246, 0.08) !important;
+  box-shadow: 0 0 15px rgba(139, 92, 246, 0.25);
+}
+
+@keyframes agent-pulse-red {
+  0% { transform: scale(1); opacity: 0.6; }
+  100% { transform: scale(1.3); opacity: 1; box-shadow: 0 0 10px #ef4444; }
+}
+@keyframes agent-pulse-amber {
+  0% { transform: scale(1); opacity: 0.6; }
+  100% { transform: scale(1.3); opacity: 1; box-shadow: 0 0 10px #f59e0b; }
+}
+@keyframes agent-pulse-cyan {
+  0% { transform: scale(1); opacity: 0.6; }
+  100% { transform: scale(1.3); opacity: 1; box-shadow: 0 0 10px #06b6d4; }
+}
+@keyframes agent-pulse-orange {
+  0% { transform: scale(1); opacity: 0.6; }
+  100% { transform: scale(1.3); opacity: 1; box-shadow: 0 0 10px #f97316; }
+}
+@keyframes agent-pulse-blue {
+  0% { transform: scale(1); opacity: 0.6; }
+  100% { transform: scale(1.3); opacity: 1; box-shadow: 0 0 10px #3b82f6; }
+}
+@keyframes agent-pulse-purple {
+  0% { transform: scale(1); opacity: 0.6; }
+  100% { transform: scale(1.3); opacity: 1; box-shadow: 0 0 10px #8b5cf6; }
+}
+
+.agent-node.active-risk .agent-pulse { animation: agent-pulse-red 0.8s infinite alternate !important; }
+.agent-node.active-finance .agent-pulse { animation: agent-pulse-amber 0.8s infinite alternate !important; }
+.agent-node.active-operations .agent-pulse { animation: agent-pulse-cyan 0.8s infinite alternate !important; }
+.agent-node.active-churn .agent-pulse { animation: agent-pulse-orange 0.8s infinite alternate !important; }
+.agent-node.active-strategy .agent-pulse { animation: agent-pulse-blue 0.8s infinite alternate !important; }
+.agent-node.active-forecast .agent-pulse { animation: agent-pulse-purple 0.8s infinite alternate !important; }
+
+.warning-card {
+  border: 1px solid rgba(249, 115, 22, 0.25);
+  background: rgba(249, 115, 22, 0.03);
+  padding: 0.8rem;
+  border-radius: 8px;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 0.8rem;
+  font-size: 0.8rem;
+  animation: warning-appear 0.5s ease-out;
+  transition: all 0.3s ease;
+}
+
+.warning-card.mitigated {
+  border-color: rgba(16, 185, 129, 0.3) !important;
+  background: rgba(16, 185, 129, 0.05) !important;
+  opacity: 0.8;
+}
+
+@keyframes warning-appear {
+  0% { transform: translateY(15px); opacity: 0; }
+  100% { transform: translateY(0); opacity: 1; }
+}
+
+@keyframes aura-core-pulse {
+  0% { transform: scale(0.9); opacity: 0.8; }
+  100% { transform: scale(1.1); opacity: 1; filter: drop-shadow(0 0 6px var(--primary-glow)); }
+}
+

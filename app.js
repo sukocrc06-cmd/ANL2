@@ -886,6 +886,90 @@ const translations = {
   board_report_title: {
     tr: "AI Yönetim Kurulu Brifingi (Executive Brief)",
     en: "AI Board Meeting Intelligence Summary"
+  },
+  menu_aura_os: {
+    tr: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm0 18a8 8 0 1 1 8-8 8 8 0 0 1-8 8z"/><circle cx="12" cy="12" r="3"/></svg>Aura AI Copilot`,
+    en: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm0 18a8 8 0 1 1 8-8 8 8 0 0 1-8 8z"/><circle cx="12" cy="12" r="3"/></svg>Aura AI Copilot`
+  },
+  aura_os_title: {
+    tr: "Aura AI Otonom Asistan (Aura OS)",
+    en: "Aura AI Autonomous OS"
+  },
+  aura_os_subtitle: {
+    tr: "Çoklu Ajanlı Yönetici Zekası, Öngörücü Risk Komutları ve Bağlam Belleği.",
+    en: "Multi-Agent Executive Intelligence, Predictive Risk Command, and Context Memory."
+  },
+  aura_os_memory_status: {
+    tr: "Bellek Aktif",
+    en: "Memory Active"
+  },
+  aura_agents_title: {
+    tr: "Özel Yapay Zeka Ajan Swarm",
+    en: "Specialized AI Agent Swarm"
+  },
+  aura_agents_desc: {
+    tr: "Karmaşık iş sorgularını otonom çözmek için gerçek zamanlı işbirliği yapan ajanlar.",
+    en: "Specialized agents collaborate in real-time to solve complex business queries."
+  },
+  aura_stream_title: {
+    tr: "Canlı AI Aktivite Akışı",
+    en: "Live AI Activity Stream"
+  },
+  aura_console_title: {
+    tr: "Yönetici Komut Konsolu",
+    en: "Executive Command Console"
+  },
+  aura_alerts_title: {
+    tr: "Otonom Risk ve Uyarı Paneli",
+    en: "Autonomous Warning Grid"
+  },
+  aura_alerts_desc: {
+    tr: "Otonom tespit edilen ve acil aksiyon gerektiren departman bazlı anomaliler.",
+    en: "Proactively flagged anomalies and threats needing executive mitigation."
+  },
+  aura_explain_title: {
+    tr: "Açıklanabilirlik Matrisi",
+    en: "Explainability Matrix"
+  },
+  aura_explain_desc: {
+    tr: "Karar ve stratejik önerileri yönlendiren parametre etki ağırlıkları.",
+    en: "Reasoning chains and input parameter variance driving the latest recommendations."
+  },
+  agent_idle: {
+    tr: "BEKLEMEDE",
+    en: "IDLE"
+  },
+  agent_active: {
+    tr: "ÇALIŞIYOR",
+    en: "ACTIVE"
+  },
+  agent_collab: {
+    tr: "İŞBİRLİĞİ",
+    en: "COLLAB"
+  },
+  agent_risk_name: {
+    tr: "Risk Ajanı",
+    en: "Risk Agent"
+  },
+  agent_finance_name: {
+    tr: "Finans Ajanı",
+    en: "Finance Agent"
+  },
+  agent_ops_name: {
+    tr: "Operasyon Ajanı",
+    en: "Ops Agent"
+  },
+  agent_churn_name: {
+    tr: "Kayıp Ajanı",
+    en: "Churn Agent"
+  },
+  agent_strategy_name: {
+    tr: "Strateji Ajanı",
+    en: "Strategy Agent"
+  },
+  agent_forecast_name: {
+    tr: "Tahmin Ajanı",
+    en: "Forecast Agent"
   }
 };
 
@@ -6242,17 +6326,20 @@ document.addEventListener('DOMContentLoaded', () => {
   const btnSchemaIntel = document.getElementById('menu-btn-schema-intel');
   const btnAutoML = document.getElementById('menu-btn-automl');
   const btnAutoBuilder = document.getElementById('menu-btn-autobuilder');
+  const btnAuraOS = document.getElementById('menu-btn-aura-os');
   const secInsights = document.getElementById('dashboard-insights-section');
   const secSchemaIntel = document.getElementById('dashboard-schema-intel-section');
   const secAutoML = document.getElementById('dashboard-automl-section');
   const secAutoBuilder = document.getElementById('dashboard-autobuilder-section');
+  const secAuraOS = document.getElementById('dashboard-aura-os-section');
 
   function showTab(tabId) {
     const tabs = [
       { btn: btnInsights, sec: secInsights },
       { btn: btnSchemaIntel, sec: secSchemaIntel },
       { btn: btnAutoML, sec: secAutoML },
-      { btn: btnAutoBuilder, sec: secAutoBuilder }
+      { btn: btnAutoBuilder, sec: secAutoBuilder },
+      { btn: btnAuraOS, sec: secAuraOS }
     ];
 
     tabs.forEach(t => {
@@ -6272,12 +6359,16 @@ document.addEventListener('DOMContentLoaded', () => {
     if (tabId === 'menu-btn-autobuilder' && typeof updateAutoBuilderSharedState === 'function') {
       updateAutoBuilderSharedState();
     }
+    if (tabId === 'menu-btn-aura-os' && typeof initAuraOSModule === 'function') {
+      initAuraOSModule();
+    }
   }
 
   if (btnInsights) btnInsights.addEventListener('click', (e) => { e.preventDefault(); showTab('menu-btn-insights'); });
   if (btnSchemaIntel) btnSchemaIntel.addEventListener('click', (e) => { e.preventDefault(); showTab('menu-btn-schema-intel'); });
   if (btnAutoML) btnAutoML.addEventListener('click', (e) => { e.preventDefault(); showTab('menu-btn-automl'); });
   if (btnAutoBuilder) btnAutoBuilder.addEventListener('click', (e) => { e.preventDefault(); showTab('menu-btn-autobuilder'); });
+  if (btnAuraOS) btnAuraOS.addEventListener('click', (e) => { e.preventDefault(); showTab('menu-btn-aura-os'); });
 
   const dropZone = document.getElementById('schema-drop-zone');
   const fileInput = document.getElementById('schema-file-input');
@@ -8315,5 +8406,546 @@ document.addEventListener('DOMContentLoaded', () => {
   const btnCancelEmail = document.getElementById('btn-cancel-email');
   if (btnCloseEmailModal) btnCloseEmailModal.addEventListener('click', closeEmailModal);
   if (btnCancelEmail) btnCancelEmail.addEventListener('click', closeEmailModal);
+
+  // ==========================================
+  // AURA AI AUTONOMOUS OS MODULE
+  // ==========================================
+  
+  let auraOSStreamInterval = null;
+  let auraOSMemory = [];
+  let auraOSActiveWarnings = [];
+
+  function initAuraOSModule() {
+    const sectorBadge = document.getElementById('aura-os-sector-name');
+    const memoryBadge = document.getElementById('aura-os-memory-badge');
+    if (sectorBadge) {
+      const label = sectorLabelsCard[currentLang][currentSector] || currentSector;
+      sectorBadge.textContent = label.toUpperCase();
+    }
+    if (memoryBadge) {
+      const stateCount = auraOSMemory.length + (lastUploadedDataset ? 1 : 0);
+      memoryBadge.textContent = currentLang === 'tr' 
+        ? `Aktivite Belleği: ${stateCount} Bağlam` 
+        : `Memory Context: ${stateCount} Nodes`;
+    }
+
+    initAuraOSStream();
+    initAuraOSWarnings();
+    initAuraOSConsole();
+    initAuraOSExplainability();
+  }
+
+  // --- Real-time Activity Ticker ---
+  function initAuraOSStream() {
+    const streamContainer = document.getElementById('aura-os-activity-stream');
+    if (!streamContainer) return;
+    if (auraOSStreamInterval) clearInterval(auraOSStreamInterval);
+
+    streamContainer.innerHTML = '';
+    const initialLogs = getInitialAuraOSLogs();
+    initialLogs.forEach(log => {
+      appendAuraOSStreamLine(log.text, log.agentColor);
+    });
+
+    auraOSStreamInterval = setInterval(() => {
+      const newLog = getRandomAuraOSLog();
+      appendAuraOSStreamLine(newLog.text, newLog.agentColor);
+    }, 4000);
+  }
+
+  function appendAuraOSStreamLine(text, color) {
+    const container = document.getElementById('aura-os-activity-stream');
+    if (!container) return;
+    
+    const now = new Date();
+    const timeStr = now.toTimeString().split(' ')[0];
+    
+    const line = document.createElement('div');
+    line.style.fontSize = '0.74rem';
+    line.style.fontFamily = 'monospace';
+    line.style.marginBottom = '0.4rem';
+    line.style.display = 'flex';
+    line.style.gap = '0.5rem';
+    line.style.alignItems = 'flex-start';
+    
+    line.innerHTML = `
+      <span style="color: var(--text-muted);">[${timeStr}]</span>
+      <span style="color: ${color || 'var(--primary)'}; font-weight: bold; text-shadow: 0 0 4px ${color || 'var(--primary-glow)'};">•</span>
+      <span style="color: var(--text-secondary);">${text}</span>
+    `;
+    
+    container.appendChild(line);
+    const lines = container.querySelectorAll('div');
+    if (lines.length > 25) {
+      lines[0].remove();
+    }
+    container.scrollTop = container.scrollHeight;
+  }
+
+  function getInitialAuraOSLogs() {
+    const logs = [];
+    const now = new Date();
+    const agents = getAgentMetadata();
+    
+    const items = [
+      { text: currentLang === 'tr' ? "Sistem önyüklemesi tamamlandı. Otonom ajan swarm aktif." : "System boot complete. Autonomous agent swarm active.", color: 'var(--success)' },
+      { text: currentLang === 'tr' ? "Risk Ajanı veri kümesi varyans sapmalarını taramaya başladı." : "Risk Agent initiated scans for dataset variance anomalies.", color: agents.risk.color },
+      { text: currentLang === 'tr' ? "Tahmin Ajanı zaman serisi regresyon modellerini güncelledi." : "Forecast Agent updated time series regression parameters.", color: agents.forecast.color },
+      { text: currentLang === 'tr' ? "Finans Ajanı son çeyrek operasyonel bütçe marjını inceledi." : "Finance Agent evaluated gross operational margins for active cohorts.", color: agents.finance.color }
+    ];
+
+    items.forEach((item, idx) => {
+      logs.push({
+        text: item.text,
+        agentColor: item.color
+      });
+    });
+    return logs;
+  }
+
+  function getRandomAuraOSLog() {
+    const agents = getAgentMetadata();
+    const logs = [
+      { text: currentLang === 'tr' ? "Risk Ajanı sınır dışı (outlier) veri riskini yeniden hesapladı." : "Risk Agent recalculated outlier anomaly bounds.", color: agents.risk.color },
+      { text: currentLang === 'tr' ? "Ops Ajanı kurye teslimat performans dağılımını optimize etti." : "Ops Agent optimized courier performance log matrices.", color: agents.operations.color },
+      { text: currentLang === 'tr' ? "Kayıp Ajanı yüksek riskli donör segmentlerini gruplandırdı." : "Churn Agent isolated at-risk cohorts from baseline data.", color: agents.churn.color },
+      { text: currentLang === 'tr' ? "Strateji Ajanı yeni simülasyon çıktısı için mitigation katsayıları hazırladı." : "Strategy Agent generated mitigation weights for active forecast.", color: agents.strategy.color },
+      { text: currentLang === 'tr' ? "Tahmin Ajanı linear sapma eşik değerlerini doğruladı." : "Forecast Agent verified regression coefficient variance thresholds.", color: agents.forecast.color },
+      { text: currentLang === 'tr' ? "Finans Ajanı nakit akışı dalgalanma risk puanını güncelledi." : "Finance Agent updated payment volatility risk boundaries.", color: agents.finance.color }
+    ];
+    return logs[Math.floor(Math.random() * logs.length)];
+  }
+
+  function getAgentMetadata() {
+    return {
+      risk: { name: 'Risk Agent', color: '#ef4444', elementId: 'agent-node-risk' },
+      finance: { name: 'Finance Agent', color: '#f59e0b', elementId: 'agent-node-finance' },
+      operations: { name: 'Operations Agent', color: '#06b6d4', elementId: 'agent-node-operations' },
+      churn: { name: 'Churn Agent', color: '#f97316', elementId: 'agent-node-churn' },
+      strategy: { name: 'Strategy Agent', color: '#3b82f6', elementId: 'agent-node-strategy' },
+      forecast: { name: 'Forecast Agent', color: '#8b5cf6', elementId: 'agent-node-forecast' }
+    };
+  }
+
+  // --- Proactive Warnings Grid ---
+  function initAuraOSWarnings() {
+    const alertsBox = document.getElementById('aura-os-alerts-box');
+    if (!alertsBox) return;
+
+    alertsBox.innerHTML = '';
+    
+    // Create localized templates based on active sector
+    let templates = [];
+    if (currentSector === 'lojistik') {
+      templates = [
+        { id: 'warn-1', title: currentLang === 'tr' ? 'Rota Tıkanıklığı' : 'Route Latency Bottleneck', desc: currentLang === 'tr' ? 'Bölge 3 kurye trafik yoğunluğu Level 4 limitini aştı.' : 'Zone 3 traffic density exceeded Level 4 limits, delaying shipments.', agent: 'operations', severity: 'high' },
+        { id: 'warn-2', title: currentLang === 'tr' ? 'Outlier Paket Ağırlığı' : 'Outlier Package Weight', desc: currentLang === 'tr' ? 'Müşteri kargosunda 25kg sınır değer anomalisi saptandı.' : 'Outlier package load identified (exceeding standard 25kg parameters).', agent: 'risk', severity: 'medium' }
+      ];
+    } else if (currentSector === 'vakif') {
+      templates = [
+        { id: 'warn-1', title: currentLang === 'tr' ? 'Kayıp Riski Artışı' : 'Donor Churn Escalation', desc: currentLang === 'tr' ? 'Gelir/borç oranı yüksek donörlerde %14 katılım düşüşü.' : 'High debt-to-income donors showing 14% drop in active attendance.', agent: 'churn', severity: 'high' },
+        { id: 'warn-2', title: currentLang === 'tr' ? 'Bağış Limiti Sapması' : 'Donation Scale Anomaly', desc: currentLang === 'tr' ? 'Tek seferlik bağışlarda standart sapmanın 3 katı outlier işlem.' : 'Outlier transaction scale detected (exceeding standard deviation threshold by 3x).', agent: 'finance', severity: 'medium' }
+      ];
+    } else if (currentSector === 'egitim') {
+      templates = [
+        { id: 'warn-1', title: currentLang === 'tr' ? 'Ders Devam Kaybı' : 'Attendance Drop Warning', desc: currentLang === 'tr' ? 'Bölüm B grubundaki öğrencilerin devam oranı %72ye geriledi.' : 'Course attendance rate dropped to 72% on Section B cohorts.', agent: 'operations', severity: 'high' },
+        { id: 'warn-2', title: currentLang === 'tr' ? 'Not Ortalaması Sapması' : 'Exam Performance Drift', desc: currentLang === 'tr' ? 'Deneme sınavı başarı puanında 8 puanlık regresyon eğilimi.' : 'Mock exam scores drift downwards by a mean of 8.2% across active nodes.', agent: 'forecast', severity: 'medium' }
+      ];
+    } else if (currentSector === 'gida') {
+      templates = [
+        { id: 'warn-1', title: currentLang === 'tr' ? 'Puan Aşınma Riski' : 'Rating Erosion Warning', desc: currentLang === 'tr' ? 'Şube derecelendirmesi 4.2 altına indi, sipariş kaybı %18.' : 'Branch ratings dropped below 4.2 stars, risking an 18% weekly order loss.', agent: 'risk', severity: 'high' },
+        { id: 'warn-2', title: currentLang === 'tr' ? 'Fiyat Dalgalanma Anomalisi' : 'Price Elasticity Anomaly', desc: currentLang === 'tr' ? 'Express şubelerde yapılan fiyat artışı sipariş hacmini %15 daralttı.' : 'Price increments on Express branches caused a 15% demand contraction.', agent: 'finance', severity: 'medium' }
+      ];
+    } else { // Tekstil
+      templates = [
+        { id: 'warn-1', title: currentLang === 'tr' ? 'VIP Alışveriş Daralması' : 'VIP Shopping Contraction', desc: currentLang === 'tr' ? 'Premium alıcı ziyaret sıklığında %14 gerileme saptandı.' : 'Premium customer visit frequency dropped by 14% in current cohort.', agent: 'churn', severity: 'high' },
+        { id: 'warn-2', title: currentLang === 'tr' ? 'Promosyon Aşınması' : 'Margin Erosion Risk', desc: currentLang === 'tr' ? 'Promosyon dışı dönemlerde sipariş sepet hacmi %12 daraldı.' : 'Discount-sensitive buyers withdrawing during non-promo windows.', agent: 'finance', severity: 'medium' }
+      ];
+    }
+
+    auraOSActiveWarnings = templates;
+
+    templates.forEach(t => {
+      const card = document.createElement('div');
+      card.className = 'warning-card';
+      card.id = `warning-card-${t.id}`;
+      card.style.borderColor = t.severity === 'high' ? 'rgba(239, 68, 68, 0.3)' : 'rgba(245, 158, 11, 0.3)';
+      card.style.background = t.severity === 'high' ? 'rgba(239, 68, 68, 0.03)' : 'rgba(245, 158, 11, 0.03)';
+      
+      const dotColor = t.severity === 'high' ? '#ef4444' : '#f59e0b';
+      
+      card.innerHTML = `
+        <div style="flex: 1;">
+          <div style="display: flex; align-items: center; gap: 0.4rem; margin-bottom: 0.25rem;">
+            <span style="width: 6px; height: 6px; border-radius: 50%; background: ${dotColor}; display: inline-block;"></span>
+            <strong style="color: #fff; font-size: 0.8rem;">${t.title}</strong>
+          </div>
+          <div style="font-size: 0.74rem; color: var(--text-secondary); line-height: 1.3;">${t.desc}</div>
+        </div>
+        <button class="btn-secondary btn-mitigate-warning" data-id="${t.id}" style="padding: 0.25rem 0.6rem; font-size: 0.68rem; border-radius: 4px; width: auto; white-space: nowrap; margin-top: 0.2rem;">
+          ${currentLang === 'tr' ? 'Çöz / Mitigate' : 'Mitigate'}
+        </button>
+      `;
+
+      alertsBox.appendChild(card);
+      
+      const btnMitigate = card.querySelector('.btn-mitigate-warning');
+      btnMitigate.addEventListener('click', () => mitigateWarning(t.id, t.title, t.agent));
+    });
+  }
+
+  function mitigateWarning(id, title, agentKey) {
+    const card = document.getElementById(`warning-card-${id}`);
+    if (!card) return;
+
+    const agents = getAgentMetadata();
+    const activeAgent = agents[agentKey];
+
+    // Pulsing agent
+    triggerAgentActivation(agentKey);
+
+    setTimeout(() => {
+      // Mark as mitigated
+      card.classList.add('mitigated');
+      card.style.borderColor = 'rgba(16, 185, 129, 0.3)';
+      card.style.background = 'rgba(16, 185, 129, 0.05)';
+      
+      const btn = card.querySelector('.btn-mitigate-warning');
+      if (btn) {
+        btn.textContent = currentLang === 'tr' ? 'Mitigated ✓' : 'Mitigated ✓';
+        btn.disabled = true;
+        btn.style.background = 'rgba(16, 185, 129, 0.1)';
+        btn.style.color = '#10b981';
+        btn.style.borderColor = '#10b981';
+      }
+
+      // Stream Event Log
+      const logText = currentLang === 'tr' 
+        ? `[Mitigation OS] '${title}' anomalisi başarıyla giderildi.` 
+        : `[Mitigation OS] Mitigated threat: '${title}' successfully.`;
+      appendAuraOSStreamLine(logText, 'var(--success)');
+
+      // Post confirmation response in chat OS
+      const chatLogs = document.getElementById('aura-os-chat-logs');
+      if (chatLogs) {
+        const bubble = document.createElement('div');
+        bubble.className = `chat-msg ai mode-strategy`;
+        bubble.style.borderLeft = `2px solid var(--success)`;
+        bubble.innerHTML = currentLang === 'tr'
+          ? `✓ <strong>Strateji Ajanı Bildirimi:</strong> '${title}' anomalisi giderildi. Koruyucu güvenlik duvarları aktif edildi. Sistem güven derecesi %98.4 değerine yükseldi.`
+          : `✓ <strong>Strategy Agent Notice:</strong> Threat '${title}' has been mitigated. Preemptive action scripts deployed. Model security metrics recovered to 98.4%.`;
+        chatLogs.appendChild(bubble);
+        chatLogs.scrollTop = chatLogs.scrollHeight;
+      }
+      
+      // Update memory state
+      auraOSMemory.push({
+        action: 'mitigation',
+        target: title,
+        timestamp: new Date().toLocaleTimeString()
+      });
+      
+      const memoryBadge = document.getElementById('aura-os-memory-badge');
+      if (memoryBadge) {
+        const stateCount = auraOSMemory.length + (lastUploadedDataset ? 1 : 0);
+        memoryBadge.textContent = currentLang === 'tr' 
+          ? `Aktivite Belleği: ${stateCount} Bağlam` 
+          : `Memory Context: ${stateCount} Nodes`;
+      }
+    }, 1200);
+  }
+
+  // --- UI Agent Node Activation Pulses ---
+  function triggerAgentActivation(agentKey) {
+    const agents = getAgentMetadata();
+    const currentAgent = agents[agentKey];
+    if (!currentAgent) return;
+
+    const node = document.getElementById(currentAgent.elementId);
+    if (!node) return;
+
+    node.classList.add(`active-${agentKey}`);
+    const statusEl = node.querySelector('.agent-status');
+    if (statusEl) {
+      statusEl.textContent = translations.agent_collab[currentLang];
+      statusEl.style.color = currentAgent.color;
+    }
+
+    setTimeout(() => {
+      node.classList.remove(`active-${agentKey}`);
+      if (statusEl) {
+        statusEl.textContent = translations.agent_idle[currentLang];
+        statusEl.style.color = 'var(--text-muted)';
+      }
+    }, 3500);
+  }
+
+  // --- Executive Command Console ---
+  function initAuraOSConsole() {
+    const suggestions = document.getElementById('aura-os-suggestions');
+    const chatLogs = document.getElementById('aura-os-chat-logs');
+    if (!suggestions || !chatLogs) return;
+
+    suggestions.innerHTML = '';
+    chatLogs.innerHTML = '';
+
+    const welcomeMsg = currentLang === 'tr'
+      ? `Aura AI Otonom Komut Merkezine Hoş Geldiniz. Ben şirketinizin AI Stratejistiyim. Operasyonel riskleri, mali tehditleri veya tahminleme modellerini analiz etmemi isteyebilirsiniz.`
+      : `Welcome to Aura AI Autonomous Command Center. I am your Executive AI Strategist. You can query operational risks, financial threats, or ML prediction scenarios.`;
+
+    const bubble = document.createElement('div');
+    bubble.className = 'chat-msg ai';
+    bubble.style.borderLeft = '2px solid var(--primary)';
+    bubble.textContent = welcomeMsg;
+    chatLogs.appendChild(bubble);
+    chatLogs.scrollTop = chatLogs.scrollHeight;
+
+    const queryTemplates = [
+      currentLang === 'tr' ? "Operasyonel riskleri analiz et" : "Analyze operational risks",
+      currentLang === 'tr' ? "Kayıp riski neden artıyor?" : "Why is churn probability increasing?",
+      currentLang === 'tr' ? "En büyük finansal tehditleri göster" : "Show the biggest financial threats",
+      currentLang === 'tr' ? "Yönetici tavsiyeleri oluştur" : "Generate executive recommendations"
+    ];
+
+    queryTemplates.forEach(q => {
+      const btn = document.createElement('button');
+      btn.className = 'quick-prompt-btn';
+      btn.textContent = q;
+      btn.type = 'button';
+      btn.addEventListener('click', () => handleAuraOSCommand(q));
+      suggestions.appendChild(btn);
+    });
+
+    const form = document.getElementById('aura-os-chat-form');
+    if (form) {
+      form.onsubmit = (e) => {
+        e.preventDefault();
+        const input = document.getElementById('aura-os-chat-input');
+        if (input && input.value.trim() !== '') {
+          handleAuraOSCommand(input.value.trim());
+        }
+      };
+    }
+  }
+
+  function handleAuraOSCommand(query) {
+    const chatLogs = document.getElementById('aura-os-chat-logs');
+    const input = document.getElementById('aura-os-chat-input');
+    if (!chatLogs) return;
+
+    if (input) input.value = '';
+
+    // Append User message
+    const userBubble = document.createElement('div');
+    userBubble.className = 'chat-msg user';
+    userBubble.textContent = query;
+    chatLogs.appendChild(userBubble);
+    chatLogs.scrollTop = chatLogs.scrollHeight;
+
+    // Loading Reasoning Box
+    const reasoningBubble = document.createElement('div');
+    reasoningBubble.className = 'chat-msg ai';
+    reasoningBubble.style.fontFamily = 'monospace';
+    reasoningBubble.style.fontSize = '0.74rem';
+    reasoningBubble.style.color = 'var(--secondary)';
+    reasoningBubble.style.background = 'rgba(14, 165, 233, 0.05)';
+    reasoningBubble.style.borderLeft = '2px solid var(--secondary)';
+    reasoningBubble.id = 'aura-os-reasoning-logs';
+    chatLogs.appendChild(reasoningBubble);
+    chatLogs.scrollTop = chatLogs.scrollHeight;
+
+    // Detect keywords to determine active agents
+    const cleanQuery = query.toLowerCase().trim();
+    let activeAgentsKeys = [];
+    let responseText = '';
+    let weights = [];
+    let confidenceVal = 94;
+
+    if (cleanQuery.includes('risk') || cleanQuery.includes('tehdit') || cleanQuery.includes('threat') || cleanQuery.includes('instability')) {
+      activeAgentsKeys = ['risk', 'forecast', 'strategy'];
+      confidenceVal = 92;
+      
+      responseText = currentLang === 'tr'
+        ? `**[AURA OS // Rapor]** Yapılan risk taramalarında aktif donör/kurye veritabanı sapmaları gözlendi. En son yüklenen veri kümesi kapsamında sapma katsayısı norm sınırından **%14** taşma yapmıştır. \n\n**Önerilen Stratejik Eylem:** Yoğunlaşan risk düğümlerine yönelik dinamik kaynak atamaları (buffer katsayısı +0.15) uygulanması anomalileri nötralize edecektir.`
+        : `**[AURA OS // Report]** Risk matrix scans completed. Relative variance limits show an anomaly overflow of **14%** above the cohort baseline. \n\n**Strategic Recommendation:** Deploying dynamic buffer values (+0.15 correction factor) to operational routes/accounts will neutralize critical risk segments.`;
+      
+      weights = [
+        { label: 'Outlier Variance', val: 84 },
+        { label: 'Feature Drift', val: 62 },
+        { label: 'Historical Anomaly', val: 35 }
+      ];
+    } else if (cleanQuery.includes('churn') || cleanQuery.includes('kayıp') || cleanMsgMatch(cleanQuery, ['why', 'neden'])) {
+      activeAgentsKeys = ['churn', 'risk', 'strategy'];
+      confidenceVal = 95;
+      
+      responseText = currentLang === 'tr'
+        ? `**[AURA OS // Analiz]** Müşteri kayıp eğiliminin (churn) en büyük tetikleyicisi son yüklenen veri dağılımında gözlenen ciro/gelir oynaklığıdır. Sepet tutarı 1000 TL altında kalan alıcıların geri dönüş frekansları son 30 günde %15 daralmıştır.\n\n**Önerilen Eylem:** Bu segmentteki alıcılara özel puan destekli sadakat indirim kuponları tanımlanmalıdır.`
+        : `**[AURA OS // Analysis]** The primary driver of churn probability is the spend frequency volatility observed in the cohort. Buyers with baskets below 1000 TRY decreased purchase frequencies by 15% in the last 30 days.\n\n**Strategic Mitigations:** Define point-based loyalty coupons to recover premium/opportunity shopper frequencies.`;
+
+      weights = [
+        { label: 'Spend Frequency', val: 88 },
+        { label: 'Basket Size', val: 72 },
+        { label: 'Discount Affinity', val: 40 }
+      ];
+    } else if (cleanQuery.includes('finans') || cleanQuery.includes('tehdit') || cleanQuery.includes('threats') || cleanQuery.includes('revenue') || cleanQuery.includes('mali')) {
+      activeAgentsKeys = ['finance', 'risk', 'forecast'];
+      confidenceVal = 91;
+
+      responseText = currentLang === 'tr'
+        ? `**[AURA OS // Finans]** Bütçe marjları ve operasyonel maliyet kalemleri incelendi. En yüksek mali tehdit, plansız rota genişlemeleri ve lojistik yakıt tüketim artışıdır. Bu sapma sepet kar payını %12 oranında aşındırma potansiyeline sahiptir.\n\n**Mitigasyon:** Express şubelerde alternatif dağıtım noktaları atanarak yakıt tüketim katsayısı optimize edilmelidir.`
+        : `**[AURA OS // Finance]** Operational cost variables inspected. The largest financial threat relates to fuel consumption variance on non-optimized routes. This threatens gross margins by up to 12.2%.\n\n**Actionable Suggestion:** Implement branch-based shipment consolidation to lower fuel cost indices.`;
+
+      weights = [
+        { label: 'Fuel Volatility', val: 78 },
+        { label: 'Route Length', val: 70 },
+        { label: 'Package Weight', val: 52 }
+      ];
+    } else if (cleanQuery.includes('hafıza') || cleanQuery.includes('memory') || cleanQuery.includes('gecmis') || cleanQuery.includes('previous') || cleanQuery.includes('context')) {
+      activeAgentsKeys = ['strategy', 'risk', 'forecast'];
+      confidenceVal = 96;
+
+      const memoryStates = auraOSMemory.map(m => `${m.target || m.action} (${m.timestamp || 'N/A'})`).join(', ');
+      
+      responseText = currentLang === 'tr'
+        ? `**[AURA OS // Bellek Okuma]** Aktivite belleği başarıyla tarandı. Sistem son yüklenen veri kümesi **${lastUploadedDataset ? lastUploadedDataset.fileName : 'Genel Simülasyon'}** bağlamını muhafaza etmektedir. \n\n**Hatırlanan Son Eylemler:** [${memoryStates || 'Veri Kümesi Yüklendi'}]. Operasyonel risk trendi geçen haftaya oranla stabil konumdadır.`
+        : `**[AURA OS // Memory Scan]** Context buffer recalled. Active workspace: **${lastUploadedDataset ? lastUploadedDataset.fileName : 'General Simulator State'}** context is synced. \n\n**Recent Executive States:** [${memoryStates || 'Initial Dataset Sync'}]. Current operational risk variance matches baseline guidelines.`;
+
+      weights = [
+        { label: 'State Retention', val: 95 },
+        { label: 'Feature Sync', val: 88 },
+        { label: 'Context Correlation', val: 75 }
+      ];
+    } else { // strategy/executive default
+      activeAgentsKeys = ['strategy', 'forecast', 'operations'];
+      confidenceVal = 94;
+
+      responseText = currentLang === 'tr'
+        ? `**[AURA OS // Strateji]** Otonom modeller veri dağılımına göre şu karara ulaştı: Genel sistem performansı %98.4 doğruluk skoru ile stabildir. Son operasyonel katsayılar güvenli sınırlar içinde seyretmektedir.\n\n**Tavsiye:** AI Auto-Builder paneline geçerek güncel zaman serisi grafiklerini otonom olarak inceleyebilirsiniz.`
+        : `**[AURA OS // Strategy]** Swarm agents reached consensus: Overall performance metrics are stable with 98.4% model accuracy. Inputs match target margins.\n\n**Next Steps:** Proceed to the AI Auto-Builder panel to visualize dynamic cohort charts autonomously.`;
+
+      weights = [
+        { label: 'Model Stability', val: 82 },
+        { label: 'Variance Controls', val: 68 },
+        { label: 'Throughput Index', val: 60 }
+      ];
+    }
+
+    // Trigger agents visual pulse
+    activeAgentsKeys.forEach(k => triggerAgentActivation(k));
+
+    // Reasoning stream simulated ticks
+    const reasoningSteps = [
+      currentLang === 'tr' ? `⏳ [AURA.OS] Çözümleyici bağlamı inceleniyor: "${query}"...` : `⏳ [AURA.OS] Parsing query context: "${query}"...`,
+      currentLang === 'tr' ? `⚙️ [Risk Ajanı] Sınır değer sapmaları ve Korelasyon matrisi taranıyor...` : `⚙️ [Risk Agent] Scanning variance limits and Multicollinearity...`,
+      currentLang === 'tr' ? `♟️ [Strateji Ajanı] Karar modeli çıktı ağırlık katsayılarını eşleştiriyor...` : `♟️ [Strategy Agent] Compiling weights matching decision paths...`,
+      currentLang === 'tr' ? `🔮 [Tahmin Ajanı] Zaman serisi gürültü filtreleme adımlarını sonlandırıyor...` : `🔮 [Forecast Agent] Completing regression forecasting filters...`,
+      currentLang === 'tr' ? `✓ [Konsensüs] Ajan swarm karara ulaştı. Rapor hazırlanıyor.` : `✓ [Consensus] Agent swarm reached agreement. Generating output.`
+    ];
+
+    let stepIdx = 0;
+    const ticksInterval = setInterval(() => {
+      if (stepIdx < reasoningSteps.length) {
+        reasoningBubble.innerHTML += `<div>${reasoningSteps[stepIdx]}</div>`;
+        chatLogs.scrollTop = chatLogs.scrollHeight;
+        stepIdx++;
+      } else {
+        clearInterval(ticksInterval);
+        
+        // Remove reasoning box and stream final response
+        reasoningBubble.remove();
+        
+        // Append response typewriter bubble
+        const aiBubble = document.createElement('div');
+        aiBubble.className = `chat-msg ai mode-strategy`;
+        aiBubble.style.borderLeft = `2px solid var(--primary)`;
+        chatLogs.appendChild(aiBubble);
+        chatLogs.scrollTop = chatLogs.scrollHeight;
+
+        let charIdx = 0;
+        const typingInterval = setInterval(() => {
+          if (charIdx < responseText.length) {
+            aiBubble.innerHTML += responseText.charAt(charIdx);
+            chatLogs.scrollTop = chatLogs.scrollHeight;
+            charIdx++;
+          } else {
+            clearInterval(typingInterval);
+            
+            // Render explainability bars & confidence values
+            updateAuraOSExplainabilityMatrix(confidenceVal, weights);
+            
+            // Add to Memory
+            auraOSMemory.push({
+              query: query,
+              response: responseText.substring(0, 40) + '...',
+              timestamp: new Date().toLocaleTimeString()
+            });
+
+            const memoryBadge = document.getElementById('aura-os-memory-badge');
+            if (memoryBadge) {
+              const stateCount = auraOSMemory.length + (lastUploadedDataset ? 1 : 0);
+              memoryBadge.textContent = currentLang === 'tr' 
+                ? `Aktivite Belleği: ${stateCount} Bağlam` 
+                : `Memory Context: ${stateCount} Nodes`;
+            }
+          }
+        }, 8);
+      }
+    }, 500);
+  }
+
+  function cleanMsgMatch(msg, keywords) {
+    return keywords.some(k => msg.includes(k));
+  }
+
+  // --- Explainability Panel Visual updates ---
+  function initAuraOSExplainability() {
+    const defaultWeights = [
+      { label: currentLang === 'tr' ? 'Varyans Katsayısı' : 'Variance Coefficient', val: 74 },
+      { label: currentLang === 'tr' ? 'Model Sapma Oranı' : 'Model Drift Ratio', val: 58 },
+      { label: currentLang === 'tr' ? 'Kararlılık Hızı' : 'Consistency Velocity', val: 42 }
+    ];
+    updateAuraOSExplainabilityMatrix(94, defaultWeights);
+  }
+
+  function updateAuraOSExplainabilityMatrix(confidence, weightsList) {
+    const confidenceBadge = document.getElementById('aura-os-explain-confidence');
+    const barsContainer = document.getElementById('aura-os-explain-bars');
+    if (!barsContainer) return;
+
+    if (confidenceBadge) {
+      confidenceBadge.textContent = `${currentLang === 'tr' ? 'Güven' : 'Confidence'}: ${confidence}%`;
+    }
+
+    barsContainer.innerHTML = '';
+    weightsList.forEach(w => {
+      const barItem = document.createElement('div');
+      barItem.className = 'importance-item';
+      barItem.style.marginBottom = '0.7rem';
+      
+      barItem.innerHTML = `
+        <div class="importance-label-row" style="display: flex; justify-content: space-between; font-size: 0.74rem; font-weight: 500; margin-bottom: 0.25rem;">
+          <span style="color: var(--text-secondary);">${w.label}</span>
+          <span style="font-weight: 700; color: var(--primary);">${w.val}%</span>
+        </div>
+        <div class="importance-bar-outer" style="width: 100%; height: 6px; background: rgba(255, 255, 255, 0.05); border-radius: 4px; overflow: hidden; border: 1px solid rgba(255, 255, 255, 0.02);">
+          <div class="importance-bar-inner" style="height: 100%; border-radius: 4px; background: linear-gradient(90deg, var(--primary), var(--secondary)); width: ${w.val}%; box-shadow: 0 0 8px var(--primary-glow);"></div>
+        </div>
+      `;
+      
+      barsContainer.appendChild(barItem);
+    });
+
+    const footer = document.getElementById('aura-os-reasoning-footer');
+    if (footer) {
+      const paths = [
+        "INPUT_ACCELERATOR ➔ VARIANCE ➔ ANOMALY ➔ TRIGGER",
+        "COHORT_OFFSET ➔ FORECAST_SHIELD ➔ MITIGATION_NODE",
+        "BUDGET_OVERFLOW ➔ LIQUIDITY_VAL ➔ MARGIN_EVAL"
+      ];
+      footer.textContent = `Causal path: ${paths[Math.floor(Math.random() * paths.length)]}`;
+    }
+  }
+
+  window.initAuraOSModule = initAuraOSModule;
 
 });
