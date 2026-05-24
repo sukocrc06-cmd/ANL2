@@ -1525,7 +1525,67 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     }
 
-    // Check against generated tempCredentials and expiration
+    const rememberCheckbox = document.getElementById('login-remember');
+    const remember = rememberCheckbox ? rememberCheckbox.checked : false;
+
+    // 1. Check if there is a valid session in localStorage matching the entered credentials
+    const storedSessionRaw = localStorage.getItem('userCardData');
+    let hasValidStoredSession = false;
+    let storedSessionData = null;
+
+    if (storedSessionRaw) {
+      try {
+        const parsed = JSON.parse(storedSessionRaw);
+        if (parsed && 
+            parsed.username === user && 
+            parsed.password === pass && 
+            parsed.expiresAt && 
+            Date.now() < parsed.expiresAt) {
+          hasValidStoredSession = true;
+          storedSessionData = parsed;
+        }
+      } catch (e) {
+        console.error("Error parsing stored session in login form submit:", e);
+      }
+    }
+
+    if (hasValidStoredSession && storedSessionData) {
+      // Successfully authenticated via local storage session (bypassing 10-minute check!)
+      loginFailedAttempts = 0;
+      currentCompany = storedSessionData.company;
+      currentSector = storedSessionData.sector;
+      
+      if (countdownInterval) {
+        clearInterval(countdownInterval);
+        countdownInterval = null;
+      }
+      
+      // Update session data in localStorage with the new 'remember' state and 1 week expiry
+      const cardData = {
+        username: storedSessionData.username,
+        password: storedSessionData.password,
+        company: storedSessionData.company,
+        sector: storedSessionData.sector,
+        expiresAt: Date.now() + 7 * 24 * 60 * 60 * 1000, // 1 week
+        remember: remember
+      };
+      localStorage.setItem('isLoggedIn', 'true');
+      localStorage.setItem('userCardData', JSON.stringify(cardData));
+      sessionStorage.setItem('sessionActive', 'true');
+      
+      // Send activation to server to make it permanent (activated)
+      fetch('/api/activate-card', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username: user })
+      }).catch(err => console.error('Error activating card on server:', err));
+
+      history.replaceState({ pageId: 'dashboard' }, '', '#dashboard');
+      switchPage('dashboard', false);
+      return;
+    }
+
+    // 2. Fall back to checking tempCredentials (first-time login check)
     if (tempCredentials && 
         user === tempCredentials.username && 
         pass === tempCredentials.password && 
@@ -1548,10 +1608,12 @@ document.addEventListener('DOMContentLoaded', () => {
         password: tempCredentials.password,
         company: tempCredentials.company,
         sector: tempCredentials.sector,
-        expiresAt: Date.now() + 7 * 24 * 60 * 60 * 1000 // 1 week
+        expiresAt: Date.now() + 7 * 24 * 60 * 60 * 1000, // 1 week
+        remember: remember
       };
       localStorage.setItem('isLoggedIn', 'true');
       localStorage.setItem('userCardData', JSON.stringify(cardData));
+      sessionStorage.setItem('sessionActive', 'true');
       
       // Send activation to server to make it permanent (activated)
       fetch('/api/activate-card', {
@@ -1590,10 +1652,12 @@ document.addEventListener('DOMContentLoaded', () => {
               password: pass,
               company: data.company,
               sector: data.sector,
-              expiresAt: Date.now() + 7 * 24 * 60 * 60 * 1000 // 1 week
+              expiresAt: Date.now() + 7 * 24 * 60 * 60 * 1000, // 1 week
+              remember: remember
             };
             localStorage.setItem('isLoggedIn', 'true');
             localStorage.setItem('userCardData', JSON.stringify(cardData));
+            sessionStorage.setItem('sessionActive', 'true');
 
             // Activate card on the server to make it permanent
             fetch('/api/activate-card', {
@@ -5124,6 +5188,16 @@ document.addEventListener('DOMContentLoaded', () => {
       try {
         const cardData = JSON.parse(userCardDataRaw);
         if (cardData && cardData.company && cardData.sector) {
+          const isRemembered = cardData.remember === true;
+          const isSessionActive = sessionStorage.getItem('sessionActive') === 'true';
+
+          // If NOT remembered and this is a brand-new browser session, log out / clear storage
+          if (!isRemembered && !isSessionActive) {
+            localStorage.removeItem('isLoggedIn');
+            localStorage.removeItem('userCardData');
+            return;
+          }
+
           // Check if session has expired
           if (cardData.expiresAt && Date.now() > cardData.expiresAt) {
             localStorage.removeItem('isLoggedIn');
@@ -5142,6 +5216,9 @@ document.addEventListener('DOMContentLoaded', () => {
             sector: cardData.sector,
             expiresAt: cardData.expiresAt // keep original expiry
           };
+
+          // Mark session active in sessionStorage since we validated it
+          sessionStorage.setItem('sessionActive', 'true');
           
           // Set initial history state to dashboard on auto-login redirect
           history.replaceState({ pageId: 'dashboard' }, '', '#dashboard');
@@ -5191,10 +5268,12 @@ document.addEventListener('DOMContentLoaded', () => {
             password: p,
             company: c,
             sector: s,
-            expiresAt: tempCredentials.expiresAt
+            expiresAt: tempCredentials.expiresAt,
+            remember: true
           };
           localStorage.setItem('isLoggedIn', 'true');
           localStorage.setItem('userCardData', JSON.stringify(cardData));
+          sessionStorage.setItem('sessionActive', 'true');
           
           // Clear URL params silently and update history to dashboard
           window.history.replaceState({ pageId: 'dashboard' }, '', '#dashboard');
@@ -5234,10 +5313,12 @@ document.addEventListener('DOMContentLoaded', () => {
           password: p,
           company: c,
           sector: s,
-          expiresAt: tempCredentials.expiresAt
+          expiresAt: tempCredentials.expiresAt,
+          remember: true
         };
         localStorage.setItem('isLoggedIn', 'true');
         localStorage.setItem('userCardData', JSON.stringify(cardData));
+        sessionStorage.setItem('sessionActive', 'true');
         window.history.replaceState({ pageId: 'dashboard' }, '', '#dashboard');
         switchPage('dashboard', false);
       });
