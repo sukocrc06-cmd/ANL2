@@ -2747,3 +2747,9 @@ canvas {
   100% { transform: scale(1.1); opacity: 1; filter: drop-shadow(0 0 6px var(--primary-glow)); }
 }
 
+/* Dashboard Section Navigation */
+.dashboard-section {
+  display: none;
+}
+
+
