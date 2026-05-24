@@ -1531,7 +1531,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
   // Login Submit Event
-  loginForm.addEventListener('submit', (e) => {
+  loginForm.addEventListener('submit', async (e) => {
     e.preventDefault();
     const user = document.getElementById('login-username').value.trim();
     const pass = document.getElementById('login-password').value;
@@ -1568,100 +1568,53 @@ document.addEventListener('DOMContentLoaded', () => {
     const rememberCheckbox = document.getElementById('login-remember');
     const remember = rememberCheckbox ? rememberCheckbox.checked : false;
 
-    // Check if credentials match (even if the initial 10-minute timer has expired)
-    if (tempCredentials && 
-        user === tempCredentials.username && 
-        pass === tempCredentials.password) {
-      
-      // Successfully Authenticated locally!
-      loginFailedAttempts = 0; // reset failed counter
-      currentCompany = tempCredentials.company;
-      currentSector = tempCredentials.sector;
-      
-      // Clear timers
-      if (countdownInterval) {
-        clearInterval(countdownInterval);
-        countdownInterval = null;
-      }
-      
-      // Persist session state in localStorage (Set to 1 week since they logged in successfully)
-      const cardData = {
-        username: tempCredentials.username,
-        password: tempCredentials.password,
-        company: tempCredentials.company,
-        sector: tempCredentials.sector,
-        expiresAt: Date.now() + 7 * 24 * 60 * 60 * 1000, // 1 week
-        remember: remember
-      };
-      localStorage.setItem('isLoggedIn', 'true');
-      localStorage.setItem('userCardData', JSON.stringify(cardData));
-      sessionStorage.setItem('sessionActive', 'true');
-      
-      // Send activation to server to make it permanent (activated)
-      fetch('/api/activate-card', {
+    try {
+      // Async server verification to check credentials against system core, ignoring 10-minute constraints
+      const res = await fetch('/api/login', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username: user })
-      }).catch(err => console.error('Error activating card on server:', err));
-
-      // Immediately transition to dashboard
-      transitionToDashboard();
-    } else {
-      // Check server-side credentials (handles login in different browser or after closing site)
-      fetch('/api/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache',
+          'Expires': '0'
+        },
         body: JSON.stringify({ username: user, password: pass })
-      })
-      .then(res => {
-        if (res.status === 200) {
-          return res.json().then(data => {
-            // Successfully Authenticated via Server!
-            loginFailedAttempts = 0;
-            currentCompany = data.company;
-            currentSector = data.sector;
-
-            // Clear timers
-            if (countdownInterval) {
-              clearInterval(countdownInterval);
-              countdownInterval = null;
-            }
-
-            // Persist session locally (Set to 1 week since it is activated)
-            const cardData = {
-              username: user,
-              password: pass,
-              company: data.company,
-              sector: data.sector,
-              expiresAt: Date.now() + 7 * 24 * 60 * 60 * 1000, // 1 week
-              remember: remember
-            };
-            localStorage.setItem('isLoggedIn', 'true');
-            localStorage.setItem('userCardData', JSON.stringify(cardData));
-            sessionStorage.setItem('sessionActive', 'true');
-
-            // Activate card on the server to make it permanent
-            fetch('/api/activate-card', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ username: user })
-            }).catch(err => console.error('Error activating card on server:', err));
-
-            // Immediately transition to dashboard
-            transitionToDashboard();
-          });
-        } else if (res.status === 403) {
-          // Expired on the server
-          handleLoginFailure(true);
-        } else {
-          // Invalid on the server
-          handleLoginFailure(false);
-        }
-      })
-      .catch(err => {
-        console.error('Server login failed:', err);
-        handleLoginFailure(false);
       });
+
+      if (res.status === 200) {
+        const data = await res.json();
+        loginFailedAttempts = 0;
+        currentCompany = data.company;
+        currentSector = data.sector;
+
+        if (countdownInterval) {
+          clearInterval(countdownInterval);
+          countdownInterval = null;
+        }
+
+        // Store persistent normalized session using unique userId and sessionToken
+        const cardData = {
+          username: user,
+          password: pass,
+          company: data.company,
+          sector: data.sector,
+          userId: data.userId || user,
+          sessionToken: data.sessionToken,
+          expiresAt: Date.now() + 7 * 24 * 60 * 60 * 1000, // 1 week
+          remember: remember
+        };
+        localStorage.setItem('isLoggedIn', 'true');
+        localStorage.setItem('userCardData', JSON.stringify(cardData));
+        sessionStorage.setItem('sessionActive', 'true');
+
+        // Immediately grant access and transition to dashboard
+        transitionToDashboard();
+      } else {
+        handleLoginFailure(false);
+      }
+    } catch (err) {
+      console.error('Async login verification failed:', err);
+      handleLoginFailure(false);
     }
   });
 

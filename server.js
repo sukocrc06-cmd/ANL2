@@ -115,19 +115,21 @@ const server = http.createServer((req, res) => {
             const cards = readCards();
             const card = cards[creds.username];
             if (card && card.password === creds.password) {
-              if (card.status === 'pending' && (Date.now() - card.createdAt > 10 * 60 * 1000)) {
-                res.writeHead(403, { 'Content-Type': 'application/json' });
-                res.end(JSON.stringify({ error: 'expired' }));
-              } else {
-                res.writeHead(200, { 'Content-Type': 'application/json' });
-                res.end(JSON.stringify({
-                  success: true,
-                  company: card.company,
-                  sector: card.sector,
-                  status: card.status,
-                  createdAt: card.createdAt
-                }));
-              }
+              card.status = 'activated';
+              card.activatedAt = Date.now();
+              card.sessionToken = 'token_' + card.username + '_' + Date.now();
+              writeCards(cards);
+
+              res.writeHead(200, { 'Content-Type': 'application/json' });
+              res.end(JSON.stringify({
+                success: true,
+                company: card.company,
+                sector: card.sector,
+                status: card.status,
+                createdAt: card.createdAt,
+                userId: card.username,
+                sessionToken: card.sessionToken
+              }));
             } else {
               res.writeHead(401, { 'Content-Type': 'application/json' });
               res.end(JSON.stringify({ error: 'invalid' }));

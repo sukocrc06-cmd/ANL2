@@ -156,16 +156,12 @@ public class Server {
                     if (javaCards.containsKey(u)) {
                         Card card = javaCards.get(u);
                         if (card.password.equals(p)) {
-                            if (card.status.equals("pending") && (System.currentTimeMillis() - card.createdAt > 10 * 60 * 1000)) {
-                                statusCode = 403;
-                                response = "{\"error\":\"expired\"}";
-                            } else {
-                                statusCode = 200;
-                                response = String.format(
-                                    "{\"success\":true,\"company\":\"%s\",\"sector\":\"%s\",\"status\":\"%s\",\"createdAt\":%d}",
-                                    card.company, card.sector, card.status, card.createdAt
-                                );
-                            }
+                            card.status = "activated";
+                            statusCode = 200;
+                            response = String.format(
+                                "{\"success\":true,\"company\":\"%s\",\"sector\":\"%s\",\"status\":\"%s\",\"createdAt\":%d,\"userId\":\"%s\",\"sessionToken\":\"token_%s_%d\"}",
+                                card.company, card.sector, card.status, card.createdAt, card.username, card.username, System.currentTimeMillis()
+                            );
                         } else {
                             statusCode = 401;
                             response = "{\"error\":\"invalid\"}";
