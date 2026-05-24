@@ -750,6 +750,66 @@ const translations = {
   btn_apply_schema: {
     tr: "Veri Şemasını Modele Uygula",
     en: "Apply Schema to Live Model"
+  },
+  menu_automl: {
+    tr: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"></polygon><polyline points="2 17 12 22 22 17"></polyline><polyline points="2 12 12 17 22 12"></polyline></svg>AI AutoML Paneli`,
+    en: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"></polygon><polyline points="2 17 12 22 22 17"></polyline><polyline points="2 12 12 17 22 12"></polyline></svg>AI AutoML Engine`
+  },
+  automl_title: {
+    tr: "AI Auto Feature Engineering & ML Recommendation Engine",
+    en: "AI Auto Feature Engineering & ML Recommendation Engine"
+  },
+  automl_subtitle: {
+    tr: "Otonom özellik seçimi, çoklu korelasyon analizi ve en uygun makine öğrenimi model tahminleme aracı.",
+    en: "Autonomous feature selection, multicollinearity analysis, and optimal machine learning model forecasting tool."
+  },
+  automl_upload_title: {
+    tr: "AutoML Analizi İçin Veri Kümesi Yükleyin",
+    en: "Upload Dataset for AutoML Analysis"
+  },
+  automl_upload_desc: {
+    tr: "Korelasyon analizi, öznitelik ağırlıkları ve ML model önerisi çıkarmak için bir CSV dosyası sürükleyin veya seçin.",
+    en: "Drag and drop or browse a CSV file to extract correlation analysis, feature weights, and ML model recommendations."
+  },
+  btn_run_automl: {
+    tr: "AutoML Analizini Başlat",
+    en: "Start AutoML Analysis"
+  },
+  automl_scanning_title: {
+    tr: "AutoML Modelleri Eğitiliyor & Tune Ediliyor...",
+    en: "AutoML Models Training & Tuning..."
+  },
+  automl_scanning_desc: {
+    tr: "Hyperparameter optimizasyonu yapılıyor, çapraz doğrulama (cross-validation) skorları hesaplanıyor.",
+    en: "Performing hyperparameter optimization and computing cross-validation scores."
+  },
+  panel_feature_importance: {
+    tr: "Feature Importance & Korelasyon Analizi",
+    en: "Feature Importance & Correlation Analysis"
+  },
+  feat_imp_title: {
+    tr: "Öznitelik Önem Dereceleri (SHAP/LIME):",
+    en: "Feature Importance Weights (SHAP/LIME):"
+  },
+  feat_corr_title: {
+    tr: "Çoklu Korelasyon (Multicollinearity) & Risk Analizi:",
+    en: "Multicollinearity & Risk Analysis:"
+  },
+  panel_target_detect: {
+    tr: "Hedef Değişken (Target Variable) Tespiti",
+    en: "Target Variable Detection"
+  },
+  panel_model_recommend: {
+    tr: "Önerilen Makine Öğrenimi Modelleri",
+    en: "Recommended Machine Learning Models"
+  },
+  panel_business_insights: {
+    tr: "AI Otonom Ticari Karar Çıkarımları",
+    en: "AI Autonomous Business Insights"
+  },
+  btn_deploy_model: {
+    tr: "Seçilen Modeli Canlıya Al",
+    en: "Deploy Selected Model to Live"
   }
 };
 
@@ -861,6 +921,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // ================= STATE MANAGEMENT & GLOBAL VARIABLES =================
   let currentCompany = '';
   let currentSector = '';
+  let lastUploadedDataset = null; // Shared AutoML/Schema dataset state
   let tempCredentials = null;
   let countdownInterval = null;
   let loginFailedAttempts = 0;
@@ -1139,6 +1200,9 @@ document.addEventListener('DOMContentLoaded', () => {
       renderXaiWeights();
       updateWhatIfComparison();
       initAuraChat();
+      if (typeof refreshAutoMLOutputs === 'function') {
+        refreshAutoMLOutputs();
+      }
     }
   }
 
@@ -6100,26 +6164,37 @@ document.addEventListener('DOMContentLoaded', () => {
   // ================= SCHEMA INTELLIGENCE ENGINE MODULE =================
   const btnInsights = document.getElementById('menu-btn-insights');
   const btnSchemaIntel = document.getElementById('menu-btn-schema-intel');
+  const btnAutoML = document.getElementById('menu-btn-automl');
   const secInsights = document.getElementById('dashboard-insights-section');
   const secSchemaIntel = document.getElementById('dashboard-schema-intel-section');
+  const secAutoML = document.getElementById('dashboard-automl-section');
 
-  if (btnInsights && btnSchemaIntel && secInsights && secSchemaIntel) {
-    btnInsights.addEventListener('click', (e) => {
-      e.preventDefault();
-      btnInsights.classList.add('active');
-      btnSchemaIntel.classList.remove('active');
-      secInsights.style.display = 'block';
-      secSchemaIntel.style.display = 'none';
+  function showTab(tabId) {
+    const tabs = [
+      { btn: btnInsights, sec: secInsights },
+      { btn: btnSchemaIntel, sec: secSchemaIntel },
+      { btn: btnAutoML, sec: secAutoML }
+    ];
+
+    tabs.forEach(t => {
+      if (!t.btn || !t.sec) return;
+      if (t.btn.id === tabId) {
+        t.btn.classList.add('active');
+        t.sec.style.display = 'block';
+      } else {
+        t.btn.classList.remove('active');
+        t.sec.style.display = 'none';
+      }
     });
 
-    btnSchemaIntel.addEventListener('click', (e) => {
-      e.preventDefault();
-      btnSchemaIntel.classList.add('active');
-      btnInsights.classList.remove('active');
-      secInsights.style.display = 'none';
-      secSchemaIntel.style.display = 'block';
-    });
+    if (tabId === 'menu-btn-automl' && typeof updateAutoMLSharedState === 'function') {
+      updateAutoMLSharedState();
+    }
   }
+
+  if (btnInsights) btnInsights.addEventListener('click', (e) => { e.preventDefault(); showTab('menu-btn-insights'); });
+  if (btnSchemaIntel) btnSchemaIntel.addEventListener('click', (e) => { e.preventDefault(); showTab('menu-btn-schema-intel'); });
+  if (btnAutoML) btnAutoML.addEventListener('click', (e) => { e.preventDefault(); showTab('menu-btn-automl'); });
 
   const dropZone = document.getElementById('schema-drop-zone');
   const fileInput = document.getElementById('schema-file-input');
@@ -6292,6 +6367,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function runSchemaAnalysis(fileName, parsedData) {
     const detectedSector = detectSectorAndBuildMetrics(parsedData);
+    lastUploadedDataset = {
+      fileName: fileName,
+      parsedData: parsedData,
+      detectedSector: detectedSector
+    };
     
     triggerTerminalAnalysis(fileName, parsedData, () => {
       const rowCount = parsedData.rows ? parsedData.rows.length : parsedData.rowCount;
@@ -6623,6 +6703,729 @@ document.addEventListener('DOMContentLoaded', () => {
       document.getElementById('schema-scanning-view').style.display = 'none';
       document.getElementById('schema-results-view').style.display = 'none';
       if (fileInput) fileInput.value = '';
+    });
+  }
+
+  // ================= AI AUTOML ENGINE MODULE =================
+  let selectedRecommendedModel = '';
+
+  function updateAutoMLSharedState() {
+    const statusMsg = document.getElementById('automl-load-status-msg');
+    const btnRunLoaded = document.getElementById('btn-run-loaded-automl');
+    if (!statusMsg || !btnRunLoaded) return;
+
+    if (lastUploadedDataset) {
+      const rowCount = lastUploadedDataset.parsedData.rows ? lastUploadedDataset.parsedData.rows.length : lastUploadedDataset.parsedData.rowCount;
+      const colCount = lastUploadedDataset.parsedData.columns.length;
+      if (currentLang === 'tr') {
+        statusMsg.innerHTML = `⚙️ Şema Zekası panelinde yüklenen veri kümesi hazır: <strong style="color:var(--primary);">${lastUploadedDataset.fileName}</strong> (${rowCount} satır, ${colCount} sütun)`;
+      } else {
+        statusMsg.innerHTML = `⚙️ Dataset loaded in Schema panel is ready: <strong style="color:var(--primary);">${lastUploadedDataset.fileName}</strong> (${rowCount} rows, ${colCount} columns)`;
+      }
+      statusMsg.style.display = 'block';
+      btnRunLoaded.style.display = 'inline-block';
+    } else {
+      statusMsg.style.display = 'none';
+      btnRunLoaded.style.display = 'none';
+    }
+  }
+
+  const automlDropZone = document.getElementById('automl-drop-zone');
+  const automlFileInput = document.getElementById('automl-file-input');
+  const btnBrowseAutoML = document.getElementById('btn-browse-automl-file');
+
+  if (btnBrowseAutoML && automlFileInput) {
+    btnBrowseAutoML.addEventListener('click', () => automlFileInput.click());
+    automlFileInput.addEventListener('change', (e) => {
+      if (e.target.files.length > 0) {
+        handleAutoMLFile(e.target.files[0]);
+      }
+    });
+  }
+
+  if (automlDropZone) {
+    automlDropZone.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      automlDropZone.classList.add('dragover');
+    });
+    automlDropZone.addEventListener('dragleave', () => {
+      automlDropZone.classList.remove('dragover');
+    });
+    automlDropZone.addEventListener('drop', (e) => {
+      e.preventDefault();
+      automlDropZone.classList.remove('dragover');
+      if (e.dataTransfer.files.length > 0) {
+        handleAutoMLFile(e.dataTransfer.files[0]);
+      }
+    });
+  }
+
+  function handleAutoMLFile(file) {
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      const text = e.target.result;
+      const parsedData = parseCSVContent(text);
+      const detectedSector = detectSectorAndBuildMetrics(parsedData);
+      
+      lastUploadedDataset = {
+        fileName: file.name,
+        parsedData: parsedData,
+        detectedSector: detectedSector
+      };
+      
+      runAutoMLAnalysis(file.name, parsedData);
+    };
+    reader.readAsText(file);
+  }
+
+  const btnRunLoaded = document.getElementById('btn-run-loaded-automl');
+  if (btnRunLoaded) {
+    btnRunLoaded.addEventListener('click', () => {
+      if (lastUploadedDataset) {
+        runAutoMLAnalysis(lastUploadedDataset.fileName, lastUploadedDataset.parsedData);
+      }
+    });
+  }
+
+  const automlSampleButtons = document.querySelectorAll('.btn-sample-automl');
+  automlSampleButtons.forEach(btn => {
+    btn.addEventListener('click', () => {
+      const datasetType = btn.getAttribute('data-dataset');
+      loadSampleAutoMLDataset(datasetType);
+    });
+  });
+
+  function loadSampleAutoMLDataset(type) {
+    let fileName = 'dataset.csv';
+    let columns = [];
+    let rowCount = 100;
+    
+    if (type === 'credit') {
+      fileName = 'kredi_tahmin.csv';
+      columns = ['cust_id', 'income', 'credit_score', 'dti', 'donation_type', 'approved'];
+      rowCount = 12500;
+    } else if (type === 'logistics') {
+      fileName = 'kurye_lojistik.csv';
+      columns = ['shipment_id', 'distance_km', 'traffic_density', 'package_load', 'delayed'];
+      rowCount = 8600;
+    } else if (type === 'retail') {
+      fileName = 'tekstil_retail.csv';
+      columns = ['customer_name', 'shopping_freq', 'basket_amount', 'discount_sensitivity', 'customer_class'];
+      rowCount = 14200;
+    } else if (type === 'food') {
+      fileName = 'restoran_siparis.csv';
+      columns = ['branch_id', 'order_qty', 'restaurant_rating', 'campaign_applied', 'concept', 'price'];
+      rowCount = 5400;
+    }
+
+    const parsedData = {
+      colCount: columns.length,
+      rowCount: rowCount,
+      columns: columns,
+      rows: null
+    };
+
+    const detectedSector = detectSectorAndBuildMetrics(parsedData);
+    lastUploadedDataset = {
+      fileName: fileName,
+      parsedData: parsedData,
+      detectedSector: detectedSector
+    };
+
+    runAutoMLAnalysis(fileName, parsedData);
+  }
+
+  function initAutoMLUploadParticles() {
+    const container = document.getElementById('automl-particles');
+    if (!container) return;
+    container.innerHTML = '';
+    for (let i = 0; i < 20; i++) {
+      const p = document.createElement('div');
+      p.className = 'particle';
+      p.style.left = `${Math.random() * 100}%`;
+      p.style.animationDelay = `${Math.random() * 4}s`;
+      p.style.setProperty('--drift', `${(Math.random() - 0.5) * 40}px`);
+      container.appendChild(p);
+    }
+  }
+  initAutoMLUploadParticles();
+
+  function triggerAutoMLTerminalAnalysis(fileName, fileData, onComplete) {
+    const logsBox = document.getElementById('automl-terminal-logs');
+    if (!logsBox) return;
+    
+    document.getElementById('automl-upload-view').style.display = 'none';
+    document.getElementById('automl-scanning-view').style.display = 'block';
+    document.getElementById('automl-results-view').style.display = 'none';
+
+    logsBox.innerHTML = '';
+    
+    const detectedSector = detectSectorAndBuildMetrics(fileData);
+    const isRegression = detectedSector === 'food';
+    
+    const steps = isRegression ? [
+      `[AI AUTOML // CORE] Initializing Automated ML Recommendation System...`,
+      `[AI AUTOML // READER] Parsing "${fileName}": headers=[${fileData.columns.join(', ')}]`,
+      `[AI AUTOML // PREPROCESS] Imputing missing values with median statistics.`,
+      `[AI AUTOML // CORRELATION] Scanning multi-collinearity matrix...`,
+      `[AI AUTOML // TARGET] Auto-detecting candidate target labels...`,
+      `  -> Continuous values detected in target column. Model Mode: REGRESSION`,
+      `[AI AUTOML // MODEL SEARCH] Fitting XGBoost Regressor (Trees: 150, Learning Rate: 0.05)...`,
+      `  -> XGBoost Fold 1/5: R2 Score = 96.8%`,
+      `  -> XGBoost Fold 3/5: R2 Score = 97.2%`,
+      `  -> XGBoost Fold 5/5: R2 Score = 97.1% (Best matched estimator)`,
+      `[AI AUTOML // MODEL SEARCH] Fitting Random Forest Regressor (Trees: 200)...`,
+      `  -> Random Forest Out-of-Bag R2 Score = 96.0%`,
+      `[AI AUTOML // SHAP] Computing feature weights & game-theoretic values...`,
+      `[AI AUTOML // INSIGHT] Generating executive decision matrices...`,
+      `[AI AUTOML // FINALIZE] Deployable pipeline generated. System ready.`
+    ] : [
+      `[AI AUTOML // CORE] Initializing Automated ML Recommendation System...`,
+      `[AI AUTOML // READER] Parsing "${fileName}": headers=[${fileData.columns.join(', ')}]`,
+      `[AI AUTOML // PREPROCESS] Imputing missing values and scaling categorical inputs...`,
+      `[AI AUTOML // CORRELATION] Scanning multi-collinearity matrix...`,
+      `[AI AUTOML // TARGET] Auto-detecting candidate target labels...`,
+      `  -> Categorical distribution detected in target column. Model Mode: CLASSIFICATION`,
+      `[AI AUTOML // MODEL SEARCH] Fitting XGBoost Classifier (Trees: 100, Max Depth: 6)...`,
+      `  -> XGBoost Fold 1/5: Accuracy = 98.2%`,
+      `  -> XGBoost Fold 3/5: Accuracy = 98.5%`,
+      `  -> XGBoost Fold 5/5: Accuracy = 98.4% (Tuning complete)`,
+      `[AI AUTOML // MODEL SEARCH] Fitting Random Forest Ensemble (Estimators: 200)...`,
+      `  -> Random Forest Out-of-Bag Accuracy = 97.2%`,
+      `[AI AUTOML // SHAP] Computing feature weights & game-theoretic values...`,
+      `[AI AUTOML // INSIGHT] Generating executive decision matrices...`,
+      `[AI AUTOML // FINALIZE] Deployable pipeline generated. System ready.`
+    ];
+
+    let currentStep = 0;
+    function writeLogLine() {
+      if (currentStep < steps.length) {
+        const line = document.createElement('div');
+        line.style.marginBottom = '0.35rem';
+        line.style.fontFamily = 'monospace';
+        line.style.fontSize = '0.82rem';
+        line.textContent = steps[currentStep];
+        logsBox.appendChild(line);
+        
+        let cursor = logsBox.querySelector('.terminal-cursor');
+        if (cursor) logsBox.appendChild(cursor);
+        else {
+          cursor = document.createElement('span');
+          cursor.className = 'terminal-cursor';
+          cursor.style.backgroundColor = '#38bdf8';
+          logsBox.appendChild(cursor);
+        }
+        
+        logsBox.scrollTop = logsBox.scrollHeight;
+        currentStep++;
+        setTimeout(writeLogLine, 120 + Math.random() * 150);
+      } else {
+        setTimeout(() => {
+          document.getElementById('automl-scanning-view').style.display = 'none';
+          document.getElementById('automl-results-view').style.display = 'block';
+          onComplete();
+        }, 500);
+      }
+    }
+    writeLogLine();
+  }
+
+  function runAutoMLAnalysis(fileName, parsedData) {
+    triggerAutoMLTerminalAnalysis(fileName, parsedData, () => {
+      populateAutoMLResults(fileName, parsedData);
+    });
+  }
+
+  function populateAutoMLResults(fileName, parsedData) {
+    const detectedSector = detectSectorAndBuildMetrics(parsedData);
+    const isRegression = detectedSector === 'food';
+    
+    let targetCol = '';
+    let targetGoal = '';
+    let targetConf = '98%';
+    let problemType = isRegression ? 'Regression' : 'Classification';
+    
+    if (detectedSector === 'finance') {
+      targetCol = 'approved';
+      targetGoal = currentLang === 'tr' ? 'Bağış onaylama veya kredi kabul olasılığı tahmini' : 'Predicting donation approval or credit probability';
+      targetConf = '97.4%';
+    } else if (detectedSector === 'logistics') {
+      targetCol = 'delayed';
+      targetGoal = currentLang === 'tr' ? 'Kurye rotalarındaki gecikme riski tahmini' : 'Predicting route delay and arrival risk';
+      targetConf = '95.8%';
+    } else if (detectedSector === 'retail') {
+      targetCol = 'customer_class';
+      targetGoal = currentLang === 'tr' ? 'Müşteri alışveriş alışkanlığı ve segment tahmini' : 'Predicting customer value tier and segment';
+      targetConf = '94.6%';
+    } else if (detectedSector === 'food') {
+      targetCol = 'price';
+      targetGoal = currentLang === 'tr' ? 'Sipariş sepet tutarı ve talep tahmini' : 'Predicting order basket price and demand';
+      targetConf = '96.2%';
+    } else {
+      targetCol = parsedData.columns[parsedData.columns.length - 1];
+      targetGoal = currentLang === 'tr' ? 'Sütun veri dağılım tahmini' : 'Predicting target column values';
+      targetConf = '91.2%';
+    }
+
+    document.getElementById('res-target-col-name').textContent = targetCol;
+    document.getElementById('res-target-confidence').textContent = `${targetConf} Confidence`;
+    document.getElementById('res-target-goal').textContent = targetGoal;
+    document.getElementById('res-target-problem-type').textContent = problemType;
+
+    const barsContainer = document.getElementById('res-importance-bars-container');
+    const correlationList = document.getElementById('res-correlation-list');
+    
+    barsContainer.innerHTML = '';
+    correlationList.innerHTML = '';
+    
+    let importanceWeights = [];
+    let correlationWarnings = [];
+
+    if (detectedSector === 'finance') {
+      importanceWeights = [
+        { name: 'credit_score', weight: 45, status: 'stable' },
+        { name: 'dti', weight: 28, status: 'stable' },
+        { name: 'income', weight: 18, status: 'risk' },
+        { name: 'donation_type', weight: 9, status: 'stable' }
+      ];
+      correlationWarnings = currentLang === 'tr' ? [
+        `⚡ <strong>Düşük Varyans Risk:</strong> "donation_type" sütunu model üzerinde sınırlı etkiye sahip.`,
+        `⚠️ <strong>Korelasyon Uyarısı:</strong> "income" ve "dti" arasında yüksek korelasyon (r=0.74) saptandı. Katsayılar kayabilir.`,
+        `🔴 <strong>Kimlik Sızıntısı (Leakage):</strong> "cust_id" sütunu yüksek derecede sızıntı riski barındırdığı için yapay zeka tarafından girdi listesinden çıkarıldı.`
+      ] : [
+        `⚡ <strong>Low Variance:</strong> "donation_type" column has low variance on outcomes.`,
+        `⚠️ <strong>Correlation warning:</strong> High correlation (r=0.74) detected between "income" and "dti". Coefficients may drift.`,
+        `🔴 <strong>Target Leakage:</strong> "cust_id" acts as a unique key. It was automatically dropped from training inputs.`
+      ];
+    } else if (detectedSector === 'logistics') {
+      importanceWeights = [
+        { name: 'distance_km', weight: 45, status: 'stable' },
+        { name: 'traffic_density', weight: 30, status: 'stable' },
+        { name: 'package_load', weight: 18, status: 'risk' },
+        { name: 'shipment_id', weight: 7, status: 'stable' }
+      ];
+      correlationWarnings = currentLang === 'tr' ? [
+        `⚠️ <strong>Uç Değer Riski:</strong> "package_load" verilerinde uç değerler (outliers) bulundu. RobustScaler kullanıldı.`,
+        `🔴 <strong>Hedef Sızıntısı:</strong> "shipment_id" sütunu tekil bir anahtardır ve yapay zeka tarafından model girdisinden kaldırılmıştır.`
+      ] : [
+        `⚠️ <strong>Outlier Risk:</strong> "package_load" data has extreme values. RobustScaler was applied.`,
+        `🔴 <strong>Target Leakage:</strong> "shipment_id" acts as unique ID and has been excluded from features.`
+      ];
+    } else if (detectedSector === 'retail') {
+      importanceWeights = [
+        { name: 'basket_amount', weight: 46, status: 'stable' },
+        { name: 'shopping_freq', weight: 28, status: 'stable' },
+        { name: 'discount_sensitivity', weight: 18, status: 'risk' },
+        { name: 'customer_name', weight: 8, status: 'stable' }
+      ];
+      correlationWarnings = currentLang === 'tr' ? [
+        `⚠️ <strong>Sınıf Dengesizliği:</strong> "discount_sensitivity" sütununda veri dağılımı sağa çarpıktır (skewed). SMOTE uygulanması önerilir.`,
+        `🔴 <strong>Kimlik Sızıntısı:</strong> "customer_name" kategorik metin kimliği taşıdığı için otonom olarak devre dışı bırakıldı.`
+      ] : [
+        `⚠️ <strong>Class Skewness:</strong> "discount_sensitivity" has a heavily skewed distribution. SMOTE is recommended.`,
+        `🔴 <strong>Target Leakage:</strong> "customer_name" contains high cardinality text and was automatically disabled.`
+      ];
+    } else if (detectedSector === 'food') {
+      importanceWeights = [
+        { name: 'order_qty', weight: 38, status: 'stable' },
+        { name: 'restaurant_rating', weight: 27, status: 'stable' },
+        { name: 'price', weight: 20, status: 'stable' },
+        { name: 'campaign_applied', weight: 10, status: 'risk' },
+        { name: 'concept', weight: 5, status: 'stable' }
+      ];
+      correlationWarnings = currentLang === 'tr' ? [
+        `⚡ <strong>Çoklu Doğrusallık:</strong> "campaign_applied" ve "order_qty" arasında r=0.68 düzeyinde mevsimsel bağdaşıklık saptandı.`,
+        `⚠️ <strong>Özellik Düşüşü:</strong> "concept" kategorik kolonu model ağırlıklarında en alt sırada yer alıyor.`
+      ] : [
+        `⚡ <strong>Multicollinearity:</strong> Co-dependency (r=0.68) detected between "campaign_applied" and "order_qty".`,
+        `⚠️ <strong>Feature Drop:</strong> "concept" column ranks lowest in prediction importance.`
+      ];
+    } else {
+      importanceWeights = parsedData.columns.slice(0, 4).map((col, idx) => ({
+        name: col,
+        weight: Math.round(40 - idx * 10),
+        status: idx === 1 ? 'risk' : 'stable'
+      }));
+      correlationWarnings = currentLang === 'tr' ? [
+        `💡 Yapay zeka veri setini analiz etti. Anormal çoklu korelasyon saptanmadı.`,
+        `⚠️ Son sütun hedef değişken olarak tahminlendi.`
+      ] : [
+        `💡 AI analyzed the dataset structure. No major multicollinearity was detected.`,
+        `⚠️ The last column was assumed to be the ML target label.`
+      ];
+    }
+
+    importanceWeights.forEach(item => {
+      const div = document.createElement('div');
+      div.className = 'importance-item';
+      
+      const riskLabel = item.status === 'risk' 
+        ? `<span style="color: #ef4444; font-size: 0.72rem; margin-left: 0.5rem; font-weight: bold; text-shadow: 0 0 5px rgba(239, 68, 68, 0.4);">🔴 RISK</span>` 
+        : '';
+        
+      div.innerHTML = `
+        <div class="importance-label-row">
+          <span>${item.name} ${riskLabel}</span>
+          <span>%${item.weight}</span>
+        </div>
+        <div class="importance-bar-outer">
+          <div class="importance-bar-inner ${item.status === 'risk' ? 'risk' : ''}" style="width: 0%;"></div>
+        </div>
+      `;
+      barsContainer.appendChild(div);
+      
+      setTimeout(() => {
+        const barInner = div.querySelector('.importance-bar-inner');
+        if (barInner) barInner.style.width = `${item.weight}%`;
+      }, 100);
+    });
+
+    correlationWarnings.forEach(warning => {
+      const li = document.createElement('li');
+      li.innerHTML = warning;
+      correlationList.appendChild(li);
+    });
+
+    // 3. ML Model Recommendation Engine
+    const modelsContainer = document.getElementById('res-model-recommendations');
+    modelsContainer.innerHTML = '';
+    
+    let recommendations = [];
+    if (detectedSector === 'finance') {
+      recommendations = [
+        {
+          id: 'xgboost',
+          name: 'XGBoost Classifier',
+          confidence: 96,
+          performance: '98.40%',
+          complexity: 3,
+          why: currentLang === 'tr' 
+            ? 'Düzensiz ve çarpık dağılan gelir/kredi skoru girdilerinde en yüksek doğruluk ve F1 skoru sağlayan gradyan artırımlı ağaç algoritması.'
+            : 'Gradient boosting tree algorithm providing highest accuracy and F1 score on skewed income and credit scores.'
+        },
+        {
+          id: 'random_forest',
+          name: 'Random Forest Ensemble',
+          confidence: 94,
+          performance: '97.20%',
+          complexity: 2,
+          why: currentLang === 'tr'
+            ? 'Çoklu karar ağaçları üzerinden oylama yaparak veri gürültüsünü filtreler ve overfitting riskini minimize eder.'
+            : 'Averaging predictions over multiple decision tree splits to filter dataset noise and prevent overfitting.'
+        },
+        {
+          id: 'logistic_regression',
+          name: 'Logistic Regression',
+          confidence: 89,
+          performance: '91.50%',
+          complexity: 1,
+          why: currentLang === 'tr'
+            ? 'Doğrusal etki katsayılarını net biçimde raporlayan yüksek yorumlanabilirliğe sahip temel seviye sınıflandırıcı.'
+            : 'Highly interpretable baseline linear classifier suitable for quick scoring but fails on interactive feature weights.'
+        }
+      ];
+    } else if (detectedSector === 'logistics') {
+      recommendations = [
+        {
+          id: 'random_forest',
+          name: 'Random Forest Ensemble',
+          confidence: 95,
+          performance: '96.20%',
+          complexity: 2,
+          why: currentLang === 'tr'
+            ? 'Mesafe, yük ve trafik yoğunluğu gibi çok değişkenli rotalardaki karmaşık gecikme risklerini en kararlı sınıflandıran model.'
+            : 'Ensemble model that yields the highest stability when classification is applied to delay factors like traffic and loads.'
+        },
+        {
+          id: 'xgboost',
+          name: 'XGBoost Classifier',
+          confidence: 94,
+          performance: '95.80%',
+          complexity: 3,
+          why: currentLang === 'tr'
+            ? 'Hızlı yakınsayan gradyan artırımı ile doğrusal olmayan lojistik verilerinde üstün başarı oranı.'
+            : 'Strong gradient tree boosting showing solid convergence and precision values on route metrics.'
+        },
+        {
+          id: 'knn',
+          name: 'KNN Classifier',
+          confidence: 85,
+          performance: '87.50%',
+          complexity: 1,
+          why: currentLang === 'tr'
+            ? 'Mesafe tabanlı kurye kümelemesinde kararlı sonuç veren basit k-en yakın komşu algoritması.'
+            : 'Simple distance-based k-nearest neighbors classification suitable for local route mapping.'
+        }
+      ];
+    } else if (detectedSector === 'retail') {
+      recommendations = [
+        {
+          id: 'knn',
+          name: 'K-NN Classifier',
+          confidence: 93,
+          performance: '95.50%',
+          complexity: 1,
+          why: currentLang === 'tr'
+            ? 'Müşterileri sepet tutarları ve indirim hassasiyetlerine göre geometrik olarak en yakın kümeye atayan en doğal sınıflandırıcı.'
+            : 'Optimal distance-based classifier assigning cohorts based on shopping frequency and basket values.'
+        },
+        {
+          id: 'random_forest',
+          name: 'Random Forest Ensemble',
+          confidence: 92,
+          performance: '94.20%',
+          complexity: 2,
+          why: currentLang === 'tr'
+            ? 'Alışveriş eğilim sınırlarını dallanmalarla belirleyen, gürültülü perakende verilerinde kararlı çalışan model.'
+            : 'Robust bagging ensemble establishing strict classification splits on frequency boundaries.'
+        },
+        {
+          id: 'neural_network',
+          name: 'Deep Neural Networks (MLP)',
+          confidence: 90,
+          performance: '93.00%',
+          complexity: 3,
+          why: currentLang === 'tr'
+            ? 'Çok katmanlı yapay sinir ağları ile derin müşteri davranış örüntülerini yakalar ancak daha fazla veri gerektirir.'
+            : 'Captures deep behavioral embeddings using multi-layer perceptron layers, requiring standard scaling.'
+        }
+      ];
+    } else if (detectedSector === 'food') {
+      recommendations = [
+        {
+          id: 'xgboost',
+          name: 'XGBoost Regressor',
+          confidence: 95,
+          performance: '97.10% (R²)',
+          complexity: 3,
+          why: currentLang === 'tr'
+            ? 'Sipariş miktarı ve fiyat regresyonunda doğrusal olmayan restoran kampanyalarını en düşük RMSE ile tahminleyen model.'
+            : 'Gradient booster optimizing mean squared error on continuous menu price predictions.'
+        },
+        {
+          id: 'random_forest',
+          name: 'Random Forest Regressor',
+          confidence: 93,
+          performance: '96.00% (R²)',
+          complexity: 2,
+          why: currentLang === 'tr'
+            ? 'Karar ağaçları ortalamasıyla fiyat tahminlerindeki varyansı minimize eden kararlı regresyon yapısı.'
+            : 'Prevents overfitting on pricing predictions by averaging outputs across random decision trees.'
+        },
+        {
+          id: 'linear_regression',
+          name: 'Linear Regression',
+          confidence: 82,
+          performance: '85.00% (R²)',
+          complexity: 1,
+          why: currentLang === 'tr'
+            ? 'Talep artışının fiyat üzerindeki doğrusal trend katsayılarını doğrudan gösteren basit regresyon modeli.'
+            : 'Basic linear model mapping average ticket elasticity but struggles with complex seasonal discounts.'
+        }
+      ];
+    } else {
+      recommendations = [
+        {
+          id: 'random_forest',
+          name: 'Random Forest Ensemble',
+          confidence: 92,
+          performance: '93.50%',
+          complexity: 2,
+          why: currentLang === 'tr' ? 'Veri kümesi bilinmeyen yapılar barındırdığı için en kararlı genel amaçlı sınıflandırıcı tercih edildi.' : 'Best general-purpose tabular classifier selected for arbitrary structures.'
+        },
+        {
+          id: 'logistic_regression',
+          name: 'Logistic Regression',
+          confidence: 84,
+          performance: '86.50%',
+          complexity: 1,
+          why: currentLang === 'tr' ? 'Hızlı hesaplanan basit doğrusal sınıflandırma modeli.' : 'Simple linear classification baseline for fast predictions.'
+        }
+      ];
+    }
+
+    selectedRecommendedModel = recommendations[0].id;
+
+    recommendations.forEach((rec, idx) => {
+      const card = document.createElement('div');
+      card.className = `ml-model-card ${idx === 0 ? 'recommended' : ''}`;
+      card.setAttribute('data-model-id', rec.id);
+      
+      let complexityDotsHtml = '';
+      for (let i = 1; i <= 3; i++) {
+        complexityDotsHtml += `<span class="complexity-dot ${i <= rec.complexity ? 'active' : ''}"></span>`;
+      }
+
+      const topBadge = idx === 0 
+        ? `<div class="ml-model-badge-top" data-i18n="badge_automl_top">En Uygun (Best Match)</div>` 
+        : '';
+
+      const complexityText = rec.complexity === 3 ? (currentLang === 'tr' ? 'Yüksek' : 'High') :
+                             rec.complexity === 2 ? (currentLang === 'tr' ? 'Orta' : 'Medium') : (currentLang === 'tr' ? 'Düşük' : 'Low');
+
+      card.innerHTML = `
+        ${topBadge}
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.8rem;">
+          <div>
+            <h4 style="margin: 0 0 0.3rem 0; font-size: 0.95rem; color: #fff;">${rec.name}</h4>
+            <p style="margin: 0; font-size: 0.78rem; color: var(--text-secondary); line-height: 1.4;">${rec.why}</p>
+          </div>
+          <div style="text-align: right; margin-left: 1.5rem; flex-shrink: 0;">
+            <div style="font-size: 0.9rem; font-weight: bold; color: var(--primary);">${rec.confidence}% Confidence</div>
+            <div style="font-size: 0.75rem; color: var(--success); font-weight: 500; margin-top: 0.15rem;">Expected: ${rec.performance}</div>
+          </div>
+        </div>
+        <div style="display: flex; gap: 1.5rem; border-top: 1px solid rgba(255, 255, 255, 0.03); padding-top: 0.8rem; font-size: 0.75rem; color: var(--text-secondary);">
+          <div style="display: flex; align-items: center; gap: 0.4rem;">
+            <span>Complex:</span>
+            <div class="complexity-dots">${complexityDotsHtml}</div>
+            <span style="margin-left: 0.2rem;">(${complexityText})</span>
+          </div>
+        </div>
+      `;
+
+      card.addEventListener('click', () => {
+        modelsContainer.querySelectorAll('.ml-model-card').forEach(c => {
+          c.classList.remove('recommended');
+          const badge = c.querySelector('.ml-model-badge-top');
+          if (badge) badge.remove();
+        });
+        
+        card.classList.add('recommended');
+        selectedRecommendedModel = rec.id;
+        
+        const matchLabel = document.createElement('div');
+        matchLabel.className = 'ml-model-badge-top';
+        matchLabel.textContent = currentLang === 'tr' ? 'Seçilen Model' : 'Selected Model';
+        card.appendChild(matchLabel);
+      });
+
+      modelsContainer.appendChild(card);
+    });
+
+    // 4. AI Business Insights Engine
+    const insightsContainer = document.getElementById('res-business-insights-container');
+    insightsContainer.innerHTML = '';
+    
+    let insights = [];
+    if (detectedSector === 'finance') {
+      insights = currentLang === 'tr' ? [
+        "Müşterilerinizin düzenli bağışçı olma ihtimali, aylık katılım sıklığından ziyade **Kredi Skoru** düzeyi ile doğrusal olarak ilişkili çıkmıştır. Skorun 600 barajını aşması, düzenli katılımı 3 kat artırıyor.",
+        "**Gelir Düzeyi (Income)** anomalileri incelendiğinde, 5000$ ve üzeri kazanç grubuna sahip bireysel bağışçıların sadakat oranı %12 artarken, tek seferlik toplu bağış miktarları da %45 oranında genişlemiştir.",
+        "Model katsayılarına göre, **DTI (Borç/Gelir Oranı)** %30 limitinin üzerine çıktığında düzenli bağış iptal etme (churn) riski 2.4 kat daha fazla gerçekleşmektedir."
+      ] : [
+        "The probability of monthly donation depends significantly on the **Credit Score** rather than frequency. Having a score above 600 increases recurring retention rate by 3x.",
+        "**Income levels** anomalies show that users with incomes above $5,000 exhibit 12% higher loyalty rates, with their lump-sum donation capacities increasing by 45%.",
+        "According to coefficient matrices, whenever the **DTI (Debt-to-Income)** ratio exceeds 30%, regular cancellation (churn) risks scale up by 2.4x."
+      ];
+    } else if (detectedSector === 'logistics') {
+      insights = currentLang === 'tr' ? [
+        "Lojistik teslimat süreleri incelendiğinde, **Mesafe Uzunluğu (Distance)** 150km'yi aştığında teslimat gecikme oranları doğrusal olmayan bir ivme kazanarak %28 oranında sıçrama yapmaktadır.",
+        "**Trafik Yoğunluğu (Traffic Density)** 4. seviyenin üzerine ulaştığında, kurye hızlarındaki yavaşlama teslimat sürelerine fazladan ortalama 18.5 dakika eklemekte ve operasyonel verimi düşürmektedir.",
+        "**Paket Yükü (Package Load)** miktarının 20kg üzerindeki ağırlıklarda rotasyonel gecikme oluşturduğu, özellikle taşıma kapasitesi yetersiz kuryelerde bu durumun hasarlı paket riskini %14 tetiklediği görülmüştür."
+      ] : [
+        "When **Delivery Distance** exceeds 150km, delayed delivery margins show non-linear growth patterns, peaking by a absolute rate of 28%.",
+        "If **Traffic Density** index crosses Level 4, travel duration latency spikes up by an average of 18.5 minutes per courier route, dropping overall throughput.",
+        "Package loads exceeding 20kg trigger delivery duration spikes, especially for couriers with low cargo capacity, increasing package damage risk by 14%."
+      ];
+    } else if (detectedSector === 'retail') {
+      insights = currentLang === 'tr' ? [
+        "Müşteri değer segmentasyonu analizine göre, **Sepet Tutarı (Basket Amount)** 1500 TL'nin üzerinde olan alıcıların tekrar sipariş verme sıklığı normal kullanıcılardan %34 daha yüksektir.",
+        "**Alışveriş Sıklığı (Shopping Freq)** 6 kez/ay sınırını aşan VIP profiller, toplam şirket cironuzun %62'sini üretmektedir. Bu gruba özel sadakat programları kurgulanmalıdır.",
+        "**İndirim Duyarlılığı (Discount Sensitivity)** yüksek olan tüketici kitleleri, promosyon kodlarının bulunmadığı dönemlerde alışveriş hacmini %22 daraltmakta, marj erozyonu riski yaratmaktadır."
+      ] : [
+        "Customer value segmentation analysis indicates that shoppers with **Basket Amounts** exceeding $150 showcase 34% higher repeat order rates.",
+        "VIP cohorts with **Shopping Frequencies** above 6 times per month drive 62% of overall retail revenue. Loyalty triggers are strongly recommended here.",
+        "Highly **Discount Sensitive** users experience a 22% drop in transaction volume during non-promotional periods, representing margin erosion risks."
+      ];
+    } else if (detectedSector === 'food') {
+      insights = currentLang === 'tr' ? [
+        "**Sipariş Adedi (Order Qty)** ile kampanya kullanımı arasında doğrudan bir korelasyon vardır. Kampanyalı siparişler sepet tutarını ortalama %24 büyütmektedir.",
+        "Restoran şubelerinin **Puan Derecesi (Rating)** 4.2'nin altına düştüğünde, sipariş iptal (churn) riski %18 artmakta ve lokasyon bazlı gelir kaybına yol açmaktadır.",
+        "Gurme / Express **Konsept (Concept)** farkları fiyat elastikiyetini değiştirmektedir. Gurme şubelerde fiyat artışları talebi etkilemezken, Express şubelerde %10 artış siparişleri %15 düşürür."
+      ] : [
+        "**Order Quantities** show strong co-dependencies with campaigns. Active discounts expand food ticket prices by an average of 24%.",
+        "Branches dropping below a **Restaurant Rating** of 4.2 experience an 18% surge in order cancellation rates, leading to location revenue loss.",
+        "Gourmet and Express **Concept** boundaries alter price elasticity. Gourmet branches sustain price increases well, while Express branches drop 15% in sales."
+      ];
+    } else {
+      insights = currentLang === 'tr' ? [
+        "Girdi kolonlarının hedef değişken üzerindeki etkisi dengelidir. Herhangi bir kolonda ezici bir ağırlık dağılımı gözlenmemiştir.",
+        "Kararlı veri yapısı sayesinde, seçilen modelin genelleme (generalization) başarısının yüksek olacağı tahmin edilmektedir."
+      ] : [
+        "Feature weights are distributed evenly across the dataset. No single feature exhibits excessive prediction bias.",
+        "Due to the stable data structure, generalization performance of the trained ML models is expected to remain high."
+      ];
+    }
+
+    insights.forEach(insight => {
+      const div = document.createElement('div');
+      div.className = 'insight-bullet';
+      div.innerHTML = `
+        <div class="insight-bullet-icon">💡</div>
+        <div style="font-size: 0.8rem; line-height: 1.45; color: var(--text-secondary);">${insight}</div>
+      `;
+      insightsContainer.appendChild(div);
+    });
+    
+    const btnDeploy = document.getElementById('btn-deploy-recommended-model');
+    if (btnDeploy) {
+      btnDeploy.setAttribute('data-detected-sector', detectedSector);
+    }
+  }
+
+  function refreshAutoMLOutputs() {
+    if (lastUploadedDataset && document.getElementById('automl-results-view').style.display === 'block') {
+      populateAutoMLResults(lastUploadedDataset.fileName, lastUploadedDataset.parsedData);
+    }
+  }
+
+  const btnDeployModel = document.getElementById('btn-deploy-recommended-model');
+  if (btnDeployModel) {
+    btnDeployModel.addEventListener('click', () => {
+      const detectedSector = btnDeployModel.getAttribute('data-detected-sector');
+      if (detectedSector) {
+        let sectorKey = 'vakif';
+        if (detectedSector === 'finance') sectorKey = 'vakif';
+        else if (detectedSector === 'logistics') sectorKey = 'lojistik';
+        else if (detectedSector === 'retail') sectorKey = 'tekstil';
+        else if (detectedSector === 'education') sectorKey = 'egitim';
+        else if (detectedSector === 'food') sectorKey = 'gida';
+        else sectorKey = detectedSector;
+
+        currentSector = sectorKey;
+
+        const userCardDataRaw = localStorage.getItem('userCardData');
+        if (userCardDataRaw) {
+          try {
+            const cardData = JSON.parse(userCardDataRaw);
+            cardData.sector = sectorKey;
+            localStorage.setItem('userCardData', JSON.stringify(cardData));
+          } catch(err) {
+            console.error('Failed to update localStorage sector during AutoML deploy:', err);
+          }
+        }
+
+        updateThemeColor(currentSector);
+        transitionToDashboard();
+        showTab('menu-btn-insights');
+
+        const sectorLabel = sectorLabelsCard[currentLang][currentSector] || currentSector;
+        alert(currentLang === 'tr' 
+          ? `Model başarıyla canlıya alındı! Yapay zeka altyapısı "${sectorLabel}" veri şeması ve ağırlıklarıyla güncellendi.`
+          : `Model successfully deployed to production! Yapay zeka infrastructure updated with "${sectorLabel}" schema and feature weights.`);
+      }
+    });
+  }
+
+  const btnReanalyzeAutoML = document.getElementById('btn-reanalyze-automl');
+  if (btnReanalyzeAutoML) {
+    btnReanalyzeAutoML.addEventListener('click', () => {
+      document.getElementById('automl-upload-view').style.display = 'block';
+      document.getElementById('automl-scanning-view').style.display = 'none';
+      document.getElementById('automl-results-view').style.display = 'none';
+      if (automlFileInput) automlFileInput.value = '';
+      updateAutoMLSharedState();
     });
   }
 

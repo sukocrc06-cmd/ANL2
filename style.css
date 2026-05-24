@@ -2375,3 +2375,101 @@ canvas {
   100% { transform: translateY(-20px) translateX(var(--drift, 20px)); opacity: 0; }
 }
 
+/* ================= AUTOML RECOMMENDATION ENGINE ================= */
+.importance-item {
+  margin-bottom: 1rem;
+}
+.importance-label-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.82rem;
+  font-weight: 500;
+  margin-bottom: 0.3rem;
+}
+.importance-bar-outer {
+  width: 100%;
+  height: 10px;
+  background: rgba(255, 255, 255, 0.04);
+  border-radius: 6px;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.02);
+}
+.importance-bar-inner {
+  height: 100%;
+  border-radius: 6px;
+  background: linear-gradient(90deg, var(--primary), var(--secondary));
+  width: 0%;
+  transition: width 1.8s cubic-bezier(0.1, 1, 0.1, 1);
+  box-shadow: 0 0 10px var(--primary-glow);
+}
+.importance-bar-inner.risk {
+  background: linear-gradient(90deg, #f97316, #ef4444);
+  box-shadow: 0 0 10px rgba(239, 68, 68, 0.4);
+}
+.ml-recommendations-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+.ml-model-card {
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 1.2rem;
+  transition: all 0.3s ease;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+}
+.ml-model-card:hover {
+  transform: translateY(-2px);
+  background: rgba(255, 255, 255, 0.04);
+  border-color: var(--primary);
+  box-shadow: 0 8px 24px rgba(37, 99, 235, 0.15);
+}
+.ml-model-card.recommended {
+  border-color: var(--primary);
+  background: rgba(37, 99, 235, 0.03);
+  box-shadow: 0 0 15px rgba(37, 99, 235, 0.1);
+}
+.ml-model-badge-top {
+  position: absolute;
+  top: 0;
+  right: 0;
+  background: var(--primary);
+  color: #fff;
+  font-size: 0.65rem;
+  font-weight: 800;
+  padding: 0.25rem 0.6rem;
+  border-bottom-left-radius: 6px;
+  text-transform: uppercase;
+}
+.complexity-dots {
+  display: flex;
+  gap: 0.25rem;
+}
+.complexity-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.2);
+}
+.complexity-dot.active {
+  background: var(--secondary);
+  box-shadow: 0 0 5px var(--secondary-glow);
+}
+.insight-bullet {
+  display: flex;
+  gap: 0.8rem;
+  align-items: flex-start;
+  padding: 0.8rem;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.01);
+  border: 1px solid rgba(255, 255, 255, 0.02);
+  margin-bottom: 0.6rem;
+}
+.insight-bullet-icon {
+  font-size: 1.2rem;
+  flex-shrink: 0;
+}
+

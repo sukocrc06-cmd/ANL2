@@ -507,6 +507,10 @@
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
           Schema Intelligence
         </a>
+        <a href="#" class="menu-item" id="menu-btn-automl" data-i18n="menu_automl" style="margin-top: 0.5rem;">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"></polygon><polyline points="2 17 12 22 22 17"></polyline><polyline points="2 12 12 17 22 12"></polyline></svg>
+          AI AutoML Engine
+        </a>
       </nav>
 
       <!-- Model Performance Monitoring Panel -->
@@ -1116,6 +1120,161 @@
             <div class="schema-full-width" style="display: flex; gap: 1rem; justify-content: flex-end; margin-top: 1rem; margin-bottom: 2rem;">
               <button type="button" class="btn-secondary" id="btn-reanalyze-schema" style="width: auto; padding: 0.7rem 1.8rem;" data-i18n="btn_reanalyze">Başka Veri Seti Yükle</button>
               <button type="button" class="btn-primary" id="btn-apply-schema" style="width: auto; padding: 0.7rem 1.8rem; box-shadow: 0 4px 14px var(--primary-glow);" data-i18n="btn_apply_schema">Veri Şemasını Modele Uygula</button>
+            </div>
+
+          </div>
+        </div>
+      </div>
+
+      <!-- ================= AI AUTOML ENGINE SECTION ================= -->
+      <div id="dashboard-automl-section" style="display: none;">
+        <header class="dashboard-header">
+          <div>
+            <h1 data-i18n="automl_title">AI Auto Feature Engineering & ML Recommendation Engine</h1>
+            <p style="color: var(--text-secondary); font-size: 0.9rem;" data-i18n="automl_subtitle">
+              Otonom özellik seçimi, çoklu korelasyon analizi ve en uygun makine öğrenimi model tahminleme aracı.
+            </p>
+          </div>
+        </header>
+
+        <!-- Initial Upload / Start View -->
+        <div id="automl-upload-view" class="glass-card" style="padding: 2.5rem; text-align: center; margin-bottom: 2rem;">
+          <div class="drop-zone" id="automl-drop-zone">
+            <div class="particle-container" id="automl-particles"></div>
+            <div class="drop-zone-icon">⚙️</div>
+            <h3 style="margin-bottom: 0.5rem;" data-i18n="automl_upload_title">AutoML Analizi İçin Veri Kümesi Yükleyin</h3>
+            <p style="color: var(--text-secondary); font-size: 0.88rem; margin-bottom: 1.5rem;" data-i18n="automl_upload_desc">
+              Korelasyon analizi, öznitelik ağırlıkları ve ML model önerisi çıkarmak için bir CSV dosyası sürükleyin veya seçin.
+            </p>
+            
+            <div id="automl-load-status-msg" style="margin-bottom: 1.5rem; display: none; font-size: 0.85rem; color: var(--primary); font-weight: bold;">
+              <!-- Populated if dataset already loaded in other tab -->
+            </div>
+
+            <div style="display: flex; gap: 1rem; justify-content: center; align-items: center; flex-wrap: wrap;">
+              <button type="button" class="btn-primary" id="btn-browse-automl-file" style="width: auto; padding: 0.7rem 2rem;" data-i18n="btn_browse_file">Dosya Seçin</button>
+              <button type="button" class="btn-secondary" id="btn-run-loaded-automl" style="width: auto; padding: 0.7rem 2rem; display: none;" data-i18n="btn_run_automl">AutoML Analizini Başlat</button>
+            </div>
+            <input type="file" id="automl-file-input" style="display: none;" accept=".csv,.txt,.json">
+          </div>
+
+          <!-- Sample Files -->
+          <div style="margin-top: 2rem; border-top: 1px dashed var(--border-color); padding-top: 1.5rem;">
+            <p style="font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 0.8rem;" data-i18n="quick_samples_title">Dosyanız yok mu? Örnek şablonlar ile anında test edin:</p>
+            <div style="display: flex; justify-content: center; gap: 0.8rem; flex-wrap: wrap;">
+              <button class="btn-secondary btn-sample-automl" data-dataset="credit" style="padding: 0.4rem 1rem; font-size: 0.78rem;">📊 kredi_tahmin.csv (Finans)</button>
+              <button class="btn-secondary btn-sample-automl" data-dataset="logistics" style="padding: 0.4rem 1rem; font-size: 0.78rem;">🚚 kurye_lojistik.csv (Lojistik)</button>
+              <button class="btn-secondary btn-sample-automl" data-dataset="retail" style="padding: 0.4rem 1rem; font-size: 0.78rem;">🛍️ tekstil_retail.csv (Tekstil)</button>
+              <button class="btn-secondary btn-sample-automl" data-dataset="food" style="padding: 0.4rem 1rem; font-size: 0.78rem;">🍕 restoran_siparis.csv (Gıda)</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Analyzing / Training View -->
+        <div id="automl-scanning-view" class="glass-card" style="display: none; padding: 3rem; text-align: center; margin-bottom: 2rem;">
+          <div class="scanning-container">
+            <div class="radar-circle" style="border-color: var(--secondary); box-shadow: 0 0 20px rgba(14, 165, 233, 0.2);">
+              <div class="radar-circle-center" style="background: var(--secondary); box-shadow: 0 0 15px var(--secondary);"></div>
+            </div>
+            <h3 style="margin-bottom: 0.5rem; color: var(--secondary);" data-i18n="automl_scanning_title">AutoML Modelleri Eğitiliyor & Tune Ediliyor...</h3>
+            <p style="color: var(--text-secondary); font-size: 0.88rem; margin-bottom: 2rem;" data-i18n="automl_scanning_desc">
+              Hyperparameter optimizasyonu yapılıyor, çapraz doğrulama (cross-validation) skorları hesaplanıyor.
+            </p>
+
+            <!-- Live ML training output logs -->
+            <div style="width: 100%; display: flex; justify-content: center;">
+              <div class="terminal-console" id="automl-terminal-logs" style="color: #38bdf8; border-color: rgba(14, 165, 233, 0.2); box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5), inset 0 0 10px rgba(14, 165, 233, 0.05);">
+                <span class="terminal-cursor" style="background: #38bdf8;"></span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- AutoML Results View -->
+        <div id="automl-results-view" style="display: none;">
+          <div class="schema-grid">
+            
+            <!-- Feature Importance Engine (Full Width) -->
+            <div class="glass-card schema-full-width" id="card-feature-importance">
+              <h3 style="margin-bottom: 1.2rem; display: flex; align-items: center; gap: 0.5rem;">
+                <span>📊</span> <span data-i18n="panel_feature_importance">Feature Importance & Korelasyon Analizi</span>
+              </h3>
+              
+              <div class="dashboard-two-col-grid" style="gap: 2rem;">
+                <div>
+                  <h4 style="margin: 0 0 1rem 0; font-size: 0.85rem; color: var(--text-secondary); text-transform: uppercase;" data-i18n="feat_imp_title">Öznitelik Önem Dereceleri (SHAP/LIME):</h4>
+                  <div id="res-importance-bars-container">
+                    <!-- Dynamic horizontal importance bars -->
+                  </div>
+                </div>
+
+                <div>
+                  <h4 style="margin: 0 0 1rem 0; font-size: 0.85rem; color: var(--text-secondary); text-transform: uppercase;" data-i18n="feat_corr_title">Çoklu Korelasyon (Multicollinearity) & Risk Analizi:</h4>
+                  <ul style="padding-left: 1.2rem; margin: 0; display: flex; flex-direction: column; gap: 0.6rem; font-size: 0.82rem; line-height: 1.45; color: var(--text-secondary);" id="res-correlation-list">
+                    <!-- Dynamic correlation warnings -->
+                  </ul>
+                </div>
+              </div>
+            </div>
+
+            <!-- Target variable Suggestion -->
+            <div class="glass-card">
+              <h3 style="margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem;">
+                <span>🎯</span> <span data-i18n="panel_target_detect">Hedef Değişken (Target Variable) Tespiti</span>
+              </h3>
+              <p style="font-size: 0.78rem; color: var(--text-secondary); margin-bottom: 1.2rem; line-height: 1.4;">
+                Yapay zeka, verilerin dağılımına ve kardinalitesine bakarak en olası hedef etiketi tahmin etti.
+              </p>
+
+              <div style="background: rgba(0,0,0,0.25); border: 1px solid var(--border-color); padding: 1.2rem; border-radius: 8px; margin-bottom: 1rem;">
+                <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.85rem;">
+                  <span style="font-weight: bold; color: var(--primary);" id="res-target-col-name">-</span>
+                  <span style="font-weight: 700; color: var(--success);" id="res-target-confidence">0% Confidence</span>
+                </div>
+              </div>
+
+              <div style="font-size: 0.78rem; color: var(--text-secondary); display: flex; flex-direction: column; gap: 0.5rem; border-top: 1px dashed var(--border-color); padding-top: 0.8rem; margin-top: 0.8rem;">
+                <div>
+                  <strong>Tahmin Amacı (Goal):</strong> <span id="res-target-goal">-</span>
+                </div>
+                <div>
+                  <strong>Önerilen ML Tipi:</strong> <span class="badge badge-success" style="font-size: 0.72rem; padding: 0.25rem 0.6rem; border-radius: 4px;" id="res-target-problem-type">-</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- ML Model Recommendation Engine -->
+            <div class="glass-card" style="grid-column: span 2;">
+              <h3 style="margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem;">
+                <span>🤖</span> <span data-i18n="panel_model_recommend">Önerilen Makine Öğrenimi Modelleri</span>
+              </h3>
+              <p style="font-size: 0.78rem; color: var(--text-secondary); margin-bottom: 1.5rem; line-height: 1.4;">
+                Veri yapısı, satır sayısı ve doğrusal olmama durumuna göre en yüksek performans verecek modeller test edilmiştir.
+              </p>
+
+              <div class="ml-recommendations-list" id="res-model-recommendations">
+                <!-- Dynamic recommended model cards -->
+              </div>
+            </div>
+
+            <!-- AI Business Insight Engine (Full Width) -->
+            <div class="glass-card schema-full-width" id="card-business-insights">
+              <h3 style="margin-bottom: 1rem; color: var(--primary); display: flex; align-items: center; gap: 0.5rem;">
+                <span>💡</span> <span data-i18n="panel_business_insights">AI Otonom Ticari Karar Çıkarımları</span>
+              </h3>
+              <p style="font-size: 0.78rem; color: var(--text-secondary); margin-bottom: 1.2rem;">
+                Modellerin katsayılarından ve karar ağacı dallanmalarından çıkartılan, şirketiniz için en kritik ticari kararlar:
+              </p>
+              
+              <div id="res-business-insights-container">
+                <!-- Dynamic executive insights -->
+              </div>
+            </div>
+
+            <!-- Controls footer -->
+            <div class="schema-full-width" style="display: flex; gap: 1rem; justify-content: flex-end; margin-top: 1rem; margin-bottom: 2rem;">
+              <button type="button" class="btn-secondary" id="btn-reanalyze-automl" style="width: auto; padding: 0.7rem 1.8rem;" data-i18n="btn_reanalyze">Başka Veri Seti Yükle</button>
+              <button type="button" class="btn-primary" id="btn-deploy-recommended-model" style="width: auto; padding: 0.7rem 1.8rem; box-shadow: 0 4px 14px var(--primary-glow);" data-i18n="btn_deploy_model">Seçilen Modeli Canlıya Al</button>
             </div>
 
           </div>
