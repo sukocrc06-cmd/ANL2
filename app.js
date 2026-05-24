@@ -123,6 +123,10 @@ const translations = {
     tr: "Sadece tahmin üretmekle kalmaz, model çıktısına göre firmanızın alabileceği stratejik iş kararlarını belirler.",
     en: "Does not only generate predictions but also determines strategic business decisions your firm can take based on the model output."
   },
+  feat_files_title: {
+    tr: "Proje Dosya Yapısı (Sistem Bileşenleri)",
+    en: "Project File Structure (System Components)"
+  },
   badge_sectors: {
     tr: "Sektörel Çözümler",
     en: "Sectoral Solutions"
