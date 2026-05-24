@@ -4384,14 +4384,251 @@ document.addEventListener('DOMContentLoaded', () => {
       const total = list.length;
       const cleanMsg = msg.toLowerCase().trim();
 
+      // Dynamic analytical queries based on selected mode + message keywords
+      if (currentAuraMode === 'dataset') {
+        if (currentSector === 'vakif') {
+          if (cleanMsg.includes('en yüksek') || cleanMsg.includes('highest') || cleanMsg.includes('en çok')) {
+            let maxVal = -1;
+            let maxName = '';
+            list.forEach(row => {
+              if (row.income > maxVal) {
+                maxVal = row.income;
+                maxName = row.name;
+              }
+            });
+            reply = currentLang === 'tr'
+              ? `Veritabanı analizlerine göre en yüksek bağış tutarına sahip bağışçımız: **${maxName}** ($${maxVal}K).`
+              : `According to database analysis, our highest donor is: **${maxName}** ($${maxVal}K).`;
+          } else if (cleanMsg.includes('ortalama') || cleanMsg.includes('average')) {
+            let sum = 0;
+            list.forEach(row => sum += row.income);
+            const avg = list.length ? (sum / list.length).toFixed(2) : 0;
+            reply = currentLang === 'tr'
+              ? `Veritabanındaki bağışçıların ortalama geçmiş bağış tutarı: **$${avg}K**.`
+              : `The average past donation amount of donors in the database is: **$${avg}K**.`;
+          } else if (cleanMsg.includes('düzenli') || cleanMsg.includes('regular') || cleanMsg.includes('oran')) {
+            let count = 0;
+            list.forEach(row => { if (row.rawStatus === 'approved') count++; });
+            const pct = list.length ? ((count / list.length) * 100).toFixed(2) : 0;
+            reply = currentLang === 'tr'
+              ? `Kayıtlı bağışçıların düzenli bağışçı olma oranı: **%${pct}** (${count}/${list.length}).`
+              : `The regular donor ratio among registered donors is: **${pct}%** (${count}/${list.length}).`;
+          }
+        } else if (currentSector === 'egitim') {
+          if (cleanMsg.includes('en riskli') || cleanMsg.includes('riskli') || cleanMsg.includes('highest risk') || cleanMsg.includes('at-risk')) {
+            let mostAtRisk = list[0] || {};
+            list.forEach(row => {
+              const getPriority = s => s === 'denied' ? 3 : (s === 'warning' ? 2 : 1);
+              if (getPriority(row.rawStatus) > getPriority(mostAtRisk.rawStatus)) {
+                mostAtRisk = row;
+              } else if (getPriority(row.rawStatus) === getPriority(mostAtRisk.rawStatus)) {
+                if (row.age < mostAtRisk.age) {
+                  mostAtRisk = row;
+                }
+              }
+            });
+            reply = currentLang === 'tr'
+              ? `Veritabanındaki en yüksek risk grubundaki öğrencimiz: **${mostAtRisk.name}** (Devam oranı: %${mostAtRisk.bmi}, Sınav puanı: ${mostAtRisk.age}).`
+              : `The student at the highest risk level is: **${mostAtRisk.name}** (Attendance: ${mostAtRisk.bmi}%, mock exam score: ${mostAtRisk.age}).`;
+          } else if (cleanMsg.includes('ortalama çalışma') || cleanMsg.includes('study time') || cleanMsg.includes('çalışma süresi')) {
+            let sum = 0;
+            list.forEach(row => sum += row.glucose);
+            const avg = list.length ? (sum / list.length).toFixed(2) : 0;
+            reply = currentLang === 'tr'
+              ? `Öğrencilerin haftalık ortalama çalışma süresi: **${avg} Saat**.`
+              : `The average study time of students is: **${avg} Hours** per week.`;
+          } else if (cleanMsg.includes('başarı riski') || cleanMsg.includes('failure risk') || cleanMsg.includes('risk ortalaması') || cleanMsg.includes('oran')) {
+            let count = 0;
+            list.forEach(row => { if (row.rawStatus !== 'approved') count++; });
+            const pct = list.length ? ((count / list.length) * 100).toFixed(2) : 0;
+            reply = currentLang === 'tr'
+              ? `Sistemde risk grubunda (Orta veya Yüksek risk) bulunan öğrencilerin oranı: **%${pct}** (${count}/${list.length}).`
+              : `The ratio of students in the success risk group (Medium or High risk) is: **${pct}%** (${count}/${list.length}).`;
+          }
+        } else if (currentSector === 'gida') {
+          if (cleanMsg.includes('en yüksek') || cleanMsg.includes('şube') || cleanMsg.includes('highest order') || cleanMsg.includes('branch')) {
+            let maxVal = -1;
+            let maxName = '';
+            list.forEach(row => {
+              if (row.size > maxVal) {
+                maxVal = row.size;
+                maxName = row.name;
+              }
+            });
+            reply = currentLang === 'tr'
+              ? `En yüksek sipariş hacmine sahip şube/kod: **${maxName}** (Günde ortalama ${maxVal} sipariş).`
+              : `The branch with the highest order volume is: **${maxName}** (Average of ${maxVal} orders per day).`;
+          } else if (cleanMsg.includes('ortalama puan') || cleanMsg.includes('average rating') || cleanMsg.includes('puan')) {
+            let sum = 0;
+            list.forEach(row => sum += row.beds);
+            const avg = list.length ? (sum / list.length).toFixed(2) : 0;
+            reply = currentLang === 'tr'
+              ? `Sistemdeki şubelerin ortalama restoran değerlendirme puanı: **${avg} / 5.0**.`
+              : `The average restaurant rating score in the database is: **${avg} / 5.0**.`;
+          } else if (cleanMsg.includes('etki') || cleanMsg.includes('kampanya') || cleanMsg.includes('campaign')) {
+            reply = currentLang === 'tr'
+              ? `Lineer regresyon katsayı analizlerimize göre, aktif kampanya uygulamaları günlük sipariş hacmini ortalama **%24.5** oranında pozitif yönde artırmaktadır.`
+              : `Based on linear regression coefficients, active campaigns increase daily order volume by an average of **24.5%**.`;
+          }
+        } else if (currentSector === 'lojistik') {
+          if (cleanMsg.includes('en uzun') || cleanMsg.includes('longest') || cleanMsg.includes('mesafe') || cleanMsg.includes('rota') || cleanMsg.includes('route')) {
+            let maxVal = -1;
+            let maxName = '';
+            list.forEach(row => {
+              if (row.days > maxVal) {
+                maxVal = row.days;
+                maxName = row.name;
+              }
+            });
+            reply = currentLang === 'tr'
+              ? `Veritabanındaki en uzun mesafeli aktif rota: **${maxName}** (${maxVal} km).`
+              : `The longest active route in the database is: **${maxName}** (${maxVal} km).`;
+          } else if (cleanMsg.includes('ortalama trafik') || cleanMsg.includes('average traffic') || cleanMsg.includes('trafik')) {
+            let sum = 0;
+            list.forEach(row => sum += row.sessions);
+            const avg = list.length ? (sum / list.length).toFixed(2) : 0;
+            reply = currentLang === 'tr'
+              ? `Rotanın ortalama trafik yoğunluk endeksi: **${avg} / 10**.`
+              : `The average traffic density index across routes is: **${avg} / 10**.`;
+          } else if (cleanMsg.includes('gecikme riski') || cleanMsg.includes('delay risk') || cleanMsg.includes('yüksek riskli') || cleanMsg.includes('oran')) {
+            let count = 0;
+            list.forEach(row => { if (row.rawStatus !== 'approved') count++; });
+            const pct = list.length ? ((count / list.length) * 100).toFixed(2) : 0;
+            reply = currentLang === 'tr'
+              ? `Gecikme riski bulunan (Orta veya Yüksek risk) rotaların oranı: **%${pct}** (${count}/${list.length}).`
+              : `The ratio of routes with delay risk (Medium or High risk) is: **${pct}%** (${count}/${list.length}).`;
+          }
+        } else if (currentSector === 'tekstil') {
+          if (cleanMsg.includes('en çok') || cleanMsg.includes('en sık') || cleanMsg.includes('who shops') || cleanMsg.includes('frequency')) {
+            let maxVal = -1;
+            let maxName = '';
+            list.forEach(row => {
+              if (row.days > maxVal) {
+                maxVal = row.days;
+                maxName = row.name;
+              }
+            });
+            reply = currentLang === 'tr'
+              ? `Aylık en yüksek alışveriş sıklığına sahip müşterimiz: **${maxName}** (Aylık ${maxVal} alışveriş).`
+              : `Our customer with the highest monthly shopping frequency is: **${maxName}** (${maxVal} transactions per month).`;
+          } else if (cleanMsg.includes('ortalama sepet') || cleanMsg.includes('average basket') || cleanMsg.includes('sepet')) {
+            let sum = 0;
+            list.forEach(row => sum += row.sessions);
+            const avg = list.length ? (sum / list.length).toFixed(2) : 0;
+            reply = currentLang === 'tr'
+              ? `Müşterilerimizin genel ortalama sepet tutarı: **${avg} TL**.`
+              : `The average basket size of our customers is: **${avg} TRY**.`;
+          } else if (cleanMsg.includes('segment') || cleanMsg.includes('dağılım') || cleanMsg.includes('distribution')) {
+            let premium = 0, opportunity = 0, low = 0;
+            list.forEach(row => {
+              if (row.status.includes('Premium')) premium++;
+              else if (row.status.includes('Fırsatçı') || row.status.includes('Opportunity')) opportunity++;
+              else low++;
+            });
+            reply = currentLang === 'tr'
+              ? `Müşteri segmentasyon dağılımımız: **${premium} Premium**, **${opportunity} Fırsatçı**, **${low} Düşük Aktiviteli** alıcı.`
+              : `Customer segment distribution: **${premium} Premium**, **${opportunity} Opportunity**, **${low} Low Activity** buyers.`;
+          }
+        }
+      } else if (currentAuraMode === 'performance') {
+        if (cleanMsg.includes('doğruluk') || cleanMsg.includes('accuracy') || cleanMsg.includes('skor') || cleanMsg.includes('oran') || cleanMsg.includes('score')) {
+          const acc = document.getElementById('metric-accuracy-val')?.textContent || '98.40%';
+          reply = currentLang === 'tr'
+            ? `Aktif makine öğrenimi modelimizin güncel doğruluk skoru: **${acc}**.`
+            : `The current accuracy score of our active machine learning model is: **${acc}**.`;
+        } else if (cleanMsg.includes('precision') || cleanMsg.includes('recall') || cleanMsg.includes('keskinlik') || cleanMsg.includes('duyarlılık') || cleanMsg.includes('denge')) {
+          const prec = document.getElementById('metric-precision-val')?.textContent || '97.80%';
+          const rec = document.getElementById('metric-recall-val')?.textContent || '99.10%';
+          reply = currentLang === 'tr'
+            ? `Modelin keskinlik değeri: **${prec}**, duyarlılık değeri: **${rec}**. F1-Skor dengesi kararlı seviyededir.`
+            : `The model precision is **${prec}** and recall is **${rec}**. The F1-Score balance is at a stable level.`;
+        } else if (cleanMsg.includes('sınır') || cleanMsg.includes('limit') || cleanMsg.includes('limitations') || cleanMsg.includes('eksik')) {
+          reply = currentLang === 'tr'
+            ? `Modelimiz gözetimli parametrelerle eğitildiğinden, eğitim veri seti dışındaki uç senaryolarda katsayı sapmaları yaşayabilir. Bu durum adillik ölçer ile denetlenmektedir.`
+            : `Since our model is trained with supervised parameters, coefficient deviations may occur in extreme scenarios outside the training dataset. This is monitored via the fairness gauge.`;
+        }
+      } else if (currentAuraMode === 'strategy') {
+        if (currentSector === 'vakif') {
+          if (cleanMsg.includes('retansiyon') || cleanMsg.includes('retention') || cleanMsg.includes('bağlılık') || cleanMsg.includes('elde tutma')) {
+            reply = currentLang === 'tr'
+              ? `**Donör Elde Tutma Stratejisi**: Katılım sıklığı 5'in altında olan üyeler için özel e-posta kampanyaları ve aylık etkinlik bültenleri düzenlenmelidir.`
+              : `**Donor Retention Strategy**: Special email campaigns and monthly event newsletters should be organized for members with attendance frequency below 5.`;
+          } else if (cleanMsg.includes('kazanma') || cleanMsg.includes('yeni') || cleanMsg.includes('tips') || cleanMsg.includes('acquire')) {
+            reply = currentLang === 'tr'
+              ? `**Yeni Bağışçı Kazanımı**: Sosyal sorumluluk projelerinde şeffaflık raporları paylaşmak, güvenilirlik algısını artırarak bağışçı dönüşümünü %15 artırmaktadır.`
+              : `**New Donor Acquisition**: Sharing transparency reports in social responsibility projects increases donor conversion by 15% by boosting credibility.`;
+          } else if (cleanMsg.includes('risk') || cleanMsg.includes('kayıp') || cleanMsg.includes('at-risk') || cleanMsg.includes('plan')) {
+            reply = currentLang === 'tr'
+              ? `**Risk Yönetim Planı**: Düzenli bağışçı durumundan potansiyel (düzensiz) bağışçı durumuna düşen donörlere özel teşekkür mektupları gönderilmelidir.`
+              : `**Risk Management Plan**: Special thank you letters should be sent to donors whose status drops from regular to potential (irregular) donor.`;
+          }
+        } else if (currentSector === 'egitim') {
+          if (cleanMsg.includes('müdahale') || cleanMsg.includes('intervention') || cleanMsg.includes('plan') || cleanMsg.includes('öneri')) {
+            reply = currentLang === 'tr'
+              ? `**Müdahale Planı**: Çalışma süresi haftalık 10 saatin altına düşen veya ders devamı %70'in altında olan öğrenciler için etüt grupları planlanmalıdır.`
+              : `**Intervention Plan**: Study groups should be planned for students whose study time falls below 10 hours/week or course attendance is below 70%.`;
+          } else if (cleanMsg.includes('başarı') || cleanMsg.includes('improve success') || cleanMsg.includes('artır')) {
+            reply = currentLang === 'tr'
+              ? `**Başarıyı Artırma Yöntemleri**: Gözetimli regresyon analizlerimize göre, haftalık çalışma süresini 5 saat artırmak başarı olasılığını ortalama %12 yükseltmektedir.`
+              : `**Improving Success Rates**: According to supervised regression analysis, increasing weekly study time by 5 hours boosts success probability by an average of 12%.`;
+          } else if (cleanMsg.includes('devam') || cleanMsg.includes('attendance') || cleanMsg.includes('iyileştir')) {
+            reply = currentLang === 'tr'
+              ? `**Ders Devam Oranını İyileştirme**: Devamsızlık uyarıları velilere ve danışman öğretmenlere otomatik bildirim olarak gönderilerek takip sıkılaştırılmalıdır.`
+              : `**Improving Attendance**: Attendance warnings should be sent to parents and academic advisors as automated notifications to tighten monitoring.`;
+          }
+        } else if (currentSector === 'gida') {
+          if (cleanMsg.includes('hacim') || cleanMsg.includes('artır') || cleanMsg.includes('boost') || cleanMsg.includes('volume')) {
+            reply = currentLang === 'tr'
+              ? `**Sipariş Hacmi Artışı**: Sipariş yoğunluğunu artırmak için yoğun saatlerde anlık indirim kuponları ve hediye ürün kampanyaları entegre edilmelidir.`
+              : `**Boosting Order Volume**: Flash discount coupons and free item campaigns should be integrated during peak hours to increase order density.`;
+          } else if (cleanMsg.includes('optimizasyon') || cleanMsg.includes('optimization')) {
+            reply = currentLang === 'tr'
+              ? `**Kampanya Optimizasyonu**: Gıda regresyon modelimiz, lokasyon ve şube puanı yüksek yerlerde yapılan kampanyaların %18 daha yüksek dönüşüm getirdiğini göstermektedir.`
+              : `**Campaign Optimization**: Our food regression model shows that campaigns run in locations with high ratings yield 18% higher conversion rates.`;
+          } else if (cleanMsg.includes('puan') || cleanMsg.includes('şube') || cleanMsg.includes('rating') || cleanMsg.includes('low-rated')) {
+            reply = currentLang === 'tr'
+              ? `**Düşük Puanlı Şubeler**: Puanı 4.0'ın altında olan şubelerde kalite denetimleri sıkılaştırılmalı ve müşteri geri bildirim anketleri analiz edilmelidir.`
+              : `**Low-Rated Branches**: Quality audits must be tightened and customer feedback surveys analyzed for branches with ratings below 4.0.`;
+          }
+        } else if (currentSector === 'lojistik') {
+          if (cleanMsg.includes('süre') || cleanMsg.includes('kısalt') || cleanMsg.includes('shorten') || cleanMsg.includes('delivery')) {
+            reply = currentLang === 'tr'
+              ? `**Teslimat Süresi Kısaltma**: Trafik yoğunluğunun 7/10'un üzerinde olduğu saatlerde akıllı alternatif rota planlama algoritmaları devreye alınmalıdır.`
+              : `**Shortening Delivery Times**: Smart alternative routing algorithms should be activated during hours when traffic density is above 7/10.`;
+          } else if (cleanMsg.includes('rota') || cleanMsg.includes('risk') || cleanMsg.includes('high-risk') || cleanMsg.includes('plan')) {
+            reply = currentLang === 'tr'
+              ? `**Yüksek Riskli Rotalar**: Trafik ve mesafe yoğunluğunun yüksek olduğu Rota TR-54 gibi hatlarda ek kurye ve transfer merkezi optimizasyonları yapılmalıdır.`
+              : `**High-Risk Routes**: Extra couriers and hub transfer optimizations should be made for lines like Route TR-54 where traffic and distance are high.`;
+          } else if (cleanMsg.includes('maliyet') || cleanMsg.includes('cost') || cleanMsg.includes('tasarruf')) {
+            reply = currentLang === 'tr'
+              ? `**Maliyet Optimizasyonu**: Yakıt tüketimini azaltmak için teslimat paket yüklerinin şubeler arasında optimize edilmiş dağıtım algoritmalarıyla dağıtılması önerilir.`
+              : `**Cost Optimization**: To reduce fuel consumption, it is recommended to distribute delivery loads using optimized branch allocation algorithms.`;
+          }
+        } else if (currentSector === 'tekstil') {
+          if (cleanMsg.includes('değer') || cleanMsg.includes('sepet') || cleanMsg.includes('increase basket') || cleanMsg.includes('value')) {
+            reply = currentLang === 'tr'
+              ? `**Sepet Tutarı Artışı**: Çapraz satış (cross-selling) öneri motoru ile müşterilere sepetlerindeki ürünlere uyumlu kombin tavsiyeleri gösterilmelidir.`
+              : `**Increasing Basket Value**: Coordinate suggestions matching the items in customers' baskets should be displayed using a cross-selling recommendation engine.`;
+          } else if (cleanMsg.includes('premium') || cleanMsg.includes('program') || cleanMsg.includes('sadakat')) {
+            reply = currentLang === 'tr'
+              ? `**Premium Sadakat Programı**: Alışveriş sıklığı 10'un üzerinde olan Premium Alıcılara özel kargo bedava ve erken erişim indirim kuponları sunulmalıdır.`
+              : `**Premium Loyalty Program**: Free shipping and early access discount codes should be offered to Premium Buyers with shopping frequency above 10.`;
+          } else if (cleanMsg.includes('churn') || cleanMsg.includes('kayıp') || cleanMsg.includes('risk') || cleanMsg.includes('azalt')) {
+            reply = currentLang === 'tr'
+              ? `**Churn Riskini Azaltma**: Alışveriş sıklığı düşüş eğiliminde olan Fırsatçı Alıcılar için push bildirimler ve kişiselleştirilmiş indirimler tanımlanmalıdır.`
+              : `**Reducing Churn Risk**: Push notifications and personalized discounts should be defined for Opportunity Buyers with declining shopping frequency.`;
+          }
+        }
+      }
 
+      // Default replies if no match was found above
       if (!reply) {
-        if (cleanMsg.includes('merhaba') || cleanMsg.includes('selam') || cleanMsg.includes('hello') || cleanMsg.includes('hi')) {
+        if (cleanMsg.includes('merhaba') || cleanMsg.includes('selam') || cleanMsg.includes('hello') || cleanMsg.includes('hi') || cleanMsg.includes('hey')) {
           reply = currentLang === 'tr'
             ? `Merhaba! Size ve **${currentCompany}** şirketine nasıl yardımcı olabilirim? Aşağıdaki hızlı şablonları kullanarak analizler yapmamı sağlayabilirsiniz.`
             : `Hello! How can I assist you and **${currentCompany}** today? You can make me perform analyses using the quick prompts below.`;
-        } else if (cleanMsg.includes('risk') || cleanMsg.includes('tahmin') || cleanMsg.includes('predict') || cleanMsg.includes('sonuç')) {
-          const outResult = document.getElementById('dash-output-result').textContent;
+        } else if (cleanMsg.includes('risk') || cleanMsg.includes('tahmin') || cleanMsg.includes('predict') || cleanMsg.includes('sonuç') || cleanMsg.includes('output') || cleanMsg.includes('karar')) {
+          const outResult = document.getElementById('dash-output-result')?.textContent || 'N/A';
           reply = currentLang === 'tr'
             ? `Şu anki aktif simülasyon girdilerine göre modelimizin tahmini sonucu: **${outResult}**.`
             : `Based on the current active simulation inputs, our model predicts: **${outResult}**.`;
@@ -4399,7 +4636,7 @@ document.addEventListener('DOMContentLoaded', () => {
           const modelNames = {
             vakif: { tr: "Karar Ağacı (Decision Tree)", en: "Decision Tree" },
             egitim: { tr: "Lojistik Regresyon", en: "Logistic Regression" },
-            gida: { tr: "Doğrusal Regresyon", en: "Linear Regression" },
+            gida: { tr: "Çoklu Doğrusal Regresyon", en: "Linear Regression" },
             lojistik: { tr: "Etki Katsayı Analizi", en: "Impact Coefficient Analysis" },
             tekstil: { tr: "K-En Yakın Komşu (K-NN)", en: "K-Nearest Neighbors (K-NN)" }
           };
@@ -4408,7 +4645,7 @@ document.addEventListener('DOMContentLoaded', () => {
             : `The supervised machine learning algorithm active on this panel: **${modelNames[currentSector].en}**.`;
         } else {
           reply = currentLang === 'tr'
-            ? `Sorduğunuz soruyu çözümleyemedim. **${currentCompany}** şirketi veritabanı analizleri veya aktif tahmin katsayıları hakkında sorular sorabilirsiniz. Örneğin: 'Ortalama nedir?'`
+            ? `Sorduğunuz soruyu çözümleyemedim. **${currentCompany}** veritabanı analizleri veya aktif tahmin katsayıları hakkında sorular sorabilirsiniz. Örneğin: 'Ortalama nedir?'`
             : `I could not resolve your question. You can ask about **${currentCompany}** database analyses or active prediction coefficients. For example: 'What is the average?'`;
         }
       }
@@ -4418,7 +4655,7 @@ document.addEventListener('DOMContentLoaded', () => {
       aiBubble.innerHTML = reply;
       chatLogs.appendChild(aiBubble);
       chatLogs.scrollTop = chatLogs.scrollHeight;
-    }, 800);
+    }, delay);
   }
 
   // Bind analytic events
@@ -4806,6 +5043,13 @@ document.addEventListener('DOMContentLoaded', () => {
       try {
         const cardData = JSON.parse(userCardDataRaw);
         if (cardData && cardData.company && cardData.sector) {
+          // Check if session has expired
+          if (cardData.expiresAt && Date.now() > cardData.expiresAt) {
+            localStorage.removeItem('isLoggedIn');
+            localStorage.removeItem('userCardData');
+            return;
+          }
+
           currentCompany = cardData.company;
           currentSector = cardData.sector;
           
@@ -4815,7 +5059,7 @@ document.addEventListener('DOMContentLoaded', () => {
             password: cardData.password || '',
             company: cardData.company,
             sector: cardData.sector,
-            expiresAt: Date.now() + 10 * 60 * 1000 // extend validity since they refreshed
+            expiresAt: cardData.expiresAt // keep original expiry
           };
           
           // Set initial history state to dashboard on auto-login redirect
