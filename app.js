@@ -1123,6 +1123,18 @@ document.addEventListener('DOMContentLoaded', () => {
       expiresAt: Date.now() + (duration * 1000)
     };
 
+    // Register card on the server
+    fetch('/api/create-card', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        username,
+        password,
+        company,
+        sector
+      })
+    }).catch(err => console.error('Error creating card on server:', err));
+
     // Populate Access Card UI
     tempUsernameInput.value = username;
     tempPasswordInput.value = password;
@@ -1484,41 +1496,17 @@ document.addEventListener('DOMContentLoaded', () => {
     const user = document.getElementById('login-username').value.trim();
     const pass = document.getElementById('login-password').value;
 
-    // Check against generated tempCredentials and expiration
-    if (tempCredentials && 
-        user === tempCredentials.username && 
-        pass === tempCredentials.password && 
-        Date.now() < tempCredentials.expiresAt) {
-      
-      // Successfully Authenticated!
-      loginFailedAttempts = 0; // reset failed counter
-      currentCompany = tempCredentials.company;
-      currentSector = tempCredentials.sector;
-      
-      // Clear timers
-      if (countdownInterval) {
-        clearInterval(countdownInterval);
-        countdownInterval = null;
+    function handleLoginFailure(isExpired) {
+      if (isExpired) {
+        loginErrorMsg.innerHTML = currentLang === 'tr'
+          ? "❌ Bu geçici giriş kartının 10 dakikalık süresi dolmuş!"
+          : "❌ This temporary entry card has expired after 10 minutes!";
+        loginErrorMsg.style.display = 'block';
+        return;
       }
-      
-      // Persist session state in localStorage
-      const cardData = {
-        username: tempCredentials.username,
-        password: tempCredentials.password,
-        company: tempCredentials.company,
-        sector: tempCredentials.sector,
-        expiresAt: tempCredentials.expiresAt
-      };
-      localStorage.setItem('isLoggedIn', 'true');
-      localStorage.setItem('userCardData', JSON.stringify(cardData));
-      
-      // Replace #login with #dashboard in history to prevent back button from returning to the login modal
-      history.replaceState({ pageId: 'dashboard' }, '', '#dashboard');
-      switchPage('dashboard', false);
-    } else {
+
       loginFailedAttempts++;
       if (loginFailedAttempts >= 3) {
-        // Expire card immediately for security
         tempCredentials = null;
         if (countdownInterval) {
           clearInterval(countdownInterval);
@@ -1529,14 +1517,107 @@ document.addEventListener('DOMContentLoaded', () => {
         validateCardForm();
         tempCard.style.display = 'none';
 
-        // Display limit reached error
         loginErrorMsg.innerHTML = translations.login_error_limit[currentLang];
         loginErrorMsg.style.display = 'block';
       } else {
-        // Display standard credentials error
         loginErrorMsg.innerHTML = translations.login_error[currentLang];
         loginErrorMsg.style.display = 'block';
       }
+    }
+
+    // Check against generated tempCredentials and expiration
+    if (tempCredentials && 
+        user === tempCredentials.username && 
+        pass === tempCredentials.password && 
+        Date.now() < tempCredentials.expiresAt) {
+      
+      // Successfully Authenticated locally!
+      loginFailedAttempts = 0; // reset failed counter
+      currentCompany = tempCredentials.company;
+      currentSector = tempCredentials.sector;
+      
+      // Clear timers
+      if (countdownInterval) {
+        clearInterval(countdownInterval);
+        countdownInterval = null;
+      }
+      
+      // Persist session state in localStorage (Set to 1 week since they logged in successfully)
+      const cardData = {
+        username: tempCredentials.username,
+        password: tempCredentials.password,
+        company: tempCredentials.company,
+        sector: tempCredentials.sector,
+        expiresAt: Date.now() + 7 * 24 * 60 * 60 * 1000 // 1 week
+      };
+      localStorage.setItem('isLoggedIn', 'true');
+      localStorage.setItem('userCardData', JSON.stringify(cardData));
+      
+      // Send activation to server to make it permanent (activated)
+      fetch('/api/activate-card', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username: user })
+      }).catch(err => console.error('Error activating card on server:', err));
+
+      // Replace #login with #dashboard in history to prevent back button from returning to the login modal
+      history.replaceState({ pageId: 'dashboard' }, '', '#dashboard');
+      switchPage('dashboard', false);
+    } else {
+      // Check server-side credentials (handles login in different browser or after closing site)
+      fetch('/api/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username: user, password: pass })
+      })
+      .then(res => {
+        if (res.status === 200) {
+          return res.json().then(data => {
+            // Successfully Authenticated via Server!
+            loginFailedAttempts = 0;
+            currentCompany = data.company;
+            currentSector = data.sector;
+
+            // Clear timers
+            if (countdownInterval) {
+              clearInterval(countdownInterval);
+              countdownInterval = null;
+            }
+
+            // Persist session locally (Set to 1 week since it is activated)
+            const cardData = {
+              username: user,
+              password: pass,
+              company: data.company,
+              sector: data.sector,
+              expiresAt: Date.now() + 7 * 24 * 60 * 60 * 1000 // 1 week
+            };
+            localStorage.setItem('isLoggedIn', 'true');
+            localStorage.setItem('userCardData', JSON.stringify(cardData));
+
+            // Activate card on the server to make it permanent
+            fetch('/api/activate-card', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ username: user })
+            }).catch(err => console.error('Error activating card on server:', err));
+
+            // Replace #login with #dashboard in history to prevent back button from returning to the login modal
+            history.replaceState({ pageId: 'dashboard' }, '', '#dashboard');
+            switchPage('dashboard', false);
+          });
+        } else if (res.status === 403) {
+          // Expired on the server
+          handleLoginFailure(true);
+        } else {
+          // Invalid on the server
+          handleLoginFailure(false);
+        }
+      })
+      .catch(err => {
+        console.error('Server login failed:', err);
+        handleLoginFailure(false);
+      });
     }
   });
 
@@ -5086,34 +5167,80 @@ document.addEventListener('DOMContentLoaded', () => {
     const s = urlParams.get('s');
     const c = urlParams.get('c');
     if (u && p && s && c) {
-      currentCompany = c;
-      currentSector = s;
-      
-      // Store credentials as valid for 10 mins
-      tempCredentials = {
-        username: u,
-        password: p,
-        company: c,
-        sector: s,
-        expiresAt: Date.now() + 10 * 60 * 1000
-      };
-      
-      // Persist session state in localStorage
-      const cardData = {
-        username: u,
-        password: p,
-        company: c,
-        sector: s,
-        expiresAt: tempCredentials.expiresAt
-      };
-      localStorage.setItem('isLoggedIn', 'true');
-      localStorage.setItem('userCardData', JSON.stringify(cardData));
-      
-      // Clear URL params silently and update history to dashboard
-      window.history.replaceState({ pageId: 'dashboard' }, '', '#dashboard');
-      
-      // Transition to Dashboard directly!
-      switchPage('dashboard', false);
+      // Validate credentials against the server first (ensures expiry checks are respected)
+      fetch('/api/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username: u, password: p })
+      })
+      .then(res => {
+        if (res.status === 200) {
+          currentCompany = c;
+          currentSector = s;
+          
+          tempCredentials = {
+            username: u,
+            password: p,
+            company: c,
+            sector: s,
+            expiresAt: Date.now() + 7 * 24 * 60 * 60 * 1000 // 1 week
+          };
+          
+          const cardData = {
+            username: u,
+            password: p,
+            company: c,
+            sector: s,
+            expiresAt: tempCredentials.expiresAt
+          };
+          localStorage.setItem('isLoggedIn', 'true');
+          localStorage.setItem('userCardData', JSON.stringify(cardData));
+          
+          // Clear URL params silently and update history to dashboard
+          window.history.replaceState({ pageId: 'dashboard' }, '', '#dashboard');
+          
+          // Activate card on the server to make it permanent
+          fetch('/api/activate-card', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username: u })
+          }).catch(err => console.error('Error activating card on server:', err));
+          
+          // Transition to Dashboard directly!
+          switchPage('dashboard', false);
+        } else {
+          // Card expired or invalid, clear URL params and show welcome
+          window.history.replaceState({ pageId: 'welcome' }, '', '#welcome');
+          switchPage('welcome', false);
+          alert(currentLang === 'tr' 
+            ? "Geçici giriş kartınızın süresi dolmuş veya geçersizdir!" 
+            : "Your temporary entry card has expired or is invalid!");
+        }
+      })
+      .catch(err => {
+        console.error('QR login validation failed, falling back locally:', err);
+        // Fallback to local login if offline/error
+        currentCompany = c;
+        currentSector = s;
+        tempCredentials = {
+          username: u,
+          password: p,
+          company: c,
+          sector: s,
+          expiresAt: Date.now() + 10 * 60 * 1000
+        };
+        const cardData = {
+          username: u,
+          password: p,
+          company: c,
+          sector: s,
+          expiresAt: tempCredentials.expiresAt
+        };
+        localStorage.setItem('isLoggedIn', 'true');
+        localStorage.setItem('userCardData', JSON.stringify(cardData));
+        window.history.replaceState({ pageId: 'dashboard' }, '', '#dashboard');
+        switchPage('dashboard', false);
+      });
     }
   }
 
