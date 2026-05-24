@@ -1,0 +1,88 @@
+{
+  "vakif": [
+    { "key": "credit", "type": "number", "min": 1, "max": 30, "value": 6, "required": true, "label": { "tr": "Aylık Katılım Sıklığı (1-30)", "en": "Monthly Attendance Frequency (1-30)" } },
+    { "key": "income", "type": "number", "min": 10, "max": 10000, "value": 100, "required": true, "label": { "tr": "Geçmiş Bağış Tutarı ($)", "en": "Past Donation Amount ($)" } },
+    { "key": "dti", "type": "number", "min": 0, "max": 30, "value": 2, "required": true, "label": { "tr": "Üyelik Süresi (Yıl)", "en": "Membership Duration (Years)" } },
+    {
+      "key": "donationType",
+      "type": "select",
+      "required": true,
+      "value": "monthly",
+      "label": { "tr": "Bağış Türü", "en": "Donation Type" },
+      "options": [
+        { "value": "single", "label": { "tr": "Tek Seferlik", "en": "One-Time" } },
+        { "value": "monthly", "label": { "tr": "Aylık Düzenli", "en": "Monthly Recurring" } },
+        { "value": "annual", "label": { "tr": "Yıllık Sponsorluk", "en": "Annual Sponsorship" } }
+      ]
+    }
+  ],
+  "egitim": [
+    { "key": "glucose", "type": "number", "min": 0, "max": 80, "value": 15, "required": true, "label": { "tr": "Çalışma Süresi (Saat)", "en": "Study Time (Hours)" } },
+    { "key": "bmi", "type": "number", "min": 0, "max": 100, "value": 80, "required": true, "label": { "tr": "Devam Oranı (%)", "en": "Attendance Rate (%)" } },
+    { "key": "age", "type": "number", "min": 0, "max": 100, "value": 70, "required": true, "label": { "tr": "Deneme Sınav Puanı (0-100)", "en": "Mock Exam Score (0-100)" } },
+    {
+      "key": "grade_level",
+      "type": "select",
+      "required": true,
+      "value": "junior",
+      "label": { "tr": "Sınıf Seviyesi", "en": "Grade Level" },
+      "options": [
+        { "value": "freshman", "label": { "tr": "1. Sınıf (Freshman)", "en": "Freshman" } },
+        { "value": "sophomore", "label": { "tr": "2. Sınıf (Sophomore)", "en": "Sophomore" } },
+        { "value": "junior", "label": { "tr": "3. Sınıf (Junior)", "en": "Junior" } },
+        { "value": "senior", "label": { "tr": "4. Sınıf (Senior)", "en": "Senior" } }
+      ]
+    }
+  ],
+  "gida": [
+    { "key": "size", "type": "number", "min": 10, "max": 10000, "value": 1000, "required": true, "label": { "tr": "Ort. Sipariş Adedi", "en": "Avg. Order Quantity" } },
+    { "key": "beds", "type": "number", "min": 1, "max": 5, "step": 0.1, "value": 4.0, "required": true, "label": { "tr": "Restoran Puanı (1-5)", "en": "Restaurant Score (1-5)" } },
+    { "key": "location", "type": "toggle", "value": false, "label": { "tr": "Kampanya Uygulandı Mı?", "en": "Was Campaign Applied?" } },
+    {
+      "key": "restaurant_type",
+      "type": "select",
+      "required": true,
+      "value": "casual",
+      "label": { "tr": "Restoran Konsepti", "en": "Restaurant Concept" },
+      "options": [
+        { "value": "fastfood", "label": { "tr": "Fast Food", "en": "Fast Food" } },
+        { "value": "cafe", "label": { "tr": "Kafe / Bistro", "en": "Cafe / Bistro" } },
+        { "value": "casual", "label": { "tr": "Casual Dining", "en": "Casual Dining" } },
+        { "value": "finedining", "label": { "tr": "Fine Dining", "en": "Fine Dining" } }
+      ]
+    }
+  ],
+  "lojistik": [
+    { "key": "days", "type": "number", "min": 1, "max": 500, "value": 15, "required": true, "label": { "tr": "Mesafe Uzunluğu (km)", "en": "Distance (km)" } },
+    { "key": "sessions", "type": "number", "min": 1, "max": 10, "value": 4, "required": true, "label": { "tr": "Trafik Yoğunluğu (1-10)", "en": "Traffic Density (1-10)" } },
+    { "key": "tickets", "type": "number", "min": 1, "max": 50, "value": 2, "required": true, "label": { "tr": "Paket Yük Adedi", "en": "Package Load Quantity" } },
+    {
+      "key": "vehicle_type",
+      "type": "select",
+      "required": true,
+      "value": "van",
+      "label": { "tr": "Taşıt Türü", "en": "Vehicle Type" },
+      "options": [
+        { "value": "motorcycle", "label": { "tr": "Motosiklet", "en": "Motorcycle" } },
+        { "value": "van", "label": { "tr": "Panelvan (Light Commercial)", "en": "Van / LCV" } },
+        { "value": "truck", "label": { "tr": "Kamyon / Ağır Vasıta", "en": "Heavy Truck" } }
+      ]
+    }
+  ],
+  "tekstil": [
+    { "key": "days", "type": "number", "min": 1, "max": 50, "value": 4, "required": true, "label": { "tr": "Alışveriş Sıklığı (Kez)", "en": "Shopping Frequency (Times)" } },
+    { "key": "sessions", "type": "number", "min": 100, "max": 10000, "value": 1200, "required": true, "label": { "tr": "Sepet Tutarı (TL)", "en": "Basket Amount (TRY)" } },
+    { "key": "tickets", "type": "number", "min": 0, "max": 100, "value": 30, "required": true, "label": { "tr": "İndirim Hassasiyeti (%)", "en": "Discount Sensitivity (%)" } },
+    {
+      "key": "promo_code",
+      "type": "text",
+      "required": false,
+      "value": "",
+      "placeholder": { "tr": "Örn: VERTEX-2026", "en": "e.g. VERTEX-2026" },
+      "label": { "tr": "Promosyon Kodu", "en": "Promo Code" },
+      "minLength": 3,
+      "maxLength": 15,
+      "pattern": "^[A-Z0-9\\-]+$"
+    }
+  ]
+}

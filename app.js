@@ -762,6 +762,8 @@ document.addEventListener('DOMContentLoaded', () => {
   let loginFailedAttempts = 0;
   let whatIfBaseline = null;
   let activePerformanceMetrics = null;
+  let sectorDataLoaded = false;
+  let sectorDataJSON = null;
 
   function transitionToDashboard() {
     const userCardDataRaw = localStorage.getItem('userCardData');
@@ -946,6 +948,11 @@ document.addEventListener('DOMContentLoaded', () => {
         if (field.min !== undefined) input.min = field.min;
         if (field.max !== undefined) input.max = field.max;
         if (field.step !== undefined) input.step = field.step;
+        if (field.placeholder !== undefined) {
+          input.placeholder = typeof field.placeholder === 'object' 
+            ? (field.placeholder[currentLang] || field.placeholder.en) 
+            : field.placeholder;
+        }
         
         group.appendChild(input);
       } else {
@@ -955,6 +962,15 @@ document.addEventListener('DOMContentLoaded', () => {
         input.id = `add-${field.key}`;
         input.value = field.value !== undefined ? field.value : '';
         input.required = field.required !== false;
+        
+        if (field.minLength !== undefined) input.minLength = field.minLength;
+        if (field.maxLength !== undefined) input.maxLength = field.maxLength;
+        if (field.pattern !== undefined) input.pattern = field.pattern;
+        if (field.placeholder !== undefined) {
+          input.placeholder = typeof field.placeholder === 'object' 
+            ? (field.placeholder[currentLang] || field.placeholder.en) 
+            : field.placeholder;
+        }
         
         group.appendChild(input);
       }
@@ -2930,6 +2946,19 @@ document.addEventListener('DOMContentLoaded', () => {
       newCustomer.status = winnerStatus;
       newCustomer.rawStatus = rawStatus;
     }
+    const dynamicInputs = dynamicFormFields.querySelectorAll('input, select');
+    dynamicInputs.forEach(input => {
+      const key = input.id.replace('add-', '');
+      if (newCustomer[key] !== undefined) return; // Skip if already set manually
+      
+      if (input.type === 'checkbox') {
+        newCustomer[key] = input.checked;
+      } else if (input.type === 'number') {
+        newCustomer[key] = Number(input.value);
+      } else {
+        newCustomer[key] = input.value;
+      }
+    });
 
     // Append to dataset and update UI
     databases[currentSector].push(newCustomer);
@@ -3937,6 +3966,288 @@ document.addEventListener('DOMContentLoaded', () => {
     return {};
   }
 
+  const explanationTemplates = {
+    tr: {
+      // vakif
+      credit_pos: "Aylık katılım sıklığı, düzenli bağışçı olma olasılığını %VALUE% artırdı.",
+      credit_neg: "Aylık katılım sıklığının düşük olması, düzenli bağışçı olasılığını %VALUE% düşürdü.",
+      income_pos: "Yüksek geçmiş bağış tutarı, düzenli bağışçı olasılığını %VALUE% artırdı.",
+      income_neg: "Düşük geçmiş bağış tutarı, düzenli bağışçı olasılığını %VALUE% düşürdü.",
+      dti_pos: "Uzun üyelik süresi, düzenli bağışçı olasılığını %VALUE% artırdı.",
+      dti_neg: "Kısa üyelik süresi, düzenli bağışçı olasılığını %VALUE% düşürdü.",
+
+      // egitim
+      glucose_pos: "Haftalık çalışma süresinin yetersizliği, başarısızlık riskini %VALUE% artırdı.",
+      glucose_neg: "Haftalık çalışma süresinin yeterli olması, başarısızlık riskini %VALUE% düşürdü.",
+      bmi_pos: "Devamsızlığın yüksek olması, başarısızlık riskini %VALUE% artırdı.",
+      bmi_neg: "Ders devam oranının yüksek olması, başarısızlık riskini %VALUE% düşürdü.",
+      age_pos: "Deneme sınav puanının düşük olması, başarısızlık riskini %VALUE% artırdı.",
+      age_neg: "Deneme sınav puanının yüksek olması, başarısızlık riskini %VALUE% düşürdü.",
+
+      // gida
+      size_pos: "Yüksek ortalama sipariş hacmi, günlük talebi %VALUE% adet artırdı.",
+      size_neg: "Düşük ortalama sipariş hacmi, günlük talebi %VALUE% adet düşürdü.",
+      beds_pos: "Yüksek restoran değerlendirme puanı, günlük talebi %VALUE% adet artırdı.",
+      beds_neg: "Düşük restoran değerlendirme puanı, günlük talebi %VALUE% adet düşürdü.",
+      location_pos: "Aktif kampanya uygulaması, günlük talebi %VALUE% adet artırdı.",
+      location_neg: "Kampanya uygulanmaması, günlük talebi %VALUE% adet düşürdü.",
+
+      // lojistik
+      days_pos: "Uzun teslimat mesafesi, gecikme riskini %VALUE% artırdı.",
+      days_neg: "Kısa teslimat mesafesi, gecikme riskini %VALUE% düşürdü.",
+      sessions_pos: "Trafik yoğunluğunun fazla olması, gecikme riskini %VALUE% artırdı.",
+      sessions_neg: "Trafik yoğunluğunun az olması, gecikme riskini %VALUE% düşürdü.",
+      tickets_pos: "Paket yük adedinin fazla olması, gecikme riskini %VALUE% artırdı.",
+      tickets_neg: "Paket yük adedinin az olması, gecikme riskini %VALUE% düşürdü.",
+
+      // tekstil
+      days_pos: "Sık alışveriş yapılması, müşteri değer skorunu %VALUE% artırdı.",
+      days_neg: "Seyrek alışveriş yapılması, müşteri değer skorunu %VALUE% düşürdü.",
+      sessions_pos: "Yüksek ortalama sepet tutarı, müşteri değer skorunu %VALUE% artırdı.",
+      sessions_neg: "Düşük ortalama sepet tutarı, müşteri değer skorunu %VALUE% düşürdü.",
+      tickets_pos: "Yüksek indirim hassasiyeti, premium alıcı skorunu %VALUE% düşürdü.",
+      tickets_neg: "Düşük indirim hassasiyeti, premium alıcı skorunu %VALUE% artırdı."
+    },
+    en: {
+      // vakif
+      credit_pos: "Regular monthly attendance increased donor probability by %VALUE%.",
+      credit_neg: "Low monthly attendance reduced donor probability by %VALUE%.",
+      income_pos: "High past donation amount increased donor probability by %VALUE%.",
+      income_neg: "Low past donation amount reduced donor probability by %VALUE%.",
+      dti_pos: "Long-term membership increased donor probability by %VALUE%.",
+      dti_neg: "Short membership duration reduced donor probability by %VALUE%.",
+
+      // egitim
+      glucose_pos: "Insufficient study time increased failure risk by %VALUE%.",
+      glucose_neg: "Sufficient study time reduced failure risk by %VALUE%.",
+      bmi_pos: "Low course attendance increased failure risk by %VALUE%.",
+      bmi_neg: "High course attendance reduced failure risk by %VALUE%.",
+      age_pos: "Low mock exam score increased failure risk by %VALUE%.",
+      age_neg: "High mock exam score reduced failure risk by %VALUE%.",
+
+      // gida
+      size_pos: "High order quantity increased daily demand by %VALUE% orders.",
+      size_neg: "Low order quantity reduced daily demand by %VALUE% orders.",
+      beds_pos: "High restaurant score increased daily demand by %VALUE% orders.",
+      beds_neg: "Low restaurant score reduced daily demand by %VALUE% orders.",
+      location_pos: "Active promotional campaign increased daily demand by %VALUE% orders.",
+      location_neg: "Lack of active campaign reduced daily demand by %VALUE% orders.",
+
+      // lojistik
+      days_pos: "Longer delivery distance increased delay probability by %VALUE%.",
+      days_neg: "Shorter delivery distance reduced delay probability by %VALUE%.",
+      sessions_pos: "High traffic density increased delay probability by %VALUE%.",
+      sessions_neg: "Low traffic density reduced delay probability by %VALUE%.",
+      tickets_pos: "High package load quantity increased delay probability by %VALUE%.",
+      tickets_neg: "Low package load quantity reduced delay probability by %VALUE%.",
+
+      // tekstil
+      days_pos: "Frequent shopping increased customer value score by %VALUE%.",
+      days_neg: "Infrequent shopping reduced customer value score by %VALUE%.",
+      sessions_pos: "High basket amount increased customer value score by %VALUE%.",
+      sessions_neg: "Low basket amount reduced customer value score by %VALUE%.",
+      tickets_pos: "High discount sensitivity reduced premium buyer score by %VALUE%.",
+      tickets_neg: "Low discount sensitivity increased premium buyer score by %VALUE%."
+    }
+  };
+
+  // Waterfall Chart Generator Function
+  function generateWaterfallChart(container, data) {
+    if (!container) return;
+    container.innerHTML = '';
+
+    const { prediction_score, feature_importance, sector, lang } = data;
+    
+    // 1. Calculate sum of weights and baseline
+    let sumWeights = 0;
+    const weightsArray = [];
+    
+    // Map feature keys to their display names and values
+    const featureMapping = {
+      vakif: {
+        credit: { tr: "Katılım Sıklığı", en: "Attendance Freq" },
+        income: { tr: "Bağış Tutarı", en: "Donation Amount" },
+        dti: { tr: "Üyelik Süresi", en: "Membership" }
+      },
+      egitim: {
+        glucose: { tr: "Çalışma Süresi", en: "Study Time" },
+        bmi: { tr: "Devam Oranı", en: "Attendance Rate" },
+        age: { tr: "Sınav Puanı", en: "Exam Score" }
+      },
+      gida: {
+        size: { tr: "Sipariş Adedi", en: "Order Qty" },
+        beds: { tr: "Restoran Puanı", en: "Rest. Rating" },
+        location: { tr: "Kampanya", en: "Campaign" }
+      },
+      lojistik: {
+        days: { tr: "Mesafe", en: "Distance" },
+        sessions: { tr: "Trafik", en: "Traffic" },
+        tickets: { tr: "Paket Yükü", en: "Package Load" }
+      },
+      tekstil: {
+        days: { tr: "Alışveriş Sıklığı", en: "Shopping Freq" },
+        sessions: { tr: "Sepet Tutarı", en: "Basket Amount" },
+        tickets: { tr: "İndirim Hassas.", en: "Discount Sens." }
+      }
+    };
+
+    const sectorFeatures = featureMapping[sector] || {};
+    
+    Object.keys(feature_importance).forEach(key => {
+      const val = feature_importance[key];
+      sumWeights += val;
+      weightsArray.push({
+        key: key,
+        name: sectorFeatures[key]?.[lang] || key,
+        value: val
+      });
+    });
+
+    const baseline = prediction_score - sumWeights;
+
+    // 2. Build cumulative steps
+    const steps = [];
+    
+    // Baseline
+    steps.push({
+      name: lang === 'tr' ? "Referans" : "Baseline",
+      start: 0,
+      end: baseline,
+      type: 'baseline',
+      formattedValue: baseline.toFixed(1) + (sector === 'gida' ? '' : '%')
+    });
+
+    let current = baseline;
+    weightsArray.forEach(w => {
+      steps.push({
+        name: w.name,
+        start: current,
+        end: current + w.value,
+        type: w.value >= 0 ? 'increase' : 'decrease',
+        formattedValue: (w.value >= 0 ? '+' : '') + w.value.toFixed(1) + (sector === 'gida' ? '' : '%'),
+        key: w.key,
+        rawWeight: w.value
+      });
+      current += w.value;
+    });
+
+    // Final Prediction
+    steps.push({
+      name: lang === 'tr' ? "Tahmin" : "Prediction",
+      start: 0,
+      end: prediction_score,
+      type: 'prediction',
+      formattedValue: prediction_score.toFixed(1) + (sector === 'gida' ? '' : '%')
+    });
+
+    // 3. Calculate SVG dimensions and scale domain
+    const allVals = [0, baseline, prediction_score];
+    let temp = baseline;
+    weightsArray.forEach(w => {
+      temp += w.value;
+      allVals.push(temp);
+    });
+
+    const minVal = Math.min(...allVals);
+    const maxVal = Math.max(...allVals);
+    const span = maxVal - minVal;
+    
+    // Add margin padding to keep values readable
+    const minDomain = minVal - (span === 0 ? 10 : span * 0.12);
+    const maxDomain = maxVal + (span === 0 ? 10 : span * 0.12);
+
+    const svgWidth = 280;
+    const paddingLeft = 85;
+    const paddingRight = 45;
+    const rowHeight = 35;
+    const barHeight = 16;
+    const paddingTop = 15;
+    const svgHeight = paddingTop * 2 + steps.length * rowHeight;
+    const chartWidth = svgWidth - paddingLeft - paddingRight;
+
+    function getX(val) {
+      if (maxDomain === minDomain) return paddingLeft + chartWidth / 2;
+      return paddingLeft + ((val - minDomain) / (maxDomain - minDomain)) * chartWidth;
+    }
+
+    // 4. Generate SVG contents
+    let svgHtml = `<svg width="${svgWidth}" height="${svgHeight}" class="waterfall-svg" style="background: transparent; overflow: visible;">`;
+    
+    const zeroX = getX(0);
+    svgHtml += `<line x1="${zeroX}" y1="${paddingTop}" x2="${zeroX}" y2="${svgHeight - paddingTop}" stroke="rgba(255,255,255,0.15)" stroke-dasharray="2,2" />`;
+
+    steps.forEach((step, i) => {
+      const y = paddingTop + i * rowHeight + (rowHeight - barHeight) / 2;
+      const xStart = getX(step.start);
+      const xEnd = getX(step.end);
+      const width = Math.abs(xEnd - xStart);
+      const x = Math.min(xStart, xEnd);
+      
+      let fill = 'var(--primary)'; // prediction
+      if (step.type === 'baseline') fill = '#64748b'; // slate grey
+      else if (step.type === 'increase') fill = '#10b981'; // emerald green
+      else if (step.type === 'decrease') fill = '#ef4444'; // crimson red
+
+      // Draw connector line from previous bar's end to current bar's start (vertically)
+      if (i > 0 && step.type !== 'prediction') {
+        const prevStep = steps[i - 1];
+        const prevX = getX(prevStep.end);
+        const prevY = paddingTop + (i - 1) * rowHeight + rowHeight / 2;
+        const currY = paddingTop + i * rowHeight + rowHeight / 2;
+        svgHtml += `<line x1="${prevX}" y1="${prevY}" x2="${prevX}" y2="${currY}" stroke="rgba(255,255,255,0.25)" stroke-dasharray="2,2" />`;
+      }
+
+      // Draw Rect
+      svgHtml += `<rect x="${x}" y="${y}" width="${Math.max(2, width)}" height="${barHeight}" fill="${fill}" rx="3" />`;
+
+      // Label text
+      svgHtml += `<text x="${paddingLeft - 8}" y="${y + barHeight - 3}" fill="var(--text-secondary)" font-size="10.5" text-anchor="end" font-family="sans-serif">${step.name}</text>`;
+
+      // Value text
+      svgHtml += `<text x="${step.end >= step.start ? xEnd + 5 : xEnd - 5}" y="${y + barHeight - 3}" fill="var(--text-primary)" font-size="10.5" font-weight="600" text-anchor="${step.end >= step.start ? 'start' : 'end'}" font-family="sans-serif">${step.formattedValue}</text>`;
+    });
+
+    svgHtml += `</svg>`;
+
+    // 5. Generate short natural-language explanations
+    let explanationsHtml = '';
+    
+    weightsArray.forEach(w => {
+      const templateKey = `${w.key}_${w.value >= 0 ? 'pos' : 'neg'}`;
+      const textTemplate = explanationTemplates[lang]?.[templateKey] || 
+                           explanationTemplates.en?.[templateKey] || 
+                           `${w.name}: ${w.value.toFixed(1)}%`;
+      
+      const formattedAbsVal = Math.abs(w.value).toFixed(1);
+      const explanationText = textTemplate.replace('%VALUE%', formattedAbsVal);
+      const bulletClass = w.value >= 0 ? 'increase' : 'decrease';
+
+      explanationsHtml += `
+        <div class="waterfall-desc-item">
+          <div class="waterfall-desc-bullet ${bulletClass}"></div>
+          <span>${explanationText}</span>
+        </div>
+      `;
+    });
+
+    // 6. Assemble layout
+    const layout = document.createElement('div');
+    layout.className = 'waterfall-layout';
+    layout.innerHTML = `
+      <div class="waterfall-chart-col">
+        ${svgHtml}
+      </div>
+      <div class="waterfall-text-col">
+        <h4 style="margin: 0 0 0.4rem 0; font-size: 0.85rem; color: var(--primary);">
+          ${lang === 'tr' ? 'Faktör Etki Detayları' : 'Factor Impact Details'}
+        </h4>
+        ${explanationsHtml}
+      </div>
+    `;
+
+    container.appendChild(layout);
+  }
+
   function showShapExplanation() {
     const modal = document.getElementById('explain-modal');
     const waterfallBox = document.getElementById('shap-waterfall-box');
@@ -3944,7 +4255,8 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!modal || !waterfallBox || !reportText) return;
 
     const avg = getSectorAverages(currentSector);
-    let contribs = [];
+    let feature_importance = {};
+    let prediction_score = 50; // base fallback
     let currentResultText = '';
     
     if (currentSector === 'vakif') {
@@ -3956,12 +4268,13 @@ document.addEventListener('DOMContentLoaded', () => {
       const cIncome = 35 * (income - avg.income) / (1000 - 10);
       const cDti = 20 * (dti - avg.dti) / (15 - 1);
       
-      contribs = [
-        { name: { tr: "Aylık Katılım Sıklığı", en: "Monthly Attendance Frequency" }, val: cCredit },
-        { name: { tr: "Geçmiş Bağış Tutarı", en: "Past Donation Amount" }, val: cIncome },
-        { name: { tr: "Üyelik Süresi", en: "Membership Duration" }, val: cDti }
-      ];
+      feature_importance = {
+        credit: cCredit,
+        income: cIncome,
+        dti: cDti
+      };
       
+      prediction_score = 50 + cCredit + cIncome + cDti;
       currentResultText = document.getElementById('dash-output-result').textContent;
       
     } else if (currentSector === 'egitim') {
@@ -3973,11 +4286,15 @@ document.addEventListener('DOMContentLoaded', () => {
       const cAttendance = -30 * (bmi - avg.bmi) / (100 - 30);
       const cExam = -20 * (age - avg.age) / (100 - 20);
       
-      contribs = [
-        { name: { tr: "Haftalık Çalışma Süresi", en: "Weekly Study Time" }, val: cStudy },
-        { name: { tr: "Ders Devam Oranı", en: "Course Attendance Rate" }, val: cAttendance },
-        { name: { tr: "Deneme Sınav Puanı", en: "Mock Exam Score" }, val: cExam }
-      ];
+      feature_importance = {
+        glucose: cStudy,
+        bmi: cAttendance,
+        age: cExam
+      };
+      
+      const z = 5.5 - (0.12 * glucose) - (0.04 * bmi) - (0.03 * age);
+      const prob = 1.0 / (1.0 + Math.exp(-z));
+      prediction_score = Math.round(prob * 100);
       
       currentResultText = document.getElementById('dash-output-result').textContent;
       
@@ -3990,12 +4307,13 @@ document.addEventListener('DOMContentLoaded', () => {
       const cBeds = 25 * (beds - avg.beds) / (5 - 1);
       const cLoc = 20 * (loc - avg.location);
       
-      contribs = [
-        { name: { tr: "Ortalama Sipariş Adedi", en: "Avg. Order Quantity" }, val: cSize },
-        { name: { tr: "Restoran Değerlendirme Puanı", en: "Restaurant Rating Score" }, val: cBeds },
-        { name: { tr: "Kampanya Uygulaması", en: "Campaign Application" }, val: cLoc }
-      ];
+      feature_importance = {
+        size: cSize,
+        beds: cBeds,
+        location: cLoc
+      };
       
+      prediction_score = 50 + cSize + cBeds + cLoc;
       currentResultText = document.getElementById('dash-output-result').textContent;
       
     } else if (currentSector === 'lojistik') {
@@ -4007,11 +4325,17 @@ document.addEventListener('DOMContentLoaded', () => {
       const cTraffic = 30 * (sessions - avg.sessions) / (10 - 1);
       const cLoad = 25 * (tickets - avg.tickets) / (10 - 1);
       
-      contribs = [
-        { name: { tr: "Mesafe Uzunluğu", en: "Distance Length" }, val: cDistance },
-        { name: { tr: "Trafik Yoğunluğu", en: "Traffic Density" }, val: cTraffic },
-        { name: { tr: "Paket Yükü Adedi", en: "Package Load Quantity" }, val: cLoad }
-      ];
+      feature_importance = {
+        days: cDistance,
+        sessions: cTraffic,
+        tickets: cLoad
+      };
+      
+      const daysImpact = Math.min(100, (days / 150) * 100);
+      const sessionImpact = (sessions / 10) * 100;
+      const supportImpact = (tickets / 10) * 100;
+      const churnScore = (daysImpact * 0.45) + (sessionImpact * 0.3) + (supportImpact * 0.25);
+      prediction_score = Math.round(churnScore);
       
       currentResultText = document.getElementById('dash-output-result').textContent;
       
@@ -4024,42 +4348,54 @@ document.addEventListener('DOMContentLoaded', () => {
       const cBasket = 35 * (sessions - avg.sessions) / (5000 - 100);
       const cDiscount = -25 * (tickets - avg.tickets) / 100;
       
-      contribs = [
-        { name: { tr: "Aylık Alışveriş Sıklığı", en: "Monthly Shopping Frequency" }, val: cFreq },
-        { name: { tr: "Ortalama Sepet Tutarı", en: "Average Basket Amount" }, val: cBasket },
-        { name: { tr: "İndirim Hassasiyeti", en: "Discount Sensitivity" }, val: cDiscount }
-      ];
+      feature_importance = {
+        days: cFreq,
+        sessions: cBasket,
+        tickets: cDiscount
+      };
       
+      prediction_score = 50 + cFreq + cBasket + cDiscount;
       currentResultText = document.getElementById('dash-output-result').textContent;
     }
 
-    waterfallBox.innerHTML = '';
-    contribs.forEach(c => {
-      const name = c.name[currentLang];
-      const val = c.val;
-      const classType = val >= 0 ? 'positive' : 'negative';
-      const absVal = Math.abs(val);
-      const width = Math.min(50, absVal);
-      const left = val >= 0 ? 50 : 50 - width;
-      const valText = (val >= 0 ? '+' : '') + val.toFixed(1) + '%';
-      
-      const item = document.createElement('div');
-      item.className = 'shap-bar-item';
-      item.innerHTML = `
-        <div class="shap-bar-label" title="${name}">${name}</div>
-        <div class="shap-bar-track">
-          <div style="position: absolute; left: 50%; top: 0; bottom: 0; width: 1px; border-left: 1px dashed rgba(255,255,255,0.25); z-index: 1;"></div>
-          <div class="shap-bar-fill ${classType}" style="position: absolute; left: ${left}%; width: 0%; transition: width 0.6s ease-in-out;"></div>
-        </div>
-        <div class="shap-bar-value">${valText}</div>
-      `;
-      waterfallBox.appendChild(item);
-      
-      requestAnimationFrame(() => {
-        const fill = item.querySelector('.shap-bar-fill');
-        if (fill) fill.style.width = `${width}%`;
-      });
+    // Generate Waterfall Chart inside waterfallBox
+    generateWaterfallChart(waterfallBox, {
+      prediction_score,
+      feature_importance,
+      sector: currentSector,
+      lang: currentLang
     });
+
+    // Make structured text report below chart
+    const contribs = Object.keys(feature_importance).map(key => ({
+      name: {
+        tr: key === 'credit' ? "Aylık Katılım Sıklığı" :
+            key === 'income' ? "Geçmiş Bağış Tutarı" :
+            key === 'dti' ? "Üyelik Süresi" :
+            key === 'glucose' ? "Haftalık Çalışma Süresi" :
+            key === 'bmi' ? "Ders Devam Oranı" :
+            key === 'age' ? "Deneme Sınav Puanı" :
+            key === 'size' ? "Ortalama Sipariş Adedi" :
+            key === 'beds' ? "Restoran Değerlendirme Puanı" :
+            key === 'location' ? "Kampanya Uygulaması" :
+            key === 'days' ? (currentSector === 'lojistik' ? "Mesafe Uzunluğu" : "Aylık Alışveriş Sıklığı") :
+            key === 'sessions' ? (currentSector === 'lojistik' ? "Trafik Yoğunluğu" : "Ortalama Sepet Tutarı") :
+            key === 'tickets' ? (currentSector === 'lojistik' ? "Paket Yükü Adedi" : "İndirim Hassasiyeti") : key,
+        en: key === 'credit' ? "Monthly Attendance Frequency" :
+            key === 'income' ? "Past Donation Amount" :
+            key === 'dti' ? "Membership Duration" :
+            key === 'glucose' ? "Weekly Study Time" :
+            key === 'bmi' ? "Course Attendance Rate" :
+            key === 'age' ? "Mock Exam Score" :
+            key === 'size' ? "Avg. Order Quantity" :
+            key === 'beds' ? "Restaurant Rating Score" :
+            key === 'location' ? "Campaign Application" :
+            key === 'days' ? (currentSector === 'lojistik' ? "Distance Length" : "Monthly Shopping Frequency") :
+            key === 'sessions' ? (currentSector === 'lojistik' ? "Traffic Density" : "Average Basket Amount") :
+            key === 'tickets' ? (currentSector === 'lojistik' ? "Package Load Quantity" : "Discount Sensitivity") : key
+      },
+      val: feature_importance[key]
+    }));
 
     let maxPos = { name: '', val: -Infinity };
     let maxNeg = { name: '', val: Infinity };
@@ -4069,6 +4405,9 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     let reportHtml = '';
+    const isOrders = currentSector === 'gida';
+    const unitSymbol = isOrders ? (currentLang === 'tr' ? ' Adet' : ' Units') : '%';
+
     if (currentLang === 'tr') {
       reportHtml = `
         <h4 style="color: var(--primary); margin-bottom: 0.5rem;">Aura AI Raporu</h4>
@@ -4079,8 +4418,8 @@ document.addEventListener('DOMContentLoaded', () => {
           Şirket ortalamalarına (referans baseline) kıyasla:
         </p>
         <ul style="padding-left: 1.2rem; margin-bottom: 0.8rem; display: flex; flex-direction: column; gap: 0.3rem;">
-          ${maxPos.val > 0.1 ? `<li>Risk/Değer oranını en çok artıran faktör: <strong style="color: var(--danger);">${maxPos.name}</strong> (+%${maxPos.val.toFixed(1)})</li>` : ''}
-          ${maxNeg.val < -0.1 ? `<li>Risk/Değer oranını en çok düşüren faktör: <strong style="color: var(--success);">${maxNeg.name}</strong> (-%${Math.abs(maxNeg.val).toFixed(1)})</li>` : ''}
+          ${maxPos.val > 0.1 ? `<li>Model hedefini en çok artıran faktör: <strong style="color: var(--success);">${maxPos.name}</strong> (+${maxPos.val.toFixed(1)}${unitSymbol})</li>` : ''}
+          ${maxNeg.val < -0.1 ? `<li>Model hedefini en çok düşüren faktör: <strong style="color: var(--danger);">${maxNeg.name}</strong> (-${Math.abs(maxNeg.val).toFixed(1)}${unitSymbol})</li>` : ''}
         </ul>
         <p style="font-size: 0.8rem; color: var(--text-muted); border-top: 1px dashed var(--border-color); padding-top: 0.5rem; margin-top: 0.5rem;">
           * SHAP/LIME yerel analizleri, veri setinizdeki tarihsel sapmalara ve karar sınırlarına dayanarak anlık olarak hesaplanır.
@@ -4096,8 +4435,8 @@ document.addEventListener('DOMContentLoaded', () => {
           Compared to company averages (reference baseline):
         </p>
         <ul style="padding-left: 1.2rem; margin-bottom: 0.8rem; display: flex; flex-direction: column; gap: 0.3rem;">
-          ${maxPos.val > 0.1 ? `<li>Factor increasing risk/value most: <strong style="color: var(--danger);">${maxPos.name}</strong> (+%${maxPos.val.toFixed(1)})</li>` : ''}
-          ${maxNeg.val < -0.1 ? `<li>Factor decreasing risk/value most: <strong style="color: var(--success);">${maxNeg.name}</strong> (-%${Math.abs(maxNeg.val).toFixed(1)})</li>` : ''}
+          ${maxPos.val > 0.1 ? `<li>Factor increasing model target most: <strong style="color: var(--success);">${maxPos.name}</strong> (+${maxPos.val.toFixed(1)}${unitSymbol})</li>` : ''}
+          ${maxNeg.val < -0.1 ? `<li>Factor decreasing model target most: <strong style="color: var(--danger);">${maxNeg.name}</strong> (-${Math.abs(maxNeg.val).toFixed(1)}${unitSymbol})</li>` : ''}
         </ul>
         <p style="font-size: 0.8rem; color: var(--text-muted); border-top: 1px dashed var(--border-color); padding-top: 0.5rem; margin-top: 0.5rem;">
           * SHAP/LIME local analyses are calculated instantly based on historical variances and decision boundaries in your dataset.
@@ -4830,9 +5169,34 @@ document.addEventListener('DOMContentLoaded', () => {
         : `Loading Matrix Schema: ${sector}_schema.json...`;
     }
 
+    let fetchPromise = Promise.resolve();
+    if (!sectorDataLoaded) {
+      fetchPromise = fetch('sector_data.json')
+        .then(res => {
+          if (!res.ok) throw new Error('Network response was not ok');
+          return res.json();
+        })
+        .then(data => {
+          sectorDataJSON = data;
+          sectorDataLoaded = true;
+          Object.keys(data).forEach(sectorKey => {
+            if (sectorSchemas[sectorKey]) {
+              sectorSchemas[sectorKey].formFields = data[sectorKey];
+            }
+          });
+          console.log('Sector schemas loaded successfully from sector_data.json');
+        })
+        .catch(err => {
+          console.warn('Fallback: Using hardcoded schemas. (Reason:', err.message, ')');
+          sectorDataLoaded = true; // prevent infinite fetch retries
+        });
+    }
+
     setTimeout(() => {
-      overlay.style.display = 'none';
-      if (callback) callback();
+      fetchPromise.finally(() => {
+        overlay.style.display = 'none';
+        if (callback) callback();
+      });
     }, 600);
   }
 

@@ -2037,3 +2037,53 @@ canvas {
   height: auto;
 }
 
+/* SVG Waterfall Layout */
+.waterfall-layout {
+  display: flex;
+  flex-direction: row;
+  gap: 1.5rem;
+  align-items: center;
+}
+.waterfall-chart-col {
+  flex: 1.2;
+  min-width: 280px;
+}
+.waterfall-text-col {
+  flex: 1;
+  min-width: 240px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+.waterfall-desc-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  font-size: 0.8rem;
+  line-height: 1.3;
+  color: var(--text-secondary);
+}
+.waterfall-desc-bullet {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  margin-top: 0.3rem;
+  flex-shrink: 0;
+}
+.waterfall-desc-bullet.increase {
+  background-color: #10b981; /* emerald green */
+}
+.waterfall-desc-bullet.decrease {
+  background-color: #ef4444; /* crimson red */
+}
+.waterfall-desc-bullet.neutral {
+  background-color: #94a3b8; /* slate gray */
+}
+
+@media (max-width: 576px) {
+  .waterfall-layout {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}
+
