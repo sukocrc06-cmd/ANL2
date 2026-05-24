@@ -810,6 +810,82 @@ const translations = {
   btn_deploy_model: {
     tr: "Seçilen Modeli Canlıya Al",
     en: "Deploy Selected Model to Live"
+  },
+  menu_autobuilder: {
+    tr: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path><path d="M12 8v4"></path><path d="M12 16h.01"></path></svg>AI Auto-Builder Paneli`,
+    en: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path><path d="M12 8v4"></path><path d="M12 16h.01"></path></svg>AI Auto-Builder`
+  },
+  autobuilder_title: {
+    tr: "AI Dashboard Auto-Builder Engine",
+    en: "AI Dashboard Auto-Builder Engine"
+  },
+  autobuilder_subtitle: {
+    tr: "Yapay zeka ile veri kümesinden anında otonom yönetici ve operasyonel takip panelleri inşa edin.",
+    en: "Generate autonomous executive and operational dashboards instantly from raw datasets using AI."
+  },
+  autobuilder_upload_title: {
+    tr: "Auto-Builder Analizi İçin Veri Kümesi Yükleyin",
+    en: "Upload Dataset for Auto-Builder Analysis"
+  },
+  autobuilder_upload_desc: {
+    tr: "Grafikler, KPI'lar ve risk haritaları içeren otonom bir çalışma alanı oluşturmak için veri yükleyin.",
+    en: "Upload your data to construct an autonomous workspace complete with charts, KPIs, and risk matrices."
+  },
+  btn_run_autobuilder: {
+    tr: "AI Çalışma Alanını İnşa Et",
+    en: "Build AI Workspace"
+  },
+  autobuilder_building_title: {
+    tr: "AI Analisti Paneli İnşa Ediyor...",
+    en: "AI Analyst Panel Constructing..."
+  },
+  autobuilder_building_desc: {
+    tr: "Veri dağılımları inceleniyor, sektörel KPI'lar hesaplanıyor ve en uygun veri görselleştirme yapısı sentezleniyor.",
+    en: "Analyzing data variance, computing sector KPIs, and synthesizing optimal visualization structures."
+  },
+  layout_exec: {
+    tr: "Yönetici Özeti (Overview)",
+    en: "Executive Overview"
+  },
+  layout_ops: {
+    tr: "Operasyonel İzleme (Ops)",
+    en: "Operational Monitoring"
+  },
+  layout_risk: {
+    tr: "Adli Riskler (Forensics)",
+    en: "Forensic Risks"
+  },
+  chart_rationale_label: {
+    tr: "Yapay Zeka Seçim Gerekçesi (AI Rationale):",
+    en: "AI Chart Selection Rationale:"
+  },
+  heatmap_title_panel: {
+    tr: "AI Risk Yoğunluk Matrisi (Heatmap)",
+    en: "AI Risk Density Heatmap Grid"
+  },
+  heatmap_desc: {
+    tr: "Departmanlar ve operasyonel süreçlerin anlık risk yoğunluğu. Koyu kırmızı hücreler yüksek kırılganlığı simgeler.",
+    en: "Live operational risk density monitoring. Dark red cells represent critical vulnerability levels."
+  },
+  risk_low: {
+    tr: "Düşük (Low)",
+    en: "Low Risk"
+  },
+  risk_medium: {
+    tr: "Orta (Med)",
+    en: "Medium Risk"
+  },
+  risk_high: {
+    tr: "Yüksek (High)",
+    en: "High Risk"
+  },
+  insight_stream_title: {
+    tr: "AI Gerçek Zamanlı Analiz Akışı (Live Stream)",
+    en: "AI Real-Time Insight Stream (Live)"
+  },
+  board_report_title: {
+    tr: "AI Yönetim Kurulu Brifingi (Executive Brief)",
+    en: "AI Board Meeting Intelligence Summary"
   }
 };
 
@@ -6165,15 +6241,18 @@ document.addEventListener('DOMContentLoaded', () => {
   const btnInsights = document.getElementById('menu-btn-insights');
   const btnSchemaIntel = document.getElementById('menu-btn-schema-intel');
   const btnAutoML = document.getElementById('menu-btn-automl');
+  const btnAutoBuilder = document.getElementById('menu-btn-autobuilder');
   const secInsights = document.getElementById('dashboard-insights-section');
   const secSchemaIntel = document.getElementById('dashboard-schema-intel-section');
   const secAutoML = document.getElementById('dashboard-automl-section');
+  const secAutoBuilder = document.getElementById('dashboard-autobuilder-section');
 
   function showTab(tabId) {
     const tabs = [
       { btn: btnInsights, sec: secInsights },
       { btn: btnSchemaIntel, sec: secSchemaIntel },
-      { btn: btnAutoML, sec: secAutoML }
+      { btn: btnAutoML, sec: secAutoML },
+      { btn: btnAutoBuilder, sec: secAutoBuilder }
     ];
 
     tabs.forEach(t => {
@@ -6190,11 +6269,15 @@ document.addEventListener('DOMContentLoaded', () => {
     if (tabId === 'menu-btn-automl' && typeof updateAutoMLSharedState === 'function') {
       updateAutoMLSharedState();
     }
+    if (tabId === 'menu-btn-autobuilder' && typeof updateAutoBuilderSharedState === 'function') {
+      updateAutoBuilderSharedState();
+    }
   }
 
   if (btnInsights) btnInsights.addEventListener('click', (e) => { e.preventDefault(); showTab('menu-btn-insights'); });
   if (btnSchemaIntel) btnSchemaIntel.addEventListener('click', (e) => { e.preventDefault(); showTab('menu-btn-schema-intel'); });
   if (btnAutoML) btnAutoML.addEventListener('click', (e) => { e.preventDefault(); showTab('menu-btn-automl'); });
+  if (btnAutoBuilder) btnAutoBuilder.addEventListener('click', (e) => { e.preventDefault(); showTab('menu-btn-autobuilder'); });
 
   const dropZone = document.getElementById('schema-drop-zone');
   const fileInput = document.getElementById('schema-file-input');
@@ -7408,7 +7491,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
         updateThemeColor(currentSector);
         transitionToDashboard();
-        showTab('menu-btn-insights');
+        showTab('menu-btn-autobuilder');
+        if (lastUploadedDataset) {
+          runAutoBuilderAnalysis(lastUploadedDataset.fileName, lastUploadedDataset.parsedData);
+        }
 
         const sectorLabel = sectorLabelsCard[currentLang][currentSector] || currentSector;
         alert(currentLang === 'tr' 
@@ -7426,6 +7512,802 @@ document.addEventListener('DOMContentLoaded', () => {
       document.getElementById('automl-results-view').style.display = 'none';
       if (automlFileInput) automlFileInput.value = '';
       updateAutoMLSharedState();
+    });
+  }
+
+  // ================= AI DASHBOARD AUTO-BUILDER MODULE =================
+  let autoBuilderLiveTickerInterval = null;
+  let autoBuilderHeatmapInterval = null;
+  let autoBuilderActiveLayout = 'executive';
+
+  function updateAutoBuilderSharedState() {
+    const statusMsg = document.getElementById('autobuilder-load-status-msg');
+    const btnRunLoaded = document.getElementById('btn-run-loaded-autobuilder');
+    if (!statusMsg || !btnRunLoaded) return;
+
+    if (lastUploadedDataset) {
+      const rowCount = lastUploadedDataset.parsedData.rows ? lastUploadedDataset.parsedData.rows.length : lastUploadedDataset.parsedData.rowCount;
+      const colCount = lastUploadedDataset.parsedData.columns.length;
+      if (currentLang === 'tr') {
+        statusMsg.innerHTML = `⚙️ Şema Zekası / AutoML panelinde yüklenen veri kümesi hazır: <strong style="color:var(--primary);">${lastUploadedDataset.fileName}</strong> (${rowCount} satır, ${colCount} sütun)`;
+      } else {
+        statusMsg.innerHTML = `⚙️ Dataset loaded in Schema/AutoML panel is ready: <strong style="color:var(--primary);">${lastUploadedDataset.fileName}</strong> (${rowCount} rows, ${colCount} columns)`;
+      }
+      statusMsg.style.display = 'block';
+      btnRunLoaded.style.display = 'inline-block';
+    } else {
+      statusMsg.style.display = 'none';
+      btnRunLoaded.style.display = 'none';
+    }
+  }
+
+  const autobuilderDropZone = document.getElementById('autobuilder-drop-zone');
+  const autobuilderFileInput = document.getElementById('autobuilder-file-input');
+  const btnBrowseAutoBuilder = document.getElementById('btn-browse-autobuilder-file');
+
+  if (btnBrowseAutoBuilder && autobuilderFileInput) {
+    btnBrowseAutoBuilder.addEventListener('click', () => autobuilderFileInput.click());
+    autobuilderFileInput.addEventListener('change', (e) => {
+      if (e.target.files.length > 0) {
+        handleAutoBuilderFile(e.target.files[0]);
+      }
+    });
+  }
+
+  if (autobuilderDropZone) {
+    autobuilderDropZone.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      autobuilderDropZone.classList.add('dragover');
+    });
+    autobuilderDropZone.addEventListener('dragleave', () => {
+      autobuilderDropZone.classList.remove('dragover');
+    });
+    autobuilderDropZone.addEventListener('drop', (e) => {
+      e.preventDefault();
+      autobuilderDropZone.classList.remove('dragover');
+      if (e.dataTransfer.files.length > 0) {
+        handleAutoBuilderFile(e.dataTransfer.files[0]);
+      }
+    });
+  }
+
+  function handleAutoBuilderFile(file) {
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      const text = e.target.result;
+      const parsedData = parseCSVContent(text);
+      const detectedSector = detectSectorAndBuildMetrics(parsedData);
+      
+      lastUploadedDataset = {
+        fileName: file.name,
+        parsedData: parsedData,
+        detectedSector: detectedSector
+      };
+      
+      runAutoBuilderAnalysis(file.name, parsedData);
+    };
+    reader.readAsText(file);
+  }
+
+  const btnRunLoadedAutobuilder = document.getElementById('btn-run-loaded-autobuilder');
+  if (btnRunLoadedAutobuilder) {
+    btnRunLoadedAutobuilder.addEventListener('click', () => {
+      if (lastUploadedDataset) {
+        runAutoBuilderAnalysis(lastUploadedDataset.fileName, lastUploadedDataset.parsedData);
+      }
+    });
+  }
+
+  const autobuilderSampleButtons = document.querySelectorAll('.btn-sample-autobuilder');
+  autobuilderSampleButtons.forEach(btn => {
+    btn.addEventListener('click', () => {
+      const datasetType = btn.getAttribute('data-dataset');
+      loadSampleAutoBuilderDataset(datasetType);
+    });
+  });
+
+  function loadSampleAutoBuilderDataset(type) {
+    let fileName = 'dataset.csv';
+    let columns = [];
+    let rowCount = 100;
+    
+    if (type === 'credit') {
+      fileName = 'kredi_tahmin.csv';
+      columns = ['cust_id', 'income', 'credit_score', 'dti', 'donation_type', 'approved'];
+      rowCount = 12500;
+    } else if (type === 'logistics') {
+      fileName = 'kurye_lojistik.csv';
+      columns = ['shipment_id', 'distance_km', 'traffic_density', 'package_load', 'delayed'];
+      rowCount = 8600;
+    } else if (type === 'retail') {
+      fileName = 'tekstil_retail.csv';
+      columns = ['customer_name', 'shopping_freq', 'basket_amount', 'discount_sensitivity', 'customer_class'];
+      rowCount = 14200;
+    } else if (type === 'food') {
+      fileName = 'restoran_siparis.csv';
+      columns = ['branch_id', 'order_qty', 'restaurant_rating', 'campaign_applied', 'concept', 'price'];
+      rowCount = 5400;
+    }
+
+    const parsedData = {
+      colCount: columns.length,
+      rowCount: rowCount,
+      columns: columns,
+      rows: null
+    };
+
+    const detectedSector = detectSectorAndBuildMetrics(parsedData);
+    lastUploadedDataset = {
+      fileName: fileName,
+      parsedData: parsedData,
+      detectedSector: detectedSector
+    };
+
+    runAutoBuilderAnalysis(fileName, parsedData);
+  }
+
+  function initAutoBuilderUploadParticles() {
+    const container = document.getElementById('autobuilder-particles');
+    if (!container) return;
+    container.innerHTML = '';
+    for (let i = 0; i < 20; i++) {
+      const p = document.createElement('div');
+      p.className = 'particle';
+      p.style.left = `${Math.random() * 100}%`;
+      p.style.animationDelay = `${Math.random() * 4}s`;
+      p.style.setProperty('--drift', `${(Math.random() - 0.5) * 40}px`);
+      container.appendChild(p);
+    }
+  }
+  initAutoBuilderUploadParticles();
+
+  function animateKPIValue(element, start, end, duration, formatFn) {
+    let startTimestamp = null;
+    const step = (timestamp) => {
+      if (!startTimestamp) startTimestamp = timestamp;
+      const progress = Math.min((timestamp - startTimestamp) / duration, 1);
+      const currentVal = progress * (end - start) + start;
+      element.textContent = formatFn ? formatFn(currentVal) : Math.round(currentVal);
+      if (progress < 1) {
+        window.requestAnimationFrame(step);
+      } else {
+        element.textContent = formatFn ? formatFn(end) : end;
+      }
+    };
+    window.requestAnimationFrame(step);
+  }
+
+  function runAutoBuilderAnalysis(fileName, parsedData) {
+    const uploadView = document.getElementById('autobuilder-upload-view');
+    const scanningView = document.getElementById('autobuilder-scanning-view');
+    const resultsView = document.getElementById('autobuilder-results-view');
+    const progressBar = document.getElementById('autobuilder-progress-bar');
+    const logsBox = document.getElementById('autobuilder-terminal-logs');
+
+    if (!uploadView || !scanningView || !resultsView || !progressBar || !logsBox) return;
+
+    if (autoBuilderLiveTickerInterval) clearInterval(autoBuilderLiveTickerInterval);
+    if (autoBuilderHeatmapInterval) clearInterval(autoBuilderHeatmapInterval);
+
+    uploadView.style.display = 'none';
+    scanningView.style.display = 'block';
+    resultsView.style.display = 'none';
+    progressBar.style.width = '0%';
+    logsBox.innerHTML = '';
+
+    const detectedSector = detectSectorAndBuildMetrics(parsedData);
+
+    const steps = [
+      `[AI ANALYST // CORE] Starting Autonomous Workspace Auto-Builder...`,
+      `[AI ANALYST // READ] Inspected columns: [${parsedData.columns.join(', ')}]`,
+      `[AI ANALYST // DETECT] Sector mapping complete: "${detectedSector.toUpperCase()}" dataset recognized.`,
+      `[AI ANALYST // KPIs] Auto-selecting top corporate health indicators...`,
+      `[AI ANALYST // CHARTS] Analyzing data distribution for optimal graph selection...`,
+      `  -> Sizing and matching coordinates for dynamic dashboard grid.`,
+      `[AI ANALYST // RISK] Compiling Palantir-style vulnerability matrices...`,
+      `[AI ANALYST // REPORT] Synthesizing board meeting brief summaries...`,
+      `[AI ANALYST // LAYOUT] Finalizing dashboard templates and interactive bindings.`,
+      `[AI ANALYST // DONE] Analytics workspace built successfully.`
+    ];
+
+    let currentStep = 0;
+    let progress = 0;
+
+    const progressInterval = setInterval(() => {
+      progress += 2;
+      progressBar.style.width = `${progress}%`;
+      if (progress >= 100) {
+        clearInterval(progressInterval);
+        setTimeout(() => {
+          scanningView.style.display = 'none';
+          resultsView.style.display = 'block';
+          buildWorkspaceLayout(detectedSector, parsedData);
+        }, 300);
+      }
+    }, 25);
+
+    const logsInterval = setInterval(() => {
+      if (currentStep < steps.length) {
+        const div = document.createElement('div');
+        div.style.marginBottom = '0.3rem';
+        div.style.fontSize = '0.8rem';
+        div.style.fontFamily = 'monospace';
+        div.textContent = steps[currentStep];
+        logsBox.appendChild(div);
+
+        let cursor = logsBox.querySelector('.terminal-cursor');
+        if (cursor) logsBox.appendChild(cursor);
+        else {
+          cursor = document.createElement('span');
+          cursor.className = 'terminal-cursor';
+          cursor.style.backgroundColor = 'var(--secondary)';
+          logsBox.appendChild(cursor);
+        }
+
+        logsBox.scrollTop = logsBox.scrollHeight;
+        currentStep++;
+      } else {
+        clearInterval(logsInterval);
+      }
+    }, 120);
+  }
+
+  function buildWorkspaceLayout(sector, parsedData) {
+    const kpisRow = document.getElementById('autobuilder-kpi-row');
+    const chartTitle = document.getElementById('autobuilder-chart-title');
+    const chartTypeBadge = document.getElementById('autobuilder-chart-type-badge');
+    const chartCanvasArea = document.getElementById('autobuilder-chart-canvas-area');
+    const chartExplanation = document.getElementById('autobuilder-chart-explanation');
+    const reportContent = document.getElementById('autobuilder-report-content');
+    const workspaceTitle = document.getElementById('autobuilder-workspace-title');
+    const detectedBadge = document.getElementById('autobuilder-detected-badge');
+
+    if (!kpisRow || !chartTitle || !chartTypeBadge || !chartCanvasArea || !chartExplanation || !reportContent || !workspaceTitle || !detectedBadge) return;
+
+    const sectorName = sectorLabelsCard[currentLang][sector] || sector;
+    workspaceTitle.textContent = `${currentCompany.toUpperCase()} Workspace`;
+    detectedBadge.textContent = sectorName;
+
+    kpisRow.innerHTML = '';
+    let kpis = [];
+    if (sector === 'vakif') {
+      kpis = [
+        { label: currentLang === 'tr' ? 'Toplam Portföy Hacmi' : 'Total Portfolio Value', value: 12800000, start: 5000000, fmt: v => `$${(v/1000000).toFixed(1)}M`, trend: '+14%', trendClass: 'up', glow: 'glow-primary' },
+        { label: currentLang === 'tr' ? 'Müşteri Kayıp Olasılığı' : 'Predicted Churn Prob.', value: 12.4, start: 0, fmt: v => `%${v.toFixed(1)}`, trend: '-2.4%', trendClass: 'down', glow: 'glow-secondary' },
+        { label: currentLang === 'tr' ? 'Ort. Kredi Skoru' : 'Avg Credit Score', value: 710, start: 500, fmt: v => Math.round(v), trend: '+12', trendClass: 'up', glow: 'glow-primary' },
+        { label: currentLang === 'tr' ? 'Toplam Operasyonel Risk' : 'Total Operational Risk', value: 18.2, start: 0, fmt: v => `%${v.toFixed(1)}`, trend: '-1.8%', trendClass: 'down', glow: 'glow-secondary' }
+      ];
+    } else if (sector === 'lojistik') {
+      kpis = [
+        { label: currentLang === 'tr' ? 'Rota Instabilite Endeksi' : 'Route Instability Index', value: 42.0, start: 0, fmt: v => `%${v.toFixed(1)}`, trend: '+4.5%', trendClass: 'up', glow: 'glow-danger' },
+        { label: currentLang === 'tr' ? 'Toplam Lojistik Yükü' : 'Total Logistics Load', value: 8600, start: 1000, fmt: v => `${Math.round(v).toLocaleString()} kg`, trend: '+12%', trendClass: 'up', glow: 'glow-primary' },
+        { label: currentLang === 'tr' ? 'Ort. Teslimat Gecikmesi' : 'Mean Delay Duration', value: 38, start: 0, fmt: v => `${Math.round(v)} dk`, trend: '-8dk', trendClass: 'down', glow: 'glow-secondary' },
+        { label: currentLang === 'tr' ? 'Teslimat Gecikme Endeksi' : 'Delivery Delay Index', value: 24.5, start: 0, fmt: v => `%${v.toFixed(1)}`, trend: '-3.2%', trendClass: 'down', glow: 'glow-secondary' }
+      ];
+    } else if (sector === 'tekstil') {
+      kpis = [
+        { label: currentLang === 'tr' ? 'Brüt Sepet Tutarı' : 'Gross Basket Value', value: 1420, start: 200, fmt: v => `${Math.round(v)} TRY`, trend: '+18%', trendClass: 'up', glow: 'glow-primary' },
+        { label: currentLang === 'tr' ? 'VIP Müşteri Payı' : 'Premium Buyer Share', value: 32.4, start: 0, fmt: v => `%${v.toFixed(1)}`, trend: '+2.8%', trendClass: 'up', glow: 'glow-primary' },
+        { label: currentLang === 'tr' ? 'Promosyon Esnekliği' : 'Promo Elasticity', value: 18.6, start: 0, fmt: v => `%${v.toFixed(1)}`, trend: '-1.2%', trendClass: 'down', glow: 'glow-secondary' },
+        { label: currentLang === 'tr' ? 'Stok Dengesizlik Riski' : 'Inventory Skew Risk', value: 15.8, start: 0, fmt: v => `%${v.toFixed(1)}`, trend: '-4.6%', trendClass: 'down', glow: 'glow-secondary' }
+      ];
+    } else if (sector === 'gida') {
+      kpis = [
+        { label: currentLang === 'tr' ? 'Sipariş Hızı (Saatlik)' : 'Order Velocity index', value: 280, start: 50, fmt: v => `${Math.round(v)}/saat`, trend: '+35%', trendClass: 'up', glow: 'glow-primary' },
+        { label: currentLang === 'tr' ? 'Gurme Konsept Oranı' : 'Gourmet Premium Share', value: 42.5, start: 0, fmt: v => `%${v.toFixed(1)}`, trend: '+8.4%', trendClass: 'up', glow: 'glow-primary' },
+        { label: currentLang === 'tr' ? 'Kampanya Satış Katkısı' : 'Campaign Sales Uplift', value: 24.0, start: 0, fmt: v => `%${v.toFixed(1)}`, trend: '+3.6%', trendClass: 'up', glow: 'glow-primary' },
+        { label: currentLang === 'tr' ? 'Fiyat Oynaklık Endeksi' : 'Price Volatility Index', value: 12.8, start: 0, fmt: v => `%${v.toFixed(1)}`, trend: '-1.4%', trendClass: 'down', glow: 'glow-secondary' }
+      ];
+    } else {
+      kpis = [
+        { label: currentLang === 'tr' ? 'Toplam Veri Satırı' : 'Total Rows Count', value: parsedData.rowCount || 100, start: 0, fmt: v => Math.round(v).toLocaleString(), trend: 'Stable', trendClass: 'up', glow: 'glow-primary' },
+        { label: currentLang === 'tr' ? 'Sütun Boyutu' : 'Features Dimension', value: parsedData.colCount || 5, start: 0, fmt: v => Math.round(v), trend: 'Fixed', trendClass: 'up', glow: 'glow-primary' },
+        { label: currentLang === 'tr' ? 'Veri Tutarlılığı' : 'Data Integrity Score', value: 98.4, start: 50, fmt: v => `%${v.toFixed(1)}`, trend: '+1.2%', trendClass: 'up', glow: 'glow-primary' },
+        { label: currentLang === 'tr' ? 'Genel Risk Kırılganlığı' : 'Unmapped Risk Level', value: 10.2, start: 0, fmt: v => `%${v.toFixed(1)}`, trend: '-0.8%', trendClass: 'down', glow: 'glow-secondary' }
+      ];
+    }
+
+    kpis.forEach(k => {
+      const card = document.createElement('div');
+      card.className = `autobuilder-kpi-card ${k.glow}`;
+      
+      const arrow = k.trendClass === 'up' 
+        ? `<span style="color:#10b981; font-weight:bold;">↑</span>` 
+        : `<span style="color:#ef4444; font-weight:bold;">↓</span>`;
+      const trendColor = k.trendClass === 'up' ? '#10b981' : '#ef4444';
+
+      card.innerHTML = `
+        <div style="font-size: 0.72rem; text-transform: uppercase; color: var(--text-secondary); font-weight: 700; letter-spacing: 0.05em; margin-bottom: 0.5rem;">${k.label}</div>
+        <div style="font-size: 1.6rem; font-weight: 800; color: #fff; margin-bottom: 0.3rem;" class="kpi-value-el">-</div>
+        <div style="font-size: 0.74rem; display: flex; justify-content: space-between; align-items: center;">
+          <span style="color: ${trendColor}; font-weight: 500;">${arrow} ${k.trend}</span>
+          <span style="color: rgba(255,255,255,0.25); font-size: 0.65rem;">Confidence: 98%</span>
+        </div>
+      `;
+
+      kpisRow.appendChild(card);
+      
+      const valueEl = card.querySelector('.kpi-value-el');
+      if (valueEl) {
+        animateKPIValue(valueEl, k.start, k.value, 1500, k.fmt);
+      }
+    });
+
+    chartCanvasArea.innerHTML = '';
+    if (sector === 'vakif') {
+      chartTitle.textContent = currentLang === 'tr' ? 'Sektörel Risk & Bağış Dağılım Profili' : 'Donor Risk & Contribution Profile';
+      chartTypeBadge.textContent = 'Radar Chart';
+      chartExplanation.textContent = currentLang === 'tr'
+        ? 'Boyutsal ölçeği bozmadan beş ayrı risk faktörünün (sadakat, frekans, bağış limiti, borç oranı, işlem tutarı) bağıntısını en objektif özetleyen Çok Boyutlu Radar (Radar) grafik seçilmiştir.'
+        : 'A Multi-dimensional Radar chart is selected because it evaluates the non-linear relationship of five separate risk profiles (loyalty, liquidity, credit rating, scale, frequency) without distorting dimensional scale.';
+      
+      chartCanvasArea.innerHTML = `
+        <svg viewBox="0 0 100 100" style="width: 100%; height: 100%; max-height: 250px;">
+          <circle cx="50" cy="50" r="40" fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="0.5"/>
+          <circle cx="50" cy="50" r="30" fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="0.5"/>
+          <circle cx="50" cy="50" r="20" fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="0.5"/>
+          <circle cx="50" cy="50" r="10" fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="0.5"/>
+          
+          <line x1="50" y1="10" x2="50" y2="90" stroke="rgba(255,255,255,0.06)" stroke-width="0.5"/>
+          <line x1="10" y1="50" x2="90" y2="50" stroke="rgba(255,255,255,0.06)" stroke-width="0.5"/>
+          
+          <text x="50" y="8" font-size="3" fill="var(--text-secondary)" text-anchor="middle">${currentLang === 'tr' ? 'Sadakat' : 'Loyalty'}</text>
+          <text x="92" y="52" font-size="3" fill="var(--text-secondary)" text-anchor="start">${currentLang === 'tr' ? 'Frekans' : 'Frequency'}</text>
+          <text x="50" y="94" font-size="3" fill="var(--text-secondary)" text-anchor="middle">${currentLang === 'tr' ? 'Limit' : 'Limit'}</text>
+          <text x="8" y="52" font-size="3" fill="var(--text-secondary)" text-anchor="end">${currentLang === 'tr' ? 'Borç Risk' : 'Debt Risk'}</text>
+          
+          <polygon points="50,22 82,50 50,78 26,50" fill="rgba(37, 99, 235, 0.25)" stroke="var(--primary)" stroke-width="1" style="filter: drop-shadow(0 0 6px var(--primary-glow));"/>
+        </svg>
+      `;
+    } else if (sector === 'lojistik') {
+      chartTitle.textContent = currentLang === 'tr' ? 'Mesafe Bazlı Gecikme Zaman Serisi' : 'Distance vs Delay Time Cohorts';
+      chartTypeBadge.textContent = 'Line Chart';
+      chartExplanation.textContent = currentLang === 'tr'
+        ? 'Kurye rotalarındaki dönemsel gecikme sürelerini, mesafe kırılımları üzerinden kronolojik bir trend olarak izlemeyi sağlayan Zaman Serisi Çizgi (Line) grafiği eşleştirilmiştir.'
+        : 'A Line chart is chosen here to visualize delay latency changes over time cohorts, highlighting seasonal route stress and tracking mean route travel time patterns across shipment batches.';
+
+      chartCanvasArea.innerHTML = `
+        <svg viewBox="0 0 120 60" style="width: 100%; height: 100%; max-height: 250px;">
+          <line x1="10" y1="10" x2="110" y2="10" stroke="rgba(255,255,255,0.04)" stroke-width="0.5"/>
+          <line x1="10" y1="25" x2="110" y2="25" stroke="rgba(255,255,255,0.04)" stroke-width="0.5"/>
+          <line x1="10" y1="40" x2="110" y2="40" stroke="rgba(255,255,255,0.04)" stroke-width="0.5"/>
+          <line x1="10" y1="50" x2="110" y2="50" stroke="rgba(255,255,255,0.1)" stroke-width="0.5"/>
+          
+          <polyline points="10,42 30,22 50,38 70,18 90,44 110,25" fill="none" stroke="var(--secondary)" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" style="filter: drop-shadow(0 0 4px var(--secondary-glow));"/>
+          
+          <circle cx="10" cy="42" r="1.5" fill="var(--secondary)"/>
+          <circle cx="30" cy="22" r="1.5" fill="var(--secondary)"/>
+          <circle cx="50" cy="38" r="1.5" fill="var(--secondary)"/>
+          <circle cx="70" cy="18" r="1.5" fill="var(--secondary)"/>
+          <circle cx="90" cy="44" r="1.5" fill="var(--secondary)"/>
+          <circle cx="110" cy="25" r="1.5" fill="var(--secondary)"/>
+        </svg>
+      `;
+    } else if (sector === 'tekstil') {
+      chartTitle.textContent = currentLang === 'tr' ? 'Müşteri Değer & İndirim Hassasiyet Kümelemesi' : 'Discount Sensitivity vs Spend Clustering';
+      chartTypeBadge.textContent = 'Scatter Plot';
+      chartExplanation.textContent = currentLang === 'tr'
+        ? 'VIP ve indirim odaklı müşteri kitlelerinin sepet tutarları ve promosyon kodlarına verdikleri tepkileri geometrik olarak kümelemek için Serpilme (Scatter) diyagramı üretilmiştir.'
+        : 'A Scatter plot is matched to this customer cohort data to illustrate the clustering of high-value shoppers based on basket sizes relative to discount sensitivities.';
+
+      chartCanvasArea.innerHTML = `
+        <svg viewBox="0 0 100 60" style="width: 100%; height: 100%; max-height: 250px;">
+          <line x1="15" y1="50" x2="90" y2="50" stroke="rgba(255,255,255,0.1)" stroke-width="0.5"/>
+          <line x1="15" y1="10" x2="15" y2="50" stroke="rgba(255,255,255,0.1)" stroke-width="0.5"/>
+          
+          <circle cx="30" cy="42" r="2" fill="rgba(16, 185, 129, 0.4)"/>
+          <circle cx="35" cy="38" r="2.2" fill="rgba(16, 185, 129, 0.5)"/>
+          <circle cx="42" cy="45" r="2" fill="rgba(16, 185, 129, 0.3)"/>
+          
+          <circle cx="70" cy="22" r="2.5" fill="rgba(239, 68, 68, 0.6)"/>
+          <circle cx="75" cy="18" r="2" fill="rgba(239, 68, 68, 0.7)"/>
+          <circle cx="65" cy="25" r="2.3" fill="rgba(239, 68, 68, 0.5)"/>
+          
+          <circle cx="50" cy="30" r="2" fill="rgba(14, 165, 233, 0.5)"/>
+          <circle cx="55" cy="33" r="2" fill="rgba(14, 165, 233, 0.4)"/>
+          <circle cx="48" cy="28" r="2" fill="rgba(14, 165, 233, 0.3)"/>
+        </svg>
+      `;
+    } else if (sector === 'gida') {
+      chartTitle.textContent = currentLang === 'tr' ? 'Konsept Bazlı Sipariş / Kampanya Kıyaslaması' : 'Restaurant Orders & Campaign Elasticity';
+      chartTypeBadge.textContent = 'Bar Chart';
+      chartExplanation.textContent = currentLang === 'tr'
+        ? 'Restoran şubelerinin konseptlerine göre sipariş adedi değişimlerini ve kampanya geri dönüşlerini ayrık olarak kıyaslayan Gruplu Sütun (Bar) grafik seçilmiştir.'
+        : 'An grouped vertical Bar chart is selected to show average transaction values across gourmet vs express concepts, allowing quick comparison of campaign margins.';
+
+      chartCanvasArea.innerHTML = `
+        <svg viewBox="0 0 120 60" style="width: 100%; height: 100%; max-height: 250px;">
+          <line x1="10" y1="50" x2="110" y2="50" stroke="rgba(255,255,255,0.1)" stroke-width="0.5"/>
+          
+          <rect x="20" y="25" width="8" height="25" fill="var(--primary)" rx="2"/>
+          <rect x="40" y="15" width="8" height="35" fill="var(--secondary)" rx="2"/>
+          <rect x="60" y="32" width="8" height="18" fill="var(--primary)" rx="2"/>
+          <rect x="80" y="8" width="8" height="42" fill="var(--secondary)" rx="2"/>
+          <rect x="100" y="20" width="8" height="30" fill="var(--primary)" rx="2"/>
+        </svg>
+      `;
+    } else {
+      chartTitle.textContent = currentLang === 'tr' ? 'Genel Veri Dağılım Çizgisi' : 'General Distribution Curve';
+      chartTypeBadge.textContent = 'Line Chart';
+      chartExplanation.textContent = currentLang === 'tr'
+        ? 'Veri kümesi öznitelik varyans trendini sıralı gözlemler bazında haritalandıran çizgi grafik seçilmiştir.'
+        : 'A standard Line chart is chosen to map data index progression over features variance.';
+
+      chartCanvasArea.innerHTML = `
+        <svg viewBox="0 0 120 60" style="width: 100%; height: 100%; max-height: 250px;">
+          <line x1="10" y1="50" x2="110" y2="50" stroke="rgba(255,255,255,0.1)" stroke-width="0.5"/>
+          <polyline points="10,30 30,15 50,45 70,12 90,28 110,40" fill="none" stroke="var(--primary)" stroke-width="1.2" stroke-linecap="round"/>
+        </svg>
+      `;
+    }
+
+    buildRiskHeatmap(sector);
+
+    const ticker = document.getElementById('autobuilder-ticker-stream');
+    if (ticker) {
+      ticker.innerHTML = '';
+      const initialAlerts = getInitialStreamAlerts(sector);
+      initialAlerts.forEach(alert => {
+        const line = document.createElement('div');
+        line.className = `ticker-line ${alert.high ? 'alert-high' : ''}`;
+        line.innerHTML = `
+          <span class="ticker-time">[${alert.time}]</span>
+          <span class="ticker-body">${alert.text}</span>
+        `;
+        ticker.appendChild(line);
+      });
+      ticker.scrollTop = ticker.scrollHeight;
+
+      autoBuilderLiveTickerInterval = setInterval(() => {
+        const now = new Date();
+        const timeStr = now.toTimeString().split(' ')[0];
+        const newAlert = getRandomStreamAlert(sector);
+        
+        const line = document.createElement('div');
+        line.className = `ticker-line ${newAlert.high ? 'alert-high' : ''}`;
+        line.innerHTML = `
+          <span class="ticker-time">[${timeStr}]</span>
+          <span class="ticker-body">${newAlert.text}</span>
+        `;
+        ticker.appendChild(line);
+        
+        const lines = ticker.querySelectorAll('.ticker-line');
+        if (lines.length > 15) {
+          lines[0].remove();
+        }
+        ticker.scrollTop = ticker.scrollHeight;
+      }, 3500);
+    }
+
+    reportContent.innerHTML = '';
+    const reportList = getExecutiveReportBriefing(sector);
+    reportList.forEach(reportItem => {
+      const p = document.createElement('div');
+      p.style.display = 'flex';
+      p.style.gap = '0.6rem';
+      p.style.alignItems = 'flex-start';
+      p.innerHTML = `
+        <span style="color:${reportItem.color}; font-weight:bold;">${reportItem.icon}</span>
+        <div>
+          <strong style="color:#fff;">${reportItem.title}:</strong>
+          <span style="font-size:0.78rem;">${reportItem.desc}</span>
+        </div>
+      `;
+      reportContent.appendChild(p);
+    });
+
+    applyAutoBuilderLayout(autoBuilderActiveLayout);
+  }
+
+  function buildRiskHeatmap(sector) {
+    const gridBox = document.getElementById('autobuilder-heatmap-grid-box');
+    if (!gridBox) return;
+    gridBox.innerHTML = '';
+
+    const rows = currentLang === 'tr' 
+      ? ['Satış / Rev', 'Süreç / Ops', 'Sistem / IT', 'Kanal / Loj', 'Güvenlik / Sec']
+      : ['Sales & Rev', 'Process / Ops', 'Systems & IT', 'Lanes / Log', 'Cyber / Sec'];
+
+    rows.forEach((rowName, rIdx) => {
+      const rowLabel = document.createElement('div');
+      rowLabel.style.fontSize = '0.72rem';
+      rowLabel.style.color = 'var(--text-secondary)';
+      rowLabel.style.fontWeight = '700';
+      rowLabel.textContent = rowName;
+      gridBox.appendChild(rowLabel);
+
+      const cellsWrapper = document.createElement('div');
+      cellsWrapper.style.display = 'grid';
+      cellsWrapper.style.gridTemplateColumns = 'repeat(5, 1fr)';
+      cellsWrapper.style.gap = '0.4rem';
+
+      for (let cIdx = 0; cIdx < 5; cIdx++) {
+        const cell = document.createElement('div');
+        let initialLevel = Math.floor(Math.random() * 3);
+        if (rIdx === 1 && cIdx === 2) initialLevel = 4;
+        if (rIdx === 4 && cIdx === 4) initialLevel = 3;
+
+        cell.className = `heatmap-cell level-${initialLevel}`;
+        cell.setAttribute('data-row', rIdx);
+        cell.setAttribute('data-col', cIdx);
+        
+        const tooltipText = currentLang === 'tr'
+          ? `Birim: ${rowName}, Segment: ${cIdx+1}, Risk Seviyesi: ${initialLevel}`
+          : `Unit: ${rowName}, Node: ${cIdx+1}, Risk Level: ${initialLevel}`;
+        cell.setAttribute('title', tooltipText);
+
+        cellsWrapper.appendChild(cell);
+      }
+      gridBox.appendChild(cellsWrapper);
+    });
+
+    autoBuilderHeatmapInterval = setInterval(() => {
+      const cells = gridBox.querySelectorAll('.heatmap-cell');
+      if (cells.length === 0) return;
+      
+      for (let i = 0; i < 2; i++) {
+        const randCell = cells[Math.floor(Math.random() * cells.length)];
+        let currentLvl = parseInt(randCell.className.match(/level-(\d)/)[1]);
+        
+        let shift = Math.random() > 0.5 ? 1 : -1;
+        let newLvl = currentLvl + shift;
+        if (newLvl < 0) newLvl = 0;
+        if (newLvl > 4) newLvl = 4;
+
+        randCell.className = `heatmap-cell level-${newLvl}`;
+        const rowName = rows[parseInt(randCell.getAttribute('data-row'))];
+        const cIdx = parseInt(randCell.getAttribute('data-col')) + 1;
+        
+        const tooltipText = currentLang === 'tr'
+          ? `Birim: ${rowName}, Segment: ${cIdx}, Risk Seviyesi: ${newLvl}`
+          : `Unit: ${rowName}, Node: ${cIdx}, Risk Level: ${newLvl}`;
+        randCell.setAttribute('title', tooltipText);
+      }
+    }, 2000);
+  }
+
+  function getInitialStreamAlerts(sector) {
+    const alerts = [];
+    const now = new Date();
+    
+    const minutesSub = [15, 10, 6, 2];
+    const rawAlerts = getAlertTemplates(sector);
+
+    for (let i = 0; i < 4; i++) {
+      const time = new Date(now.getTime() - minutesSub[i] * 60 * 1000);
+      const timeStr = time.toTimeString().split(' ')[0];
+      alerts.push({
+        time: timeStr,
+        text: rawAlerts[i % rawAlerts.length].text,
+        high: rawAlerts[i % rawAlerts.length].high
+      });
+    }
+    return alerts;
+  }
+
+  function getRandomStreamAlert(sector) {
+    const rawAlerts = getAlertTemplates(sector);
+    const selected = rawAlerts[Math.floor(Math.random() * rawAlerts.length)];
+    return selected;
+  }
+
+  function getAlertTemplates(sector) {
+    if (sector === 'vakif') {
+      return [
+        { text: currentLang === 'tr' ? 'Kayıp riski yüksek bağışçılar segmentinde hareketlilik saptandı.' : 'Activity detected in high churn risk donor segment.', high: true },
+        { text: currentLang === 'tr' ? 'DTI borç oranı %40 seviyesini aşan bağışçılardan iptal bildirimi geldi.' : 'Cancellation alerts received from donors with DTI ratio >40%.', high: true },
+        { text: currentLang === 'tr' ? 'Finansal tahmin modelleri %98.4 güven derecesiyle stabil duruma geçti.' : 'Financial forecast models stabilized with 98.4% confidence score.', high: false },
+        { text: currentLang === 'tr' ? 'Bölge 4 bağış katılım hacminde %12 oranında artış kaydedildi.' : '12% uplift recorded in Area 4 donation attendance volumes.', high: false },
+        { text: currentLang === 'tr' ? 'Yapay zeka portföy tahminlerinde gürültü filtresini güncelledi.' : 'AI updated noise filters in portfolio prediction pipelines.', high: false }
+      ];
+    } else if (sector === 'lojistik') {
+      return [
+        { text: currentLang === 'tr' ? 'Bölge 3 kurye trafik yoğunluğu Level 4 limitini aşarak gecikmeyi tetikledi.' : 'Zone 3 traffic density exceeded Level 4 limits, triggering delay alerts.', high: true },
+        { text: currentLang === 'tr' ? '25kg ağırlığı aşan paket teslimatlarında rota instability uyarısı.' : 'Route instability warnings in package deliveries exceeding 25kg.', high: true },
+        { text: currentLang === 'tr' ? 'Lojistik teslimat süreleri ortalaması 38 dakikaya geriledi (Favorable).' : 'Logistics average delivery duration dropped to 38 mins (Favorable).', high: false },
+        { text: currentLang === 'tr' ? 'Uzun mesafe rotalarında (>200km) AI otonom buffer pencereleri atandı.' : 'AI autonomously assigned buffer windows to long routes (>200km).', high: false },
+        { text: currentLang === 'tr' ? 'Kurye performans takip matrisi başarıyla güncellendi.' : 'Courier performance tracker metrics compiled successfully.', high: false }
+      ];
+    } else if (sector === 'tekstil') {
+      return [
+        { text: currentLang === 'tr' ? 'VIP Müşterilerin alışveriş sıklıklarında %14 daralma eğilimi gözlendi.' : '14% drop tendency observed in shopping frequencies of VIP cohort.', high: true },
+        { text: currentLang === 'tr' ? 'Promosyon kodları hassasiyet anomalisi: Sepet marjı %12 aşındı.' : 'Promo code sensitivity anomaly: Gross basket margin eroded by 12%.', high: true },
+        { text: currentLang === 'tr' ? 'Müşteri segmentasyon küme sınırları K-NN tarafından yeniden çizildi.' : 'Customer segmentation cluster bounds re-calculated by K-NN model.', high: false },
+        { text: currentLang === 'tr' ? 'Sepet tutarı 1500 TL üzeri alıcılarda sadakat oranı yükseldi.' : 'Loyalty ratios peaked in buyers with basket sizes > 1500 TRY.', high: false }
+      ];
+    } else if (sector === 'food') {
+      return [
+        { text: currentLang === 'tr' ? 'Restoran şube puanı 4.2 altına inen lokasyonda sipariş kaybı riski.' : 'Order loss risk in location dropping rating below 4.2 stars.', high: true },
+        { text: currentLang === 'tr' ? 'Express şubelerde fiyat artışı sonrası sipariş adedinde %15 daralma.' : '15% drop in orders after price increments on Express branches.', high: true },
+        { text: currentLang === 'tr' ? 'Gurme konseptli şubelerde fiyat esnekliği stabil konumda.' : 'Price elasticity remains stable on Gourmet concept branches.', high: false },
+        { text: currentLang === 'tr' ? 'Kampanya bazlı sipariş artışı sepet tutarını %24 oranında genişletti.' : 'Campaign-driven orders expanded average ticket size by 24%.', high: false }
+      ];
+    } else {
+      return [
+        { text: currentLang === 'tr' ? 'Veri kümesi anomalisi: Uç değerler saptandı.' : 'Dataset anomaly: Extreme outliers detected.', high: true },
+        { text: currentLang === 'tr' ? 'Yapay zeka otonom grafik haritalamayı başarıyla sonlandırdı.' : 'AI successfully completed autonomous dashboard rendering loops.', high: false }
+      ];
+    }
+  }
+
+  function getExecutiveReportBriefing(sector) {
+    if (sector === 'vakif') {
+      return [
+        { title: currentLang === 'tr' ? 'Yönetici Özeti' : 'Executive Summary', desc: currentLang === 'tr' ? 'Finansal bağışçı yapısı stabil olmakla beraber borç-gelir (DTI) oranları yükselen kitlelerde kayıp riskleri izlenmektedir.' : 'While donor levels are stable, high churn risks are monitored in cohorts with expanding DTI liabilities.', icon: '📋', color: 'var(--primary)' },
+        { title: currentLang === 'tr' ? 'Stratejik Uyarı' : 'Business Warning', desc: currentLang === 'tr' ? 'Kredi skoru 600 altında kalan bağışçıların katılım sıklıkları düşüştedir. Bu gruba yönelik esnek planlar sunulmalı.' : 'Attendance rates of donors with credit scores below 600 show deterioration. Flexible targets should be defined.', icon: '⚠️', color: '#f97316' },
+        { title: currentLang === 'tr' ? 'Risk Tahmini' : 'Predicted Risks', desc: currentLang === 'tr' ? 'Gelecek çeyrekte DTI oranları artmaya devam ederse toplam portföy sadakat seviyesinde %5.4 kayıp yaşanabilir.' : 'If DTI liabilities keep climbing, overall portfolio loyalty score may drop by 5.4% in the next quarter.', icon: '🔮', color: '#ef4444' }
+      ];
+    } else if (sector === 'lojistik') {
+      return [
+        { title: currentLang === 'tr' ? 'Operasyonel Rapor' : 'Operational Summary', desc: currentLang === 'tr' ? 'Rota uzunluğu 150 km üzerine çıkan bölgelerde kargo teslimat gecikme riskleri %28 sıçrama yapmıştır.' : 'Delivery latency risks jump by 28% in routes exceeding 150 km. Dynamic buffer allocation is required.', icon: '🚚', color: 'var(--secondary)' },
+        { title: currentLang === 'tr' ? 'Kritik Eşik' : 'Critical Buffer', desc: currentLang === 'tr' ? 'Paket yükü 20 kg üzerine çıktığında kuryelerin hız katsayıları düşmekte ve teslim süresi ortalama 18 dakika aşınmaktadır.' : 'Package loads above 20kg drop courier speeds, causing an average of 18 minutes shipment delays.', icon: '⚠️', color: '#f97316' },
+        { title: currentLang === 'tr' ? 'Gelecek Tahmini' : 'Opportunity Scan', desc: currentLang === 'tr' ? 'Trafik yoğunluğu 4. seviye olan bölgelerde akıllı otonom kurye atama modeline geçiş teslimat performansını %15 iyileştirecektir.' : 'Switching to smart dynamic courier assignment in Level 4 traffic zones will recover delivery performance by 15%.', icon: '💡', color: '#10b981' }
+      ];
+    } else if (sector === 'tekstil') {
+      return [
+        { title: currentLang === 'tr' ? 'Ticari Özet' : 'Commercial Summary', desc: currentLang === 'tr' ? 'VIP müşteri segmenti cironun %62sini üretmekle beraber sadakat sıklıklarında %14 daralma gözlenmiştir.' : 'While VIP cohort produces 62% of gross revenue, loyalty visit frequency has dropped by 14%.', icon: '🛍️', color: 'var(--primary)' },
+        { title: currentLang === 'tr' ? 'Marj Uyarısı' : 'Margin Warning', desc: currentLang === 'tr' ? 'İndirim duyarlılığı yüksek alıcıların promosyon dışı dönemlerde çekilmesi marj daralması riski yaratmaktadır.' : 'High discount-sensitive buyers withdrawing during non-promo periods creates margin erosion risks.', icon: '⚠️', color: '#f97316' },
+        { title: currentLang === 'tr' ? 'Eylem Önerisi' : 'Opportunity Action', desc: currentLang === 'tr' ? 'Sepet tutarı 1500 TL üzeri sadık müşterilere yönelik puan bazlı geri kazanım senaryosu kurgulanmalı.' : 'Implement point-based loyalty recovery scenarios targeting buyers with baskets exceeding 1500 TRY.', icon: '💡', color: '#10b981' }
+      ];
+    } else if (sector === 'food') {
+      return [
+        { title: currentLang === 'tr' ? 'Restoran Raporu' : 'Restaurant Summary', desc: currentLang === 'tr' ? 'Kampanya entegrasyonu sepet boyutlarını %24 büyütmektedir. Express şubeler fiyat artışlarına aşırı duyarlıdır.' : 'Active campaigns expand tickets by 24%. Express concepts show high sensitivity to price hikes.', icon: '🍕', color: 'var(--secondary)' },
+        { title: currentLang === 'tr' ? 'Şube Uyarısı' : 'Location Alert', desc: currentLang === 'tr' ? 'Rating derecesi 4.2 altına düşen restoranlarda haftalık sipariş kaybı riski %18 düzeyindedir.' : 'Branches dropping below 4.2 stars ratings represent an immediate 18% weekly order volume loss risk.', icon: '⚠️', color: '#f97316' },
+        { title: currentLang === 'tr' ? 'Öngörülen Çözüm' : 'AI Recommendation', desc: currentLang === 'tr' ? 'Express şubelerde fiyat artışı yerine miktar indirimleri (bundle) yapılması sipariş akışını koruyacaktır.' : 'Deploying quantity bundles rather than direct pricing hikes on Express branches will protect order flow.', icon: '💡', color: '#10b981' }
+      ];
+    } else {
+      return [
+        { title: currentLang === 'tr' ? 'Genel Özet' : 'General Summary', desc: currentLang === 'tr' ? 'Veri kümesi şeması ve dağılım oranları sistem tarafından otonom olarak görselleştirilmiştir.' : 'Dataset structure and target distributions mapped dynamically by AI Auto-Builder.', icon: '📋', color: 'var(--primary)' },
+        { title: currentLang === 'tr' ? 'AI Tavsiyesi' : 'AI Recommendation', desc: currentLang === 'tr' ? 'Verilerdeki anomalileri temizleyip AutoML modellerini yeniden eğitmeyi düşünebilirsiniz.' : 'Impute missing values and re-run AutoML model fitting to optimize accuracy boundaries.', icon: '💡', color: '#10b981' }
+      ];
+    }
+  }
+
+  function applyAutoBuilderLayout(layout) {
+    autoBuilderActiveLayout = layout;
+    const chartCard = document.getElementById('autobuilder-chart-container');
+    const heatmapCard = document.getElementById('autobuilder-heatmap-container');
+    const insightsCard = document.getElementById('autobuilder-insights-container');
+    const reportCard = document.getElementById('autobuilder-report-container');
+
+    if (!chartCard || !heatmapCard || !insightsCard || !reportCard) return;
+
+    chartCard.style.gridColumn = '';
+    heatmapCard.style.gridColumn = '';
+    insightsCard.style.gridColumn = '';
+    reportCard.style.gridColumn = '';
+    chartCard.style.display = 'flex';
+    heatmapCard.style.display = 'block';
+    insightsCard.style.display = 'block';
+    reportCard.style.display = 'block';
+
+    if (layout === 'executive') {
+      chartCard.style.gridColumn = 'span 2';
+      heatmapCard.style.display = 'none';
+      insightsCard.style.gridColumn = 'span 1';
+      reportCard.style.gridColumn = 'span 1';
+    } else if (layout === 'operational') {
+      chartCard.style.display = 'none';
+      heatmapCard.style.gridColumn = 'span 2';
+      insightsCard.style.gridColumn = 'span 1';
+      reportCard.style.gridColumn = 'span 1';
+    } else if (layout === 'forensic') {
+      chartCard.style.gridColumn = 'span 1';
+      heatmapCard.style.gridColumn = 'span 1';
+      insightsCard.style.display = 'none';
+      reportCard.style.display = 'none';
+    }
+  }
+
+  const layoutButtons = document.querySelectorAll('.layout-selectors .btn-layout');
+  layoutButtons.forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      layoutButtons.forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      const targetLayout = btn.getAttribute('data-layout');
+      applyAutoBuilderLayout(targetLayout);
+    });
+  });
+
+  const btnReanalyzeAutoBuilder = document.getElementById('btn-reanalyze-autobuilder');
+  if (btnReanalyzeAutoBuilder) {
+    btnReanalyzeAutoBuilder.addEventListener('click', () => {
+      document.getElementById('autobuilder-upload-view').style.display = 'block';
+      document.getElementById('autobuilder-scanning-view').style.display = 'none';
+      document.getElementById('autobuilder-results-view').style.display = 'none';
+      if (autobuilderFileInput) autobuilderFileInput.value = '';
+      if (autoBuilderLiveTickerInterval) clearInterval(autoBuilderLiveTickerInterval);
+      if (autoBuilderHeatmapInterval) clearInterval(autoBuilderHeatmapInterval);
+      updateAutoBuilderSharedState();
+    });
+  }
+
+  const btnDownloadAutoBuilderReport = document.getElementById('btn-download-autobuilder-report');
+  if (btnDownloadAutoBuilderReport) {
+    btnDownloadAutoBuilderReport.addEventListener('click', () => {
+      if (!lastUploadedDataset) return;
+      
+      const { jsPDF } = window.jspdf || {};
+      if (!jsPDF) {
+        alert(currentLang === 'tr' ? 'jsPDF kütüphanesi yüklenemedi!' : 'jsPDF library not loaded!');
+        return;
+      }
+
+      const doc = new jsPDF();
+      const sectorKey = lastUploadedDataset.detectedSector;
+      const sectorLabel = sectorLabelsCard[currentLang][sectorKey] || sectorKey;
+      const nowStr = new Date().toLocaleDateString(currentLang === 'tr' ? 'tr-TR' : 'en-US');
+
+      doc.setFillColor(22, 28, 45);
+      doc.rect(0, 0, 210, 30, 'F');
+
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(16);
+      doc.text(currentLang === 'tr' ? 'AI OTONOM VERİ RAPORU (EXECUTIVE BRIEF)' : 'AI AUTONOMOUS DATA REPORT (EXECUTIVE BRIEF)', 15, 18);
+
+      doc.setTextColor(100, 100, 100);
+      doc.setFontSize(8);
+      doc.text(`CONFIDENTIAL // SYSTEM LOGS GENERATED ON ${nowStr}`, 15, 26);
+
+      doc.setTextColor(22, 28, 45);
+      doc.setFontSize(10);
+      doc.text(`${currentLang === 'tr' ? 'Şirket Adı' : 'Company Name'}: ${currentCompany.toUpperCase()}`, 15, 45);
+      doc.text(`${currentLang === 'tr' ? 'Tespit Edilen Sektör' : 'Detected Sector'}: ${sectorLabel.toUpperCase()}`, 15, 52);
+      doc.text(`${currentLang === 'tr' ? 'Kaynak Dosya' : 'Source File'}: ${lastUploadedDataset.fileName}`, 15, 59);
+
+      doc.setDrawColor(37, 99, 235);
+      doc.setLineWidth(0.5);
+      doc.line(15, 65, 195, 65);
+
+      doc.setFontSize(12);
+      doc.setTextColor(37, 99, 235);
+      doc.text(currentLang === 'tr' ? 'OTONOM TİCARİ KPI ÇIKARIMLARI' : 'AUTONOMOUS BUSINESS KPI METRICS', 15, 75);
+
+      doc.setTextColor(80, 80, 80);
+      doc.setFontSize(9);
+      
+      let yOffset = 85;
+      const kpiItems = getExecutiveReportBriefing(sectorKey);
+      kpiItems.forEach(k => {
+        doc.setFontSize(10);
+        doc.setTextColor(22, 28, 45);
+        doc.text(`• ${k.title}:`, 15, yOffset);
+        doc.setFontSize(9);
+        doc.setTextColor(80, 80, 80);
+        
+        const lines = doc.splitTextToSize(k.desc, 175);
+        doc.text(lines, 20, yOffset + 5);
+        yOffset += 15 + (lines.length * 3);
+      });
+
+      doc.line(15, yOffset, 195, yOffset);
+      yOffset += 10;
+
+      doc.setFontSize(12);
+      doc.setTextColor(37, 99, 235);
+      doc.text(currentLang === 'tr' ? 'VERİ GÖRSELLEŞTİRME VE DİNAMİK GRAFİK SEÇİMİ' : 'DATA VISUALIZATION & DYNAMIC CHART SELECTION', 15, yOffset);
+
+      doc.setFontSize(9);
+      doc.setTextColor(80, 80, 80);
+      const explanationText = chartExplanation.textContent;
+      const linesExplanation = doc.splitTextToSize(explanationText, 175);
+      doc.text(linesExplanation, 15, yOffset + 8);
+      yOffset += 15 + (linesExplanation.length * 3);
+
+      const hashSeed = `${currentCompany}-${sectorKey}-${nowStr}-${Math.random()}`;
+      let hashNum = 0;
+      for (let i = 0; i < hashSeed.length; i++) {
+        hashNum = hashSeed.charCodeAt(i) + ((hashNum << 5) - hashNum);
+      }
+      const hash = 'AB-' + sectorKey.substring(0,3).toUpperCase() + '-' + Math.abs(hashNum).toString(16).substring(0,6).toUpperCase();
+
+      doc.setFillColor(245, 247, 250);
+      doc.rect(15, 260, 180, 18, 'F');
+      doc.setFontSize(8);
+      doc.setTextColor(150, 150, 150);
+      doc.text(`AUTOGENERATED BY ANL ANALYTICS SOFTWARE // SECURITY SIGNATURE: ${hash}`, 20, 271);
+
+      doc.save(`ANL_Vertex_AutoBuilder_Report_${currentCompany.toUpperCase()}_${sectorKey.toUpperCase()}.pdf`);
     });
   }
 

@@ -2473,3 +2473,172 @@ canvas {
   flex-shrink: 0;
 }
 
+/* ================= AI DASHBOARD AUTO-BUILDER STYLES ================= */
+.layout-selectors button.btn-layout {
+  background: transparent;
+  border: none;
+  color: var(--text-secondary);
+  font-size: 0.78rem;
+  font-weight: 600;
+  padding: 0.4rem 1rem;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.25s ease;
+}
+.layout-selectors button.btn-layout:hover {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.03);
+}
+.layout-selectors button.btn-layout.active {
+  color: #fff;
+  background: var(--primary);
+  box-shadow: 0 2px 8px var(--primary-glow);
+}
+
+/* Skeleton Loading Screens */
+@keyframes skeleton-pulse {
+  0% { opacity: 0.3; }
+  50% { opacity: 0.6; }
+  100% { opacity: 0.3; }
+}
+.skeleton-bar {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 4px;
+  animation: skeleton-pulse 1.5s infinite ease-in-out;
+}
+.skeleton-box {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.02);
+  animation: skeleton-pulse 1.5s infinite ease-in-out;
+}
+
+/* KPI Card Animations */
+.autobuilder-kpi-card {
+  position: relative;
+  overflow: hidden;
+  border-radius: 12px;
+  padding: 1.2rem;
+  background: rgba(0, 0, 0, 0.25);
+  border: 1px solid var(--border-color);
+  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+.autobuilder-kpi-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.4), inset 0 0 10px rgba(255,255,255,0.02);
+  border-color: rgba(255, 255, 255, 0.15);
+}
+.autobuilder-kpi-card.glow-primary {
+  border-color: rgba(37, 99, 235, 0.25);
+  box-shadow: 0 0 15px rgba(37, 99, 235, 0.05);
+}
+.autobuilder-kpi-card.glow-primary:hover {
+  border-color: var(--primary);
+  box-shadow: 0 0 20px rgba(37, 99, 235, 0.2);
+}
+.autobuilder-kpi-card.glow-secondary {
+  border-color: rgba(14, 165, 233, 0.25);
+  box-shadow: 0 0 15px rgba(14, 165, 233, 0.05);
+}
+.autobuilder-kpi-card.glow-secondary:hover {
+  border-color: var(--secondary);
+  box-shadow: 0 0 20px rgba(14, 165, 233, 0.2);
+}
+.autobuilder-kpi-card.glow-danger {
+  border-color: rgba(239, 68, 68, 0.25);
+  box-shadow: 0 0 15px rgba(239, 68, 68, 0.05);
+}
+.autobuilder-kpi-card.glow-danger:hover {
+  border-color: #ef4444;
+  box-shadow: 0 0 20px rgba(239, 68, 68, 0.2);
+}
+
+/* Bloomberg Heatmap Visuals */
+.heatmap-cell {
+  height: 28px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.01);
+  transition: all 0.5s ease;
+  position: relative;
+}
+.heatmap-cell:hover {
+  transform: scale(1.05);
+  z-index: 10;
+}
+.heatmap-cell.level-0 {
+  background: rgba(16, 185, 129, 0.05);
+  border-color: rgba(16, 185, 129, 0.1);
+}
+.heatmap-cell.level-1 {
+  background: rgba(16, 185, 129, 0.15);
+  border-color: rgba(16, 185, 129, 0.25);
+}
+.heatmap-cell.level-2 {
+  background: rgba(249, 115, 22, 0.25);
+  border-color: rgba(249, 115, 22, 0.4);
+}
+.heatmap-cell.level-3 {
+  background: rgba(239, 68, 68, 0.4);
+  border-color: rgba(239, 68, 68, 0.6);
+}
+.heatmap-cell.level-4 {
+  background: rgba(239, 68, 68, 0.85);
+  border-color: #ef4444;
+  box-shadow: 0 0 12px rgba(239, 68, 68, 0.6);
+  animation: heatmap-pulse-red 2s infinite alternate;
+}
+
+@keyframes heatmap-pulse-red {
+  0% { box-shadow: 0 0 4px rgba(239, 68, 68, 0.3); opacity: 0.85; }
+  100% { box-shadow: 0 0 14px rgba(239, 68, 68, 0.8); opacity: 1; }
+}
+
+/* Insight Stream Ticker */
+.ticker-line {
+  display: flex;
+  gap: 0.6rem;
+  align-items: flex-start;
+  padding: 0.5rem;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.01);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.02);
+  font-family: monospace;
+  font-size: 0.74rem;
+  margin-bottom: 0.35rem;
+  animation: ticker-appear 0.4s ease-out;
+}
+.ticker-time {
+  color: var(--secondary);
+  font-weight: 700;
+  flex-shrink: 0;
+}
+.ticker-body {
+  color: var(--text-secondary);
+}
+.ticker-line.alert-high {
+  background: rgba(239, 68, 68, 0.03);
+  border-left: 3px solid #ef4444;
+}
+.ticker-line.alert-high .ticker-time {
+  color: #ef4444;
+}
+.ticker-line.alert-high .ticker-body {
+  color: #fca5a5;
+  font-weight: 500;
+}
+
+@keyframes ticker-appear {
+  0% { opacity: 0; transform: translateY(-10px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+
+.pulse-dot-green {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--success);
+  box-shadow: 0 0 8px var(--success);
+  animation: pulse 1.5s infinite alternate;
+}
+

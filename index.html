@@ -511,6 +511,10 @@
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"></polygon><polyline points="2 17 12 22 22 17"></polyline><polyline points="2 12 12 17 22 12"></polyline></svg>
           AI AutoML Engine
         </a>
+        <a href="#" class="menu-item" id="menu-btn-autobuilder" data-i18n="menu_autobuilder" style="margin-top: 0.5rem;">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path><path d="M12 8v4"></path><path d="M12 16h.01"></path></svg>
+          AI Auto-Builder
+        </a>
       </nav>
 
       <!-- Model Performance Monitoring Panel -->
@@ -1277,6 +1281,201 @@
               <button type="button" class="btn-primary" id="btn-deploy-recommended-model" style="width: auto; padding: 0.7rem 1.8rem; box-shadow: 0 4px 14px var(--primary-glow);" data-i18n="btn_deploy_model">Seçilen Modeli Canlıya Al</button>
             </div>
 
+          </div>
+        </div>
+      </div>
+
+      <!-- ================= AI DASHBOARD AUTO-BUILDER SECTION ================= -->
+      <div id="dashboard-autobuilder-section" style="display: none;">
+        <header class="dashboard-header" style="margin-bottom: 1.5rem;">
+          <div>
+            <h1 data-i18n="autobuilder_title">AI Dashboard Auto-Builder Engine</h1>
+            <p style="color: var(--text-secondary); font-size: 0.9rem;" data-i18n="autobuilder_subtitle">
+              Yapay zeka ile veri kümesinden anında otonom yönetici ve operasyonel takip panelleri inşa edin.
+            </p>
+          </div>
+        </header>
+
+        <!-- Initial Upload / Start View -->
+        <div id="autobuilder-upload-view" class="glass-card" style="padding: 2.5rem; text-align: center; margin-bottom: 2rem;">
+          <div class="drop-zone" id="autobuilder-drop-zone">
+            <div class="particle-container" id="autobuilder-particles"></div>
+            <div class="drop-zone-icon">🚀</div>
+            <h3 style="margin-bottom: 0.5rem;" data-i18n="autobuilder_upload_title">Auto-Builder Analizi İçin Veri Kümesi Yükleyin</h3>
+            <p style="color: var(--text-secondary); font-size: 0.88rem; margin-bottom: 1.5rem;" data-i18n="autobuilder_upload_desc">
+              Grafikler, KPI'lar ve risk haritaları içeren otonom bir çalışma alanı oluşturmak için veri yükleyin.
+            </p>
+            
+            <div id="autobuilder-load-status-msg" style="margin-bottom: 1.5rem; display: none; font-size: 0.85rem; color: var(--primary); font-weight: bold;">
+            </div>
+
+            <div style="display: flex; gap: 1rem; justify-content: center; align-items: center; flex-wrap: wrap;">
+              <button type="button" class="btn-primary" id="btn-browse-autobuilder-file" style="width: auto; padding: 0.7rem 2rem;" data-i18n="btn_browse_file">Dosya Seçin</button>
+              <button type="button" class="btn-secondary" id="btn-run-loaded-autobuilder" style="width: auto; padding: 0.7rem 2rem; display: none;" data-i18n="btn_run_autobuilder">Auto-Builder Çalıştır</button>
+            </div>
+            <input type="file" id="autobuilder-file-input" style="display: none;" accept=".csv,.txt,.json">
+          </div>
+
+          <!-- Sample Files -->
+          <div style="margin-top: 2rem; border-top: 1px dashed var(--border-color); padding-top: 1.5rem;">
+            <p style="font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 0.8rem;" data-i18n="quick_samples_title">Dosyanız yok mu? Örnek şablonlar ile anında test edin:</p>
+            <div style="display: flex; justify-content: center; gap: 0.8rem; flex-wrap: wrap;">
+              <button class="btn-secondary btn-sample-autobuilder" data-dataset="credit" style="padding: 0.4rem 1rem; font-size: 0.78rem;">📊 kredi_tahmin.csv (Finans)</button>
+              <button class="btn-secondary btn-sample-autobuilder" data-dataset="logistics" style="padding: 0.4rem 1rem; font-size: 0.78rem;">🚚 kurye_lojistik.csv (Lojistik)</button>
+              <button class="btn-secondary btn-sample-autobuilder" data-dataset="retail" style="padding: 0.4rem 1rem; font-size: 0.78rem;">🛍️ tekstil_retail.csv (Tekstil)</button>
+              <button class="btn-secondary btn-sample-autobuilder" data-dataset="food" style="padding: 0.4rem 1rem; font-size: 0.78rem;">🍕 restoran_siparis.csv (Gıda)</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Analyzing / Training View -->
+        <div id="autobuilder-scanning-view" class="glass-card" style="display: none; padding: 3rem; text-align: center; margin-bottom: 2rem;">
+          <div class="scanning-container">
+            <!-- Loading Skeleton Blocks -->
+            <div style="max-width: 500px; margin: 0 auto 2rem auto; display: flex; flex-direction: column; gap: 1rem;">
+              <div class="skeleton-bar" style="height: 20px; width: 60%; margin: 0 auto;"></div>
+              <div class="skeleton-bar" style="height: 12px; width: 85%; margin: 0 auto;"></div>
+              <div style="display: flex; gap: 1rem; justify-content: center; margin-top: 1rem;">
+                <div class="skeleton-box" style="height: 60px; width: 100px; border-radius: 8px;"></div>
+                <div class="skeleton-box" style="height: 60px; width: 100px; border-radius: 8px;"></div>
+                <div class="skeleton-box" style="height: 60px; width: 100px; border-radius: 8px;"></div>
+              </div>
+            </div>
+
+            <h3 style="margin-bottom: 0.5rem; color: var(--secondary);" data-i18n="autobuilder_building_title">AI Analisti Paneli İnşa Ediyor...</h3>
+            <p style="color: var(--text-secondary); font-size: 0.88rem; margin-bottom: 1.5rem;" data-i18n="autobuilder_building_desc">
+              Veri dağılımları inceleniyor, sektörel KPI'lar hesaplanıyor ve en uygun veri görselleştirme yapısı sentezleniyor.
+            </p>
+
+            <!-- Loading Progress Bar -->
+            <div style="width: 100%; max-width: 400px; margin: 0 auto 2rem auto; background: rgba(255,255,255,0.05); height: 6px; border-radius: 3px; overflow: hidden; border: 1px solid rgba(255,255,255,0.02);">
+              <div id="autobuilder-progress-bar" style="width: 0%; height: 100%; background: linear-gradient(90deg, var(--primary), var(--secondary)); box-shadow: 0 0 10px var(--primary-glow); transition: width 0.1s linear;"></div>
+            </div>
+
+            <!-- Monospaced construction log terminal -->
+            <div style="width: 100%; display: flex; justify-content: center;">
+              <div class="terminal-console" id="autobuilder-terminal-logs" style="color: var(--secondary); border-color: rgba(14, 165, 233, 0.2); box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5), inset 0 0 10px rgba(14, 165, 233, 0.05);">
+                <span class="terminal-cursor" style="background: var(--secondary);"></span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- AutoML Results View -->
+        <div id="autobuilder-results-view" style="display: none;">
+          <!-- Layout Selection Topbar -->
+          <div class="glass-card" style="padding: 1rem 1.5rem; margin-bottom: 1.5rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+            <div style="display: flex; align-items: center; gap: 0.8rem;">
+              <span style="font-size: 1.1rem;">⚙️</span>
+              <strong style="font-size: 0.9rem;" id="autobuilder-workspace-title">Auto-Built Workspace</strong>
+              <span class="badge badge-success" style="font-size: 0.72rem; padding: 0.25rem 0.6rem; border-radius: 4px;" id="autobuilder-detected-badge">-</span>
+            </div>
+            
+            <div class="layout-selectors" style="display: flex; gap: 0.5rem; background: rgba(0,0,0,0.2); padding: 0.25rem; border-radius: 8px; border: 1px solid var(--border-color);">
+              <button type="button" class="btn-layout active" data-layout="executive" data-i18n="layout_exec">Overview</button>
+              <button type="button" class="btn-layout" data-layout="operational" data-i18n="layout_ops">Monitoring</button>
+              <button type="button" class="btn-layout" data-layout="forensic" data-i18n="layout_risk">Forensics</button>
+            </div>
+          </div>
+
+          <!-- Dynamic 4-KPI Row -->
+          <div class="dashboard-grid" style="grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem; margin-bottom: 1.5rem;" id="autobuilder-kpi-row">
+            <!-- Dynamically populated neon KPI cards -->
+          </div>
+
+          <!-- Core Workspace Grid -->
+          <div class="dashboard-two-col-grid" style="gap: 1.5rem; margin-bottom: 1.5rem;" id="autobuilder-workspace-grid">
+            
+            <!-- Dynamic Chart Section -->
+            <div class="glass-card" id="autobuilder-chart-container" style="display: flex; flex-direction: column; justify-content: space-between; min-height: 420px;">
+              <div>
+                <h3 style="margin-bottom: 1.2rem; display: flex; align-items: center; justify-content: space-between;">
+                  <span id="autobuilder-chart-title">AI Dynamic Analysis Chart</span>
+                  <span class="badge" style="background: rgba(37,99,235,0.1); color: var(--primary); font-size: 0.72rem; padding: 0.2rem 0.5rem;" id="autobuilder-chart-type-badge">-</span>
+                </h3>
+                
+                <!-- Chart Area -->
+                <div style="width: 100%; height: 260px; position: relative; display: flex; justify-content: center; align-items: center;" id="autobuilder-chart-canvas-area">
+                  <!-- Inline responsive SVG chart inserted here -->
+                </div>
+              </div>
+
+              <!-- Rationale Panel -->
+              <div style="background: rgba(0,0,0,0.15); border: 1px solid var(--border-color); border-radius: 8px; padding: 0.9rem; margin-top: 1rem;">
+                <div style="font-size: 0.72rem; text-transform: uppercase; color: var(--primary); font-weight: 700; margin-bottom: 0.3rem;" data-i18n="chart_rationale_label">Yapay Zeka Seçim Gerekçesi (AI Rationale):</div>
+                <div style="font-size: 0.76rem; color: var(--text-secondary); line-height: 1.45;" id="autobuilder-chart-explanation">-</div>
+              </div>
+            </div>
+
+            <!-- AI Risk Heatmap System -->
+            <div class="glass-card" id="autobuilder-heatmap-container" style="min-height: 420px;">
+              <h3 style="margin-bottom: 1rem; display: flex; align-items: center; justify-content: space-between;">
+                <span data-i18n="heatmap_title_panel">AI Risk Yoğunluk Matrisi (Heatmap)</span>
+                <span style="font-size: 0.7rem; color: #ef4444; font-weight: bold; animation: pulse 1.5s infinite alternate;" id="heatmap-live-badge">🔴 LIVE MONITOR</span>
+              </h3>
+              <p style="font-size: 0.78rem; color: var(--text-secondary); margin-bottom: 1.2rem; line-height: 1.4;" data-i18n="heatmap_desc">
+                Departmanlar ve operasyonel süreçlerin anlık risk yoğunluğu. Koyu kırmızı hücreler yüksek kırılganlığı simgeler.
+              </p>
+
+              <!-- Heatmap Grid -->
+              <div style="width: 100%; display: flex; flex-direction: column; gap: 0.6rem;">
+                <div style="display: grid; grid-template-columns: 80px 1fr; gap: 0.8rem; align-items: center;" id="autobuilder-heatmap-grid-box">
+                  <!-- Dynamically populated Bloomberg-style rows -->
+                </div>
+
+                <!-- Heatmap Legend -->
+                <div style="display: flex; gap: 1rem; justify-content: flex-end; align-items: center; margin-top: 1rem; font-size: 0.72rem; color: var(--text-secondary);">
+                  <div style="display: flex; align-items: center; gap: 0.35rem;">
+                    <span style="display: inline-block; width: 10px; height: 10px; border-radius: 2px; background: rgba(16, 185, 129, 0.2);"></span>
+                    <span data-i18n="risk_low">Düşük (Low)</span>
+                  </div>
+                  <div style="display: flex; align-items: center; gap: 0.35rem;">
+                    <span style="display: inline-block; width: 10px; height: 10px; border-radius: 2px; background: rgba(249, 115, 22, 0.4);"></span>
+                    <span data-i18n="risk_medium">Orta (Med)</span>
+                  </div>
+                  <div style="display: flex; align-items: center; gap: 0.35rem;">
+                    <span style="display: inline-block; width: 10px; height: 10px; border-radius: 2px; background: rgba(239, 68, 68, 0.8); box-shadow: 0 0 8px rgba(239,68,68,0.5);"></span>
+                    <span data-i18n="risk_high">Yüksek (High)</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- AI Insight Stream -->
+            <div class="glass-card" id="autobuilder-insights-container" style="min-height: 320px;">
+              <h3 style="margin-bottom: 1rem; color: var(--secondary); display: flex; align-items: center; justify-content: space-between;">
+                <span data-i18n="insight_stream_title">AI Gerçek Zamanlı Analiz Akışı (Live Stream)</span>
+                <span class="pulse-dot-green"></span>
+              </h3>
+              <p style="font-size: 0.78rem; color: var(--text-secondary); margin-bottom: 1rem;">
+                Karar ağacı ve regresyon modelinden gelen anlık anomali ve operasyonel kırılganlık uyarıları.
+              </p>
+              
+              <div class="insight-ticker-panel" id="autobuilder-ticker-stream" style="max-height: 200px; overflow-y: auto; border: 1px solid var(--border-color); border-radius: 8px; padding: 0.8rem; background: rgba(0,0,0,0.25);">
+                <!-- Dynamic stream lines -->
+              </div>
+            </div>
+
+            <!-- Auto Generated Executive Report Panel -->
+            <div class="glass-card" id="autobuilder-report-container" style="min-height: 320px;">
+              <h3 style="margin-bottom: 1rem; color: var(--primary); display: flex; align-items: center; gap: 0.5rem;">
+                <span>💡</span> <span data-i18n="board_report_title">AI Yönetim Kurulu Brifingi (Executive Brief)</span>
+              </h3>
+              <p style="font-size: 0.78rem; color: var(--text-secondary); margin-bottom: 1.2rem;">
+                Yapay zekanın şirket yöneticilerine yönelik stratejik karar ve gelecek risk çıkarımları:
+              </p>
+              
+              <div style="display: flex; flex-direction: column; gap: 0.8rem; font-size: 0.8rem; line-height: 1.45; color: var(--text-secondary);" id="autobuilder-report-content">
+                <!-- Dynamically populated Board intelligence report -->
+              </div>
+            </div>
+
+          </div>
+
+          <!-- Controls footer -->
+          <div style="display: flex; gap: 1rem; justify-content: flex-end; margin-top: 1rem; margin-bottom: 2rem;">
+            <button type="button" class="btn-secondary" id="btn-reanalyze-autobuilder" style="width: auto; padding: 0.7rem 1.8rem;" data-i18n="btn_reanalyze">Başka Veri Seti Yükle</button>
+            <button type="button" class="btn-primary" id="btn-download-autobuilder-report" style="width: auto; padding: 0.7rem 1.8rem; box-shadow: 0 4px 14px var(--primary-glow);" data-i18n="btn_download_pdf">Yönetici Raporunu İndir (PDF)</button>
           </div>
         </div>
       </div>
