@@ -2747,7 +2747,17 @@ canvas {
   100% { transform: scale(1.1); opacity: 1; filter: drop-shadow(0 0 6px var(--primary-glow)); }
 }
 
-.dashboard-section { display: none; }
-.dashboard-section.active { display: block; }
+.dashboard-section {
+  display: none !important;
+  visibility: hidden;
+  opacity: 0;
+  z-index: 1;
+}
+.dashboard-section.active {
+  display: block !important;
+  visibility: visible;
+  opacity: 1;
+  z-index: 10;
+}
 
 

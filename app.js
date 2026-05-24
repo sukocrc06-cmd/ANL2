@@ -6460,26 +6460,27 @@ document.addEventListener('DOMContentLoaded', () => {
   const secInsights = document.getElementById('dashboard-insights-section');
   const secSchemaIntel = document.getElementById('dashboard-schema-intel-section');
 
-  function showTab(tabId) {
-    const btn = document.getElementById(tabId);
-    if (btn) {
-      btn.click();
-    }
+  const PANELS = {
+    dashboard: 'dashboard-insights-section',
+    schema: 'dashboard-schema-intel-section',
+    automl: 'dashboard-automl-section',
+    autobuilder: 'dashboard-autobuilder-section',
+    aura: 'dashboard-aura-os-section',
+    saas: 'dashboard-saas-section'
+  };
+
+  function hideAllPanels() {
+    document.querySelectorAll('.dashboard-section').forEach(s => {
+      s.classList.remove('active');
+    });
   }
 
-  document.querySelectorAll('.menu-item').forEach(item => {
-    item.addEventListener('click', function(e) {
-      e.preventDefault();
-      // Deactivate all
-      document.querySelectorAll('.menu-item').forEach(i => i.classList.remove('active'));
-      document.querySelectorAll('.dashboard-section').forEach(s => s.classList.remove('active'));
-      // Activate target
-      this.classList.add('active');
-      const targetId = this.getAttribute('data-target');
-      if(document.getElementById(targetId)) {
-        document.getElementById(targetId).classList.add('active');
-      }
-
+  function showPanel(panelId) {
+    console.log('Switching to panel:', panelId);
+    const targetId = PANELS[panelId];
+    const panel = document.getElementById(targetId);
+    if (panel) {
+      panel.classList.add('active');
       // Trigger module callbacks
       if (targetId === 'dashboard-automl-section' && typeof updateAutoMLSharedState === 'function') {
         updateAutoMLSharedState();
@@ -6490,8 +6491,76 @@ document.addEventListener('DOMContentLoaded', () => {
       if (targetId === 'dashboard-aura-os-section' && typeof initAuraOSModule === 'function') {
         initAuraOSModule();
       }
+    } else {
+      console.warn('Panel target not found in DOM:', targetId);
+      fallbackToDefault();
+    }
+  }
+
+  function setActiveMenu(panelId) {
+    const targetId = PANELS[panelId];
+    document.querySelectorAll('.menu-item').forEach(i => {
+      if (i.getAttribute('data-target') === targetId) {
+        i.classList.add('active');
+      } else {
+        i.classList.remove('active');
+      }
     });
-  });
+  }
+
+  function fallbackToDefault() {
+    console.warn('Falling back to default dashboard panel');
+    window.location.hash = 'dashboard';
+  }
+
+  function handleHashRouting() {
+    const hash = window.location.hash.substring(1);
+    if (PANELS[hash]) {
+      hideAllPanels();
+      showPanel(hash);
+      setActiveMenu(hash);
+    } else if (!hash) {
+      window.location.hash = 'dashboard';
+    } else {
+      fallbackToDefault();
+    }
+  }
+
+  function showTab(tabId) {
+    const btn = document.getElementById(tabId);
+    if (btn) {
+      btn.click();
+    }
+  }
+
+  function initializeNavigation() {
+    // Attach hash change listener
+    window.addEventListener('hashchange', handleHashRouting);
+
+    // Handle click listener on menu items to update hash
+    document.querySelectorAll('.menu-item').forEach(item => {
+      item.addEventListener('click', function(e) {
+        e.preventDefault();
+        const targetId = this.getAttribute('data-target');
+        let panelKey = '';
+        for (const [key, value] of Object.entries(PANELS)) {
+          if (value === targetId) {
+            panelKey = key;
+            break;
+          }
+        }
+        if (panelKey) {
+          window.location.hash = panelKey;
+        }
+      });
+    });
+
+    // Run router once on initialization
+    handleHashRouting();
+  }
+
+  // Initialize navigation controller
+  initializeNavigation();
 
   const dropZone = document.getElementById('schema-drop-zone');
   const fileInput = document.getElementById('schema-file-input');
