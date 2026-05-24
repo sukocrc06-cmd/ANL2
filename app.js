@@ -5269,25 +5269,36 @@ document.addEventListener('DOMContentLoaded', () => {
   let pipelineLiveInterval = null; // interval for the live ms counter
 
   function triggerPipelinePulse() {
-    const startTime = performance.now();
-    const nodeStepTimes = [];  // will hold actual activation times per step
+    // Generate dynamic processing times for the current run
+    const ingestTime = Math.floor(Math.random() * 400) + 100;
+    const preprocessTime = Math.floor(Math.random() * 600) + 150;
+    const solverTime = Math.floor(Math.random() * 1000) + 200;
+    const auraTime = Math.floor(Math.random() * 1200) + 300;
+    const outputTime = Math.floor(Math.random() * 400) + 100;
 
-    // ── 1. Reset all nodes and arrows ──────────────────────────────────────
+    const totalPipelineMs = ingestTime + preprocessTime + solverTime + auraTime + outputTime;
+
+    function getPerfClass(ms) {
+      if (ms < 500) return 'perf-green';
+      if (ms <= 1000) return 'perf-orange';
+      return 'perf-red';
+    }
+
+    const startTime = performance.now();
+
+    // ── 1. Reset all nodes, arrows and styling ──────────────────────────────
     PIPELINE_STEPS.forEach(s => {
       const n = document.getElementById(s.node);
       const a = s.arrow ? document.getElementById(s.arrow) : null;
       const m = document.getElementById(s.ms);
-      if (n) n.classList.remove('active');
+      if (n) {
+        n.classList.remove('active', 'perf-green', 'perf-orange', 'perf-red');
+      }
       if (a) a.classList.remove('active');
       if (m) m.textContent = '—';
     });
 
-    // ── 2. Activate node 1 immediately ─────────────────────────────────────
-    const n0 = document.getElementById(PIPELINE_STEPS[0].node);
-    if (n0) n0.classList.add('active');
-    nodeStepTimes[0] = 0;
-
-    // ── 3. Live counter: tick every 16ms while pipeline runs ───────────────
+    // ── 2. Live counter: tick every 16ms while pipeline runs ───────────────
     const latencyEl  = document.getElementById('pipeline-latency-ms');
     const latencyBar = document.getElementById('pipeline-latency-bar');
     if (pipelineLiveInterval) clearInterval(pipelineLiveInterval);
@@ -5295,74 +5306,116 @@ document.addEventListener('DOMContentLoaded', () => {
 
     pipelineLiveInterval = setInterval(() => {
       const elapsed = Math.round(performance.now() - startTime);
-      if (latencyEl) latencyEl.textContent = elapsed;
-      // Mini latency bar: max scale = TOTAL_PIPELINE_DURATION ms
+      if (latencyEl) latencyEl.textContent = Math.min(totalPipelineMs, elapsed);
+      // Mini latency bar
       if (latencyBar) {
-        const pct = Math.min(100, (elapsed / TOTAL_PIPELINE_DURATION) * 100);
+        const pct = Math.min(100, (elapsed / totalPipelineMs) * 100);
         latencyBar.style.width = `${pct}%`;
-        const hue = Math.round(120 - (pct / 100) * 100); // green→yellow→red
+        const hue = Math.round(120 - Math.min(100, (elapsed / 3000) * 100) * 1.2);
         latencyBar.style.background = `hsl(${hue},85%,52%)`;
       }
     }, 16);
 
-    // ── 4. Sequentially activate remaining steps ────────────────────────────
-    PIPELINE_STEPS.slice(1).forEach((step, i) => {
-      setTimeout(() => {
-        const node  = document.getElementById(step.node);
-        const arrow = step.arrow ? document.getElementById(step.arrow) : null;
-        const msEl  = document.getElementById(step.ms);
-        const prevMsEl = document.getElementById(PIPELINE_STEPS[i].ms); // i = prev index
+    // ── 3. Stage 1 (Ingestion) starts immediately ────────────────────────────
+    const node1 = document.getElementById('flow-node-ingest');
+    if (node1) node1.classList.add('active');
 
-        if (arrow) arrow.classList.add('active');
-        if (node)  node.classList.add('active');
+    // Timeout 1: Ingest finishes, Preprocess starts
+    setTimeout(() => {
+      const ms1 = document.getElementById('flow-ms-1');
+      if (ms1) ms1.textContent = `${ingestTime}ms`;
+      const node = document.getElementById('flow-node-ingest');
+      if (node) {
+        node.classList.remove('active');
+        node.classList.add(getPerfClass(ingestTime));
+      }
+      
+      const arrow1 = document.getElementById('flow-arrow-1');
+      const node2 = document.getElementById('flow-node-preprocess');
+      if (arrow1) arrow1.classList.add('active');
+      if (node2) node2.classList.add('active');
+    }, ingestTime);
 
-        const stepMs = Math.round(performance.now() - startTime);
-        nodeStepTimes[i + 1] = stepMs;
+    // Timeout 2: Preprocess finishes, Solver starts
+    setTimeout(() => {
+      const ms2 = document.getElementById('flow-ms-2');
+      if (ms2) ms2.textContent = `${preprocessTime}ms`;
+      const node = document.getElementById('flow-node-preprocess');
+      if (node) {
+        node.classList.remove('active');
+        node.classList.add(getPerfClass(preprocessTime));
+      }
+      
+      const arrow2 = document.getElementById('flow-arrow-2');
+      const node3 = document.getElementById('flow-node-solver');
+      if (arrow2) arrow2.classList.add('active');
+      if (node3) node3.classList.add('active');
+    }, ingestTime + preprocessTime);
 
-        // Show cumulative time on this node's badge
-        if (msEl) msEl.textContent = `+${stepMs}ms`;
+    // Timeout 3: Solver finishes, Aura AI starts
+    setTimeout(() => {
+      const ms3 = document.getElementById('flow-ms-3');
+      if (ms3) ms3.textContent = `${solverTime}ms`;
+      const node = document.getElementById('flow-node-solver');
+      if (node) {
+        node.classList.remove('active');
+        node.classList.add(getPerfClass(solverTime));
+      }
+      
+      const arrow3 = document.getElementById('flow-arrow-3');
+      const node4 = document.getElementById('flow-node-aura');
+      if (arrow3) arrow3.classList.add('active');
+      if (node4) node4.classList.add('active');
+    }, ingestTime + preprocessTime + solverTime);
 
-        // Show interval time on previous node
-        if (prevMsEl && i > 0) {
-          const interval = stepMs - (nodeStepTimes[i] || 0);
-          prevMsEl.textContent = `${interval}ms`;
-        } else if (prevMsEl && i === 0) {
-          prevMsEl.textContent = `0ms`;
-        }
+    // Timeout 4: Aura AI finishes, Output starts
+    setTimeout(() => {
+      const ms4 = document.getElementById('flow-ms-4');
+      if (ms4) ms4.textContent = `${auraTime}ms`;
+      const node = document.getElementById('flow-node-aura');
+      if (node) {
+        node.classList.remove('active');
+        node.classList.add(getPerfClass(auraTime));
+      }
+      
+      const arrow4 = document.getElementById('flow-arrow-4');
+      const node5 = document.getElementById('flow-node-action');
+      if (arrow4) arrow4.classList.add('active');
+      if (node5) node5.classList.add('active');
+    }, ingestTime + preprocessTime + solverTime + auraTime);
 
-        // On last step: finalise everything
-        if (i === PIPELINE_STEPS.length - 2) {
-          clearInterval(pipelineLiveInterval);
-          pipelineLiveInterval = null;
+    // Timeout 5: Output finishes, pipeline completes
+    setTimeout(() => {
+      const ms5 = document.getElementById('flow-ms-5');
+      if (ms5) ms5.textContent = `${outputTime}ms`;
+      const node = document.getElementById('flow-node-action');
+      if (node) {
+        node.classList.remove('active');
+        node.classList.add(getPerfClass(outputTime));
+      }
 
-          const totalMs = Math.round(performance.now() - startTime);
-          const totalMsDisplay = totalMs;
+      // Finalize pipeline
+      clearInterval(pipelineLiveInterval);
+      pipelineLiveInterval = null;
 
-          // Update header counter
-          if (latencyEl) latencyEl.textContent = totalMsDisplay;
-          if (latencyBar) {
-            latencyBar.style.width = '100%';
-            const hue = Math.round(120 - Math.min(100, (totalMs / 1200) * 100));
-            latencyBar.style.background = `hsl(${hue},85%,52%)`;
-          }
+      if (latencyEl) latencyEl.textContent = totalPipelineMs;
+      if (latencyBar) {
+        latencyBar.style.width = '100%';
+        const hue = Math.round(120 - Math.min(100, (totalPipelineMs / 3000) * 100) * 1.2);
+        latencyBar.style.background = `hsl(${hue},85%,52%)`;
+      }
 
-          // Record this run
-          pipelineRunCount++;
-          const runRecord = { ts: performance.now(), latencyMs: totalMs };
-          pipelineRunHistory.push(runRecord);
-          if (pipelineRunHistory.length > 30) pipelineRunHistory.shift();
+      pipelineRunCount++;
+      const runRecord = { ts: performance.now(), latencyMs: totalPipelineMs };
+      pipelineRunHistory.push(runRecord);
+      if (pipelineRunHistory.length > 30) pipelineRunHistory.shift();
 
-          pipelineLatencyHistory.push(totalMs);
-          if (pipelineLatencyHistory.length > 60) pipelineLatencyHistory.shift();
+      pipelineLatencyHistory.push(totalPipelineMs);
+      if (pipelineLatencyHistory.length > 60) pipelineLatencyHistory.shift();
 
-          // Update stats strip
-          _updatePipelineStats(totalMs);
-
-          // Draw throughput sparkline
-          _drawThroughputChart();
-        }
-      }, step.delay);
-    });
+      _updatePipelineStats(totalPipelineMs);
+      _drawThroughputChart();
+    }, totalPipelineMs);
   }
 
   // ── Stats strip updater ───────────────────────────────────────────────────

@@ -2087,3 +2087,53 @@ canvas {
   }
 }
 
+/* Live Performance Tracker color animations */
+@keyframes glowGreen {
+  from { box-shadow: 0 0 4px rgba(16, 185, 129, 0.15); border-color: rgba(16, 185, 129, 0.3); }
+  to { box-shadow: 0 0 15px rgba(16, 185, 129, 0.5); border-color: rgba(16, 185, 129, 0.95); }
+}
+@keyframes glowOrange {
+  from { box-shadow: 0 0 4px rgba(249, 115, 22, 0.15); border-color: rgba(249, 115, 22, 0.3); }
+  to { box-shadow: 0 0 15px rgba(249, 115, 22, 0.5); border-color: rgba(249, 115, 22, 0.95); }
+}
+@keyframes glowRed {
+  from { box-shadow: 0 0 4px rgba(239, 68, 68, 0.15); border-color: rgba(239, 68, 68, 0.3); }
+  to { box-shadow: 0 0 15px rgba(239, 68, 68, 0.5); border-color: rgba(239, 68, 68, 0.95); }
+}
+
+.flow-node.perf-green {
+  background: rgba(16, 185, 129, 0.08) !important;
+  animation: glowGreen 1s alternate infinite ease-in-out !important;
+}
+.flow-node.perf-green .flow-node-num {
+  background: #10b981 !important;
+  color: #ffffff !important;
+}
+.flow-node.perf-green .flow-node-ms {
+  color: #10b981 !important;
+}
+
+.flow-node.perf-orange {
+  background: rgba(249, 115, 22, 0.08) !important;
+  animation: glowOrange 1s alternate infinite ease-in-out !important;
+}
+.flow-node.perf-orange .flow-node-num {
+  background: #f97316 !important;
+  color: #ffffff !important;
+}
+.flow-node.perf-orange .flow-node-ms {
+  color: #f97316 !important;
+}
+
+.flow-node.perf-red {
+  background: rgba(239, 68, 68, 0.08) !important;
+  animation: glowRed 1s alternate infinite ease-in-out !important;
+}
+.flow-node.perf-red .flow-node-num {
+  background: #ef4444 !important;
+  color: #ffffff !important;
+}
+.flow-node.perf-red .flow-node-ms {
+  color: #ef4444 !important;
+}
+
