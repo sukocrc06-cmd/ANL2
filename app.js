@@ -970,6 +970,138 @@ const translations = {
   agent_forecast_name: {
     tr: "Tahmin Ajanı",
     en: "Forecast Agent"
+  },
+  menu_saas_cloud: {
+    tr: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/><path d="M12 11v6"/><path d="M9 14h6"/></svg>SaaS Enterprise Cloud`,
+    en: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/><path d="M12 11v6"/><path d="M9 14h6"/></svg>SaaS Enterprise Cloud`
+  },
+  saas_title: {
+    tr: "SaaS Bulut Yönetimi",
+    en: "Enterprise Cloud Control"
+  },
+  saas_subtitle: {
+    tr: "Küresel Çoklu Kiracılı Altyapı, Yapay Zeka Düğümleri ve API Entegrasyon Hub'ı.",
+    en: "Global Multi-Tenant Infrastructure, Compute Node Orchestration, and API Hub."
+  },
+  saas_onboard_title: {
+    tr: "🚀 Kiracı Onboarding Sihirbazı",
+    en: "🚀 Cinematic Tenant Onboarding Wizard"
+  },
+  saas_onboard_desc: {
+    tr: "Yeni bir kurumsal sektör kümesi oluşturun, veritabanı konteynerleri atayın ve yapay zeka sunucu düğümlerini yapılandırın.",
+    en: "Initialize a new enterprise sector cluster, provision container databases, and configure dedicated AI nodes."
+  },
+  btn_start_onboarding: {
+    tr: "Yeni Altyapıyı Hazırla",
+    en: "Provision New Tenancy"
+  },
+  saas_tenant_title: {
+    tr: "🏢 Kurumsal Organizasyon Seçici",
+    en: "🏢 Organization Switcher"
+  },
+  saas_tenant_desc: {
+    tr: "Aktif kurumsal kiracıyı, yapay zeka kümesini ve güvenlik erişim yetkilerini değiştirin.",
+    en: "Select active tenant corporation, executive workspace cluster, and security privileges."
+  },
+  saas_label_org: {
+    tr: "Aktif Kiracı (Tenant)",
+    en: "Active Tenant"
+  },
+  saas_label_role: {
+    tr: "Erişim Rolü",
+    en: "Security Role"
+  },
+  saas_label_cluster: {
+    tr: "Hesaplama Sunucu Kümesi",
+    en: "Compute Workspace"
+  },
+  saas_role_permission: {
+    tr: "Rol yetki düzeyi:",
+    en: "Role privileges:"
+  },
+  saas_map_title: {
+    tr: "🌐 Küresel Sunucu Ağ Haritası",
+    en: "🌐 Global Server Map"
+  },
+  saas_map_desc: {
+    tr: "Uluslararası analiz talepleri için sunucu durumları ve canlı ağ gecikmeleri.",
+    en: "Compute status and network routes for international enterprise analytics queries."
+  },
+  saas_database_health: {
+    tr: "Veritabanı Kümesi Sağlığı:",
+    en: "Database Cluster Health:"
+  },
+  saas_api_title: {
+    tr: "🔌 Entegrasyon ve Webhook Merkezi",
+    en: "🔌 Integration & Webhook Hub"
+  },
+  saas_api_desc: {
+    tr: "ERP/CRM platformlarını bağlayın ve canlı REST API anahtarları üretin.",
+    en: "Connect external CRM/ERP platforms and generate secure live REST tokens."
+  },
+  btn_gen_api: {
+    tr: "API Token Üret",
+    en: "Generate API Token"
+  },
+  saas_webhooks_health: {
+    tr: "Webhook Bağlantı Sağlığı:",
+    en: "Webhook Health status:"
+  },
+  saas_billing_title: {
+    tr: "💳 Faturalandırma ve AI Kullanımı",
+    en: "💳 Billing & AI Usage"
+  },
+  saas_billing_desc: {
+    tr: "Abonelik planları, API kota sınırları ve fatura oluşturma paneli.",
+    en: "Subscription pricing plans, API monthly usage thresholds, and invoice compilations."
+  },
+  saas_token_limit: {
+    tr: "Aylık AI Token Kullanımı",
+    en: "AI Model Tokens Usage"
+  },
+  saas_api_limit: {
+    tr: "API İstek Limit Kotası",
+    en: "API Calls Threshold"
+  },
+  btn_invoice_pdf: {
+    tr: "Faturayı İndir (PDF)",
+    en: "Download Invoice (PDF)"
+  },
+  saas_security_title: {
+    tr: "🛡️ Güvenlik Operasyonları (SOC)",
+    en: "🛡️ Security Control (SOC)"
+  },
+  saas_security_desc: {
+    tr: "Sistem giriş logları, şüpheli hareketler, şifreleme ve SOC2 uyumluluk raporları.",
+    en: "Access audit logs, suspect login attempts, encryption metrics, and compliance logs."
+  },
+  saas_cyber_status: {
+    tr: "AI Tehdit Kalkanı Aktif",
+    en: "AI Threat Shield active"
+  },
+  saas_cyber_desc: {
+    tr: "Bulut kümelerinde herhangi bir siber tehdit veya sızıntı saptanmadı.",
+    en: "0 active threat vector alerts detected in cluster."
+  },
+  saas_compliance: {
+    tr: "SOC2/HIPAA Uyumluluk Durumu:",
+    en: "SOC2/HIPAA compliance status:"
+  },
+  saas_compliant: {
+    tr: "UYUMLU",
+    en: "COMPLIANT"
+  },
+  saas_market_title: {
+    tr: "🛒 AI Modül Mağazası",
+    en: "🛒 AI Module Marketplace"
+  },
+  saas_market_desc: {
+    tr: "Çalışma alanınıza özel sektörel modeller ve ek yapay zeka ajanları kurun.",
+    en: "Install premium sector models and agent extensions inside your workspaces."
+  },
+  saas_license: {
+    tr: "Bulut Lisans Süresi:",
+    en: "Cloud License Term:"
   }
 };
 
