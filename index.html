@@ -798,6 +798,7 @@
                   <th>Gelir</th>
                   <th>Kredi Skor</th>
                   <th>Risk Durumu</th>
+                  <th>✉️</th>
                 </tr>
               </thead>
               <tbody id="table-body">
@@ -923,6 +924,49 @@
           <!-- Rendered in JS -->
         </div>
       </div>
+    </div>
+  </div>
+
+  <!-- Email Notification Modal -->
+  <div id="email-modal" class="modal-overlay">
+    <div class="login-modal-card glass-card" style="max-width: 500px; width: 100%;">
+      <div class="modal-header">
+        <div style="display: flex; align-items: center; gap: 0.8rem;">
+          <div class="login-secure-icon-container" style="background: rgba(14, 165, 233, 0.08); border-color: rgba(14, 165, 233, 0.18);">
+            <span style="font-size: 1.3rem;">✉️</span>
+          </div>
+          <div>
+            <h3 style="margin: 0; font-size: 1.2rem;" data-i18n="email_modal_title">Müşteri Bildirimi Gönder</h3>
+            <span style="font-size: 0.75rem; color: var(--text-muted); display: block; margin-top: -2px;" data-i18n="email_modal_subtitle">ANL Vertex Bildirim İstasyonu</span>
+          </div>
+        </div>
+        <button id="btn-close-email-modal" class="btn-close">&times;</button>
+      </div>
+      <p style="color: var(--text-secondary); font-size: 0.85rem; margin-bottom: 1.5rem; margin-top: 0.5rem;" data-i18n="email_modal_desc">
+        Seçilen müşteriye model çıktısı ve stratejik eylemler hakkında bilgilendirme e-postası gönderin.
+      </p>
+
+      <form id="email-form" onsubmit="event.preventDefault(); sendEmail();">
+        <div class="control-group">
+          <label class="control-label" for="email-recipient" data-i18n="label_email_recipient">Alıcı E-posta:</label>
+          <input type="email" id="email-recipient" class="text-input" placeholder="ornek@firma.com" required>
+        </div>
+
+        <div class="control-group">
+          <label class="control-label" for="email-subject" data-i18n="label_email_subject">Konu:</label>
+          <input type="text" id="email-subject" class="text-input" value="ANL Vertex Analitik Tahmin Raporu" required>
+        </div>
+
+        <div class="control-group" style="margin-bottom: 1.2rem;">
+          <label class="control-label" for="email-message" data-i18n="label_email_message">Mesaj İçeriği:</label>
+          <textarea id="email-message" class="text-input" rows="6" style="resize: vertical; min-height: 120px; font-family: var(--font-sans);" required></textarea>
+        </div>
+
+        <div class="btn-group" style="margin-top: 1rem;">
+          <button type="button" class="btn-secondary" id="btn-cancel-email" style="flex: 1;" data-i18n="btn_cancel">İptal</button>
+          <button type="submit" class="btn-primary" style="flex: 2;" data-i18n="btn_send_email">Gönder</button>
+        </div>
+      </form>
     </div>
   </div>
 

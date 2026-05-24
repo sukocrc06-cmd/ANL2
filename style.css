@@ -1145,6 +1145,7 @@ canvas {
   }
   .glass-card {
     padding: 1.5rem;
+    flex-direction: column !important;
   }
 }
 

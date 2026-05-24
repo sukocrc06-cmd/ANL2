@@ -1841,6 +1841,7 @@ document.addEventListener('DOMContentLoaded', () => {
         <th>${currentLang === 'tr' ? 'Bağış Tutarı ($)' : 'Donation Amount ($)'}</th>
         <th>${currentLang === 'tr' ? 'Üyelik Süresi (Yıl)' : 'Membership (Years)'}</th>
         <th>${currentLang === 'tr' ? 'Sınıflandırma' : 'Classification'}</th>
+        <th>✉️</th>
       `;
 
     } else if (currentSector === 'egitim') {
@@ -1893,6 +1894,7 @@ document.addEventListener('DOMContentLoaded', () => {
         <th>${currentLang === 'tr' ? 'Devam (%)' : 'Attendance (%)'}</th>
         <th>${currentLang === 'tr' ? 'Sınav Puanı' : 'Exam Score'}</th>
         <th>${currentLang === 'tr' ? 'Başarı Riski' : 'Failure Risk'}</th>
+        <th>✉️</th>
       `;
 
     } else if (currentSector === 'gida') {
@@ -1947,6 +1949,7 @@ document.addEventListener('DOMContentLoaded', () => {
         <th>${currentLang === 'tr' ? 'Restoran Puanı' : 'Restaurant Score'}</th>
         <th>${currentLang === 'tr' ? 'Kampanya' : 'Campaign'}</th>
         <th>${currentLang === 'tr' ? 'Günlük Yemek Talebi' : 'Daily Food Demand'}</th>
+        <th>✉️</th>
       `;
 
       regressionDots = [];
@@ -2036,6 +2039,7 @@ document.addEventListener('DOMContentLoaded', () => {
         <th>${currentLang === 'tr' ? 'Trafik Katsayısı' : 'Traffic Coefficient'}</th>
         <th>${currentLang === 'tr' ? 'Paket Adedi' : 'Package Count'}</th>
         <th>${currentLang === 'tr' ? 'Gecikme Olasılığı' : 'Delay Probability'}</th>
+        <th>✉️</th>
       `;
     } else if (currentSector === 'tekstil') {
       vizContentBox.innerHTML = `
@@ -2080,6 +2084,7 @@ document.addEventListener('DOMContentLoaded', () => {
         <th>${currentLang === 'tr' ? 'Sepet Tutarı' : 'Basket Amount'}</th>
         <th>${currentLang === 'tr' ? 'İndirim Etkisi' : 'Discount Effect'}</th>
         <th>${currentLang === 'tr' ? 'Müşteri Segmenti' : 'Customer Segment'}</th>
+        <th>✉️</th>
       `;
     }
 
@@ -2223,6 +2228,7 @@ document.addEventListener('DOMContentLoaded', () => {
           <td>$${row.income}</td>
           <td>${row.dti} ${currentLang === 'tr' ? 'Yıl' : 'Years'}</td>
           <td><span class="badge ${badgeClass}">${getLocalizedRowStatus(row, 'vakif', currentLang)}</span></td>
+          <td><button class="btn-primary" style="padding: 0.3rem 0.6rem; font-size: 0.85rem;" onclick="openEmailModal('${row.name.replace(/'/g, "\\'")}', '${row.email || (row.name.toLowerCase().replace(/[^a-z0-9]/g, '') + '@example.com')}')">✉️</button></td>
         `;
       } else if (currentSector === 'egitim') {
         tr.innerHTML = `
@@ -2231,6 +2237,7 @@ document.addEventListener('DOMContentLoaded', () => {
           <td>%${row.bmi}</td>
           <td>${row.age}</td>
           <td><span class="badge ${badgeClass}">${getLocalizedRowStatus(row, 'egitim', currentLang)}</span></td>
+          <td><button class="btn-primary" style="padding: 0.3rem 0.6rem; font-size: 0.85rem;" onclick="openEmailModal('${row.name.replace(/'/g, "\\'")}', '${row.email || (row.name.toLowerCase().replace(/[^a-z0-9]/g, '') + '@example.com')}')">✉️</button></td>
         `;
       } else if (currentSector === 'gida') {
         tr.innerHTML = `
@@ -2239,6 +2246,7 @@ document.addEventListener('DOMContentLoaded', () => {
           <td>${row.beds} ${currentLang === 'tr' ? 'Puan' : 'Points'}</td>
           <td>${currentLang === 'tr' ? row.location : (row.location === 'Evet' ? 'Yes' : 'No')}</td>
           <td><span class="badge badge-success">${getLocalizedRowStatus(row, 'gida', currentLang)}</span></td>
+          <td><button class="btn-primary" style="padding: 0.3rem 0.6rem; font-size: 0.85rem;" onclick="openEmailModal('${row.name.replace(/'/g, "\\'")}', '${row.email || (row.name.toLowerCase().replace(/[^a-z0-9]/g, '') + '@example.com')}')">✉️</button></td>
         `;
       } else if (currentSector === 'lojistik') {
         tr.innerHTML = `
@@ -2247,6 +2255,7 @@ document.addEventListener('DOMContentLoaded', () => {
           <td>${row.sessions}</td>
           <td>${row.tickets} ${currentLang === 'tr' ? 'Adet' : 'Units'}</td>
           <td><span class="badge ${badgeClass}">${getLocalizedRowStatus(row, 'lojistik', currentLang)}</span></td>
+          <td><button class="btn-primary" style="padding: 0.3rem 0.6rem; font-size: 0.85rem;" onclick="openEmailModal('${row.name.replace(/'/g, "\\'")}', '${row.email || (row.name.toLowerCase().replace(/[^a-z0-9]/g, '') + '@example.com')}')">✉️</button></td>
         `;
       } else if (currentSector === 'tekstil') {
         tr.innerHTML = `
@@ -2255,6 +2264,7 @@ document.addEventListener('DOMContentLoaded', () => {
           <td>${row.sessions} ${currentLang === 'tr' ? 'TL' : 'TRY'}</td>
           <td>%${row.tickets}</td>
           <td><span class="badge ${badgeClass}">${getLocalizedRowStatus(row, 'tekstil', currentLang)}</span></td>
+          <td><button class="btn-primary" style="padding: 0.3rem 0.6rem; font-size: 0.85rem;" onclick="openEmailModal('${row.name.replace(/'/g, "\\'")}', '${row.email || (row.name.toLowerCase().replace(/[^a-z0-9]/g, '') + '@example.com')}')">✉️</button></td>
         `;
       }
 
@@ -5257,5 +5267,71 @@ document.addEventListener('DOMContentLoaded', () => {
       });
     }
   }
+
+  // Email Notification Modal logic
+  window.openEmailModal = function(name, email) {
+    const modal = document.getElementById('email-modal');
+    if (!modal) return;
+    document.getElementById('email-recipient').value = email;
+    
+    const subject = currentLang === 'tr' 
+      ? 'ANL Vertex Analitik Tahmin Raporu'
+      : 'ANL Vertex Analytical Prediction Report';
+    document.getElementById('email-subject').value = subject;
+    
+    const message = currentLang === 'tr'
+      ? `Sayın ${name},\n\nANL Vertex platformu üzerinden gerçekleştirdiğimiz model analizine göre tahmin kaydınız güncellenmiştir.\n\nİyi çalışmalar,\nANL Vertex Ekibi`
+      : `Dear ${name},\n\nAccording to the model analysis performed on the ANL Vertex platform, your prediction record has been updated.\n\nBest regards,\nANL Vertex Team`;
+    document.getElementById('email-message').value = message;
+    
+    modal.classList.add('active');
+  };
+
+  window.closeEmailModal = function() {
+    const modal = document.getElementById('email-modal');
+    if (modal) modal.classList.remove('active');
+  };
+
+  window.sendEmail = async function() {
+    const recipient = document.getElementById('email-recipient').value;
+    const subject = document.getElementById('email-subject').value;
+    const message = document.getElementById('email-message').value;
+    
+    const btn = document.querySelector('#email-form button[type="submit"]');
+    const originalText = btn.textContent;
+    btn.textContent = currentLang === 'tr' ? 'Gönderiliyor...' : 'Sending...';
+    btn.disabled = true;
+
+    try {
+      const response = await fetch('http://localhost:3000/send-email', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ recipient, subject, message })
+      });
+      
+      if (response.ok) {
+        alert(currentLang === 'tr' ? 'E-posta bildirimi başarıyla gönderildi!' : 'Email notification sent successfully!');
+      } else {
+        alert(currentLang === 'tr' ? 'Bildirim gönderilirken bir hata oluştu!' : 'An error occurred while sending the notification!');
+      }
+    } catch (error) {
+      console.error('Email sending failed:', error);
+      // Fallback message for offline / mock server
+      alert(currentLang === 'tr' 
+        ? `Bildirim gönderimi simüle edildi (Çevrimdışı Mod).\nAlıcı: ${recipient}`
+        : `Notification sending simulated (Offline Mode).\nRecipient: ${recipient}`);
+    } finally {
+      btn.textContent = originalText;
+      btn.disabled = false;
+      closeEmailModal();
+    }
+  };
+
+  const btnCloseEmailModal = document.getElementById('btn-close-email-modal');
+  const btnCancelEmail = document.getElementById('btn-cancel-email');
+  if (btnCloseEmailModal) btnCloseEmailModal.addEventListener('click', closeEmailModal);
+  if (btnCancelEmail) btnCancelEmail.addEventListener('click', closeEmailModal);
 
 });
