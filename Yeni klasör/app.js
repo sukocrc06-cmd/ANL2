@@ -123,10 +123,6 @@ const translations = {
     tr: "Sadece tahmin üretmekle kalmaz, model çıktısına göre firmanızın alabileceği stratejik iş kararlarını belirler.",
     en: "Does not only generate predictions but also determines strategic business decisions your firm can take based on the model output."
   },
-  feat_files_title: {
-    tr: "Proje Dosya Yapısı (Sistem Bileşenleri)",
-    en: "Project File Structure (System Components)"
-  },
   badge_sectors: {
     tr: "Sektörel Çözümler",
     en: "Sectoral Solutions"
@@ -1422,9 +1418,9 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  btnOpenLogin.addEventListener('click', showLoginModal);
-  btnCloseModal.addEventListener('click', hideLoginModal);
-  btnCancelLogin.addEventListener('click', hideLoginModal);
+  btnOpenLogin.addEventListener('click', () => switchPage('login'));
+  btnCloseModal.addEventListener('click', () => switchPage('welcome'));
+  btnCancelLogin.addEventListener('click', () => switchPage('welcome'));
 
   // Password Visibility Toggle
   const btnTogglePassword = document.getElementById('btn-toggle-password');
@@ -1474,6 +1470,7 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
 
+  // Login Submit Event
   loginForm.addEventListener('submit', (e) => {
     e.preventDefault();
     const user = document.getElementById('login-username').value.trim();
@@ -1496,12 +1493,18 @@ document.addEventListener('DOMContentLoaded', () => {
         countdownInterval = null;
       }
       
-      // Persist session
+      // Persist session state in localStorage
+      const cardData = {
+        username: tempCredentials.username,
+        password: tempCredentials.password,
+        company: tempCredentials.company,
+        sector: tempCredentials.sector,
+        expiresAt: tempCredentials.expiresAt
+      };
       localStorage.setItem('isLoggedIn', 'true');
-      localStorage.setItem('userCardData', JSON.stringify(tempCredentials));
+      localStorage.setItem('userCardData', JSON.stringify(cardData));
       
-      hideLoginModal();
-      transitionToDashboard();
+      switchPage('dashboard');
     } else {
       loginFailedAttempts++;
       if (loginFailedAttempts >= 3) {
@@ -1529,19 +1532,64 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // ================= STATE 3: DASHBOARD CONTROL ENGINE =================
   
-  function transitionToDashboard() {
-    pageWelcome.style.display = 'none';
-    pageDashboard.style.display = 'flex';
+  // Centralized SPA navigation screen toggler
+  function switchPage(pageId, pushState = true) {
+    if (pushState) {
+      history.pushState({ pageId }, '', `#${pageId}`);
+    }
 
-    // Set sector theme color dynamically on login transition
-    updateThemeColor(currentSector);
+    if (pageId === 'welcome') {
+      if (localStorage.getItem('isLoggedIn') === 'true') {
+        performLogout();
+      }
+      pageWelcome.style.display = 'block';
+      pageDashboard.style.display = 'none';
+      hideLoginModal();
+    } else if (pageId === 'login') {
+      pageWelcome.style.display = 'block';
+      pageDashboard.style.display = 'none';
+      showLoginModal();
+    } else if (pageId === 'dashboard') {
+      pageWelcome.style.display = 'none';
+      pageDashboard.style.display = 'flex';
+      hideLoginModal();
 
-    updateDashboardLanguageSpecifics();
+      // Set sector theme color dynamically on login transition
+      updateThemeColor(currentSector);
 
-    // Build Layout content, inputs, forms and table (wrapped in sector schema loader)
-    loadSectorSchema(currentSector, () => {
-      setupSectorDashboard();
+      updateDashboardLanguageSpecifics();
+
+      // Build Layout content, inputs, forms and table (wrapped in sector schema loader)
+      loadSectorSchema(currentSector, () => {
+        setupSectorDashboard();
+      });
+    }
+  }
+
+  function performLogout() {
+    // Reset global state
+    currentCompany = '';
+    currentSector = '';
+    tempCredentials = null;
+    if (countdownInterval) {
+      clearInterval(countdownInterval);
+      countdownInterval = null;
+    }
+
+    // Clear persisted session
+    localStorage.removeItem('isLoggedIn');
+    localStorage.removeItem('userCardData');
+
+    // Reset dynamic theme color scheme and promo selection indicators
+    updateThemeColor('default');
+    document.querySelectorAll('.sector-promo-card').forEach(card => {
+      card.classList.remove('active-selection');
     });
+
+    // Clear form inputs
+    accessCardForm.reset();
+    validateCardForm(); // Hide create button
+    tempCard.style.display = 'none';
   }
 
   function getLocalizedRowStatus(row, sector, lang) {
@@ -3376,33 +3424,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const btnLogout = document.getElementById('btn-logout');
 
   btnLogout.addEventListener('click', () => {
-    // Reset global state
-    currentCompany = '';
-    currentSector = '';
-    tempCredentials = null;
-    if (countdownInterval) {
-      clearInterval(countdownInterval);
-      countdownInterval = null;
-    }
-
-    // Clear session persistence
-    localStorage.removeItem('isLoggedIn');
-    localStorage.removeItem('userCardData');
-
-    // Reset dynamic theme color scheme and promo selection indicators
-    updateThemeColor('default');
-    document.querySelectorAll('.sector-promo-card').forEach(card => {
-      card.classList.remove('active-selection');
-    });
-
-    // Clear form inputs
-    accessCardForm.reset();
-    validateCardForm(); // Hide create button
-    tempCard.style.display = 'none';
-
-    // Route back to Welcome Page
-    pageDashboard.style.display = 'none';
-    pageWelcome.style.display = 'block';
+    switchPage('welcome');
   });
 
   // ================= SCROLL REVEAL OBSERVER =================
@@ -4749,64 +4771,95 @@ document.addEventListener('DOMContentLoaded', () => {
     ctx.fillText(`${n} runs`, W - PAD.right - 38, H - 3);
   }
 
-  // Check persisted session from localStorage
-  function checkSession() {
-    const isLoggedIn = localStorage.getItem('isLoggedIn');
-    const userCardDataStr = localStorage.getItem('userCardData');
-    if (isLoggedIn === 'true' && userCardDataStr) {
-      try {
-        const cardData = JSON.parse(userCardDataStr);
-        if (cardData) {
-          tempCredentials = cardData;
-          currentCompany = cardData.company;
-          currentSector = cardData.sector;
-          transitionToDashboard();
-          return true;
-        }
-      } catch (e) {
-        console.error("Error parsing session data", e);
-      }
-    }
-    return false;
-  }
-
   // Set initial language from local storage state or default
   setLanguage(currentLang);
 
-  // Check if session is already active
-  const hasSession = checkSession();
+  // Set up initial history state
+  if (!history.state) {
+    history.replaceState({ pageId: 'welcome' }, '', '#welcome');
+  }
 
-  // Auto-login via QR Code scan query parameters (only if no active session already loaded)
-  if (!hasSession) {
-    const urlParams = new URLSearchParams(window.location.search);
-    if (urlParams.get('qrLogin') === 'true') {
-      const u = urlParams.get('u');
-      const p = urlParams.get('p');
-      const s = urlParams.get('s');
-      const c = urlParams.get('c');
-      if (u && p && s && c) {
-        currentCompany = c;
-        currentSector = s;
-        
-        // Store credentials as valid for 10 mins
-        tempCredentials = {
-          username: u,
-          password: p,
-          company: c,
-          sector: s,
-          expiresAt: Date.now() + 10 * 60 * 1000
-        };
-        
-        // Persist session
-        localStorage.setItem('isLoggedIn', 'true');
-        localStorage.setItem('userCardData', JSON.stringify(tempCredentials));
-        
-        // Clear URL params silently so refreshing doesn't loop
-        window.history.replaceState({}, document.title, window.location.pathname);
-        
-        // Transition to Dashboard directly!
-        transitionToDashboard();
+  // Handle browser navigation (Back/Forward)
+  window.addEventListener('popstate', (e) => {
+    if (e.state && e.state.pageId) {
+      switchPage(e.state.pageId, false);
+    } else {
+      switchPage('welcome', false);
+    }
+  });
+
+  // Check for existing session in localStorage
+  function checkSession() {
+    const isLoggedIn = localStorage.getItem('isLoggedIn');
+    const userCardDataRaw = localStorage.getItem('userCardData');
+    if (isLoggedIn === 'true' && userCardDataRaw) {
+      try {
+        const cardData = JSON.parse(userCardDataRaw);
+        if (cardData && cardData.company && cardData.sector) {
+          currentCompany = cardData.company;
+          currentSector = cardData.sector;
+          
+          // Recreate tempCredentials
+          tempCredentials = {
+            username: cardData.username || '',
+            password: cardData.password || '',
+            company: cardData.company,
+            sector: cardData.sector,
+            expiresAt: Date.now() + 10 * 60 * 1000 // extend validity since they refreshed
+          };
+          
+          // Set initial history state to dashboard on auto-login redirect
+          history.replaceState({ pageId: 'dashboard' }, '', '#dashboard');
+          
+          // Transition to Dashboard directly!
+          switchPage('dashboard', false);
+        }
+      } catch (e) {
+        console.error('Failed to parse session data:', e);
+        localStorage.removeItem('isLoggedIn');
+        localStorage.removeItem('userCardData');
       }
+    }
+  }
+
+  checkSession();
+
+  // Auto-login via QR Code scan query parameters
+  const urlParams = new URLSearchParams(window.location.search);
+  if (urlParams.get('qrLogin') === 'true') {
+    const u = urlParams.get('u');
+    const p = urlParams.get('p');
+    const s = urlParams.get('s');
+    const c = urlParams.get('c');
+    if (u && p && s && c) {
+      currentCompany = c;
+      currentSector = s;
+      
+      // Store credentials as valid for 10 mins
+      tempCredentials = {
+        username: u,
+        password: p,
+        company: c,
+        sector: s,
+        expiresAt: Date.now() + 10 * 60 * 1000
+      };
+      
+      // Persist session state in localStorage
+      const cardData = {
+        username: u,
+        password: p,
+        company: c,
+        sector: s,
+        expiresAt: tempCredentials.expiresAt
+      };
+      localStorage.setItem('isLoggedIn', 'true');
+      localStorage.setItem('userCardData', JSON.stringify(cardData));
+      
+      // Clear URL params silently and update history to dashboard
+      window.history.replaceState({ pageId: 'dashboard' }, '', '#dashboard');
+      
+      // Transition to Dashboard directly!
+      switchPage('dashboard', false);
     }
   }
 

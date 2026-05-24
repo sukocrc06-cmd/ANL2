@@ -1914,30 +1914,3 @@ canvas {
     border-radius: 4px !important;
   }
 }
-
-/* File tags overview style */
-.files-overview-list {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.4rem;
-  margin-top: 0.5rem;
-}
-
-.file-tag {
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid var(--border-color);
-  padding: 0.2rem 0.5rem;
-  border-radius: 6px;
-  font-size: 0.75rem;
-  font-family: monospace;
-  color: var(--text-secondary);
-  transition: var(--transition-smooth);
-  cursor: help;
-}
-
-.file-tag:hover {
-  border-color: var(--primary);
-  color: var(--primary);
-  background: var(--primary-glow);
-}
-
