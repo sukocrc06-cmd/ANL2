@@ -6457,96 +6457,41 @@ document.addEventListener('DOMContentLoaded', () => {
   // ================= DASHBOARD SECTION NAVIGATION CONTROLLER =================
   const btnInsights = document.getElementById('menu-btn-insights');
   const btnSchemaIntel = document.getElementById('menu-btn-schema-intel');
-  const secInsights = document.getElementById('general-insights-section');
-  const secSchemaIntel = document.getElementById('schema-intel-section');
-
-  function hideAllSections() {
-    document.querySelectorAll('.dashboard-section').forEach(sec => {
-      sec.style.display = 'none';
-    });
-  }
-
-  function showSection(targetId) {
-    const sec = document.getElementById(targetId);
-    if (sec) {
-      sec.style.display = 'block';
-    }
-  }
-
-  function activateMenuItem(item) {
-    document.querySelectorAll('.sidebar-menu-item').forEach(btn => {
-      btn.classList.remove('active');
-    });
-    item.classList.add('active');
-  }
+  const secInsights = document.getElementById('dashboard-insights-section');
+  const secSchemaIntel = document.getElementById('dashboard-schema-intel-section');
 
   function showTab(tabId) {
-    let target = '';
-    let btn = null;
-    if (tabId === 'menu-btn-insights') { target = 'general-insights'; btn = btnInsights; }
-    else if (tabId === 'menu-btn-schema-intel') { target = 'schema-intel'; btn = btnSchemaIntel; }
-    else if (tabId === 'menu-btn-automl') { target = 'automl'; btn = document.getElementById('menu-btn-automl'); }
-    else if (tabId === 'menu-btn-autobuilder') { target = 'autobuilder'; btn = document.getElementById('menu-btn-autobuilder'); }
-    else if (tabId === 'menu-btn-aura-os') { target = 'aura-os'; btn = document.getElementById('menu-btn-aura-os'); }
-    else if (tabId === 'menu-btn-saas') { target = 'saas'; btn = document.getElementById('menu-btn-saas'); }
-
-    if (target && btn) {
-      activateMenuItem(btn);
-      hideAllSections();
-      showSection(target + '-section');
-
-      // Trigger callbacks
-      if (target === 'automl' && typeof updateAutoMLSharedState === 'function') {
-        updateAutoMLSharedState();
-      }
-      if (target === 'autobuilder' && typeof updateAutoBuilderSharedState === 'function') {
-        updateAutoBuilderSharedState();
-      }
-      if (target === 'aura-os' && typeof initAuraOSModule === 'function') {
-        initAuraOSModule();
-      }
+    const btn = document.getElementById(tabId);
+    if (btn) {
+      btn.click();
     }
   }
 
-  // Attach event listeners to all menu items
-  document.querySelectorAll('.sidebar-menu-item').forEach(item => {
+  document.querySelectorAll('.menu-item').forEach(item => {
     item.addEventListener('click', function(e) {
       e.preventDefault();
-      const target = this.getAttribute('data-target');
-      if (!target) return;
-
-      activateMenuItem(this);
-      hideAllSections();
-      showSection(target + '-section');
+      // Deactivate all
+      document.querySelectorAll('.menu-item').forEach(i => i.classList.remove('active'));
+      document.querySelectorAll('.dashboard-section').forEach(s => s.classList.remove('active'));
+      // Activate target
+      this.classList.add('active');
+      const targetId = this.getAttribute('data-target');
+      if(document.getElementById(targetId)) {
+        document.getElementById(targetId).classList.add('active');
+      }
 
       // Trigger module callbacks
-      if (target === 'automl' && typeof updateAutoMLSharedState === 'function') {
+      if (targetId === 'dashboard-automl-section' && typeof updateAutoMLSharedState === 'function') {
         updateAutoMLSharedState();
       }
-      if (target === 'autobuilder' && typeof updateAutoBuilderSharedState === 'function') {
+      if (targetId === 'dashboard-autobuilder-section' && typeof updateAutoBuilderSharedState === 'function') {
         updateAutoBuilderSharedState();
       }
-      if (target === 'aura-os' && typeof initAuraOSModule === 'function') {
+      if (targetId === 'dashboard-aura-os-section' && typeof initAuraOSModule === 'function') {
         initAuraOSModule();
       }
     });
   });
-
-  // Ensure that the default dashboard state (#general-insights-section) is correctly handled on page load
-  function initDefaultDashboardNavigation() {
-    hideAllSections();
-    const defaultSec = document.getElementById('general-insights-section');
-    if (defaultSec) {
-      defaultSec.style.display = 'block';
-    }
-    const defaultItem = document.querySelector('.sidebar-menu-item[data-target="general-insights"]');
-    if (defaultItem) {
-      document.querySelectorAll('.sidebar-menu-item').forEach(btn => btn.classList.remove('active'));
-      defaultItem.classList.add('active');
-    }
-  }
-
-  initDefaultDashboardNavigation();
 
   const dropZone = document.getElementById('schema-drop-zone');
   const fileInput = document.getElementById('schema-file-input');
@@ -7038,8 +6983,10 @@ document.addEventListener('DOMContentLoaded', () => {
         
         btnInsights.classList.add('active');
         btnSchemaIntel.classList.remove('active');
-        secInsights.style.display = 'block';
-        secSchemaIntel.style.display = 'none';
+        secInsights.classList.add('active');
+        secSchemaIntel.classList.remove('active');
+        secInsights.style.display = '';
+        secSchemaIntel.style.display = '';
         
         alert(currentLang === 'tr' 
           ? `Başarı! Veri şeması uygulandı. Platform sektörü "${sectorLabelsCard[currentLang][targetSector]}" olarak güncellendi.`
