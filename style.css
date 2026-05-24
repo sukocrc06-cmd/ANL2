@@ -882,15 +882,28 @@ input:checked + .slider-toggle:before {
 
 .dashboard-grid {
   display: grid;
-  grid-template-columns: 1.3fr 1fr;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
   gap: 2rem;
 }
 
-@media (max-width: 900px) {
+.dashboard-two-col-grid {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: 1.2fr 1fr;
+  gap: 2rem;
+}
+
+@media (max-width: 768px) {
   .dashboard-grid {
     grid-template-columns: 1fr;
   }
+  .dashboard-two-col-grid {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 1.5rem;
+  }
 }
+
 
 /* Visualizer Area */
 .visualizer-card {
@@ -1029,6 +1042,7 @@ canvas {
 .data-table th, .data-table td {
   padding: 0.8rem 1rem;
   border-bottom: 1px solid var(--border-color);
+  white-space: nowrap;
 }
 
 .data-table th {
@@ -1914,3 +1928,21 @@ canvas {
     border-radius: 4px !important;
   }
 }
+
+/* Dashboard mobile responsive enhancements */
+@media (max-width: 768px) {
+  #aura-chat-logs {
+    max-height: 300px !important;
+  }
+}
+
+.dashboard-main canvas,
+.dashboard-main svg {
+  max-width: 100%;
+}
+
+.dashboard-main svg,
+.dashboard-main canvas:not(#regression-canvas) {
+  height: auto;
+}
+
