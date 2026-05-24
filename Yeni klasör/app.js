@@ -1418,9 +1418,17 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
+  const handleCloseLogin = () => {
+    if (history.state && history.state.pageId === 'login') {
+      history.back();
+    } else {
+      switchPage('welcome');
+    }
+  };
+
   btnOpenLogin.addEventListener('click', () => switchPage('login'));
-  btnCloseModal.addEventListener('click', () => switchPage('welcome'));
-  btnCancelLogin.addEventListener('click', () => switchPage('welcome'));
+  btnCloseModal.addEventListener('click', handleCloseLogin);
+  btnCancelLogin.addEventListener('click', handleCloseLogin);
 
   // Password Visibility Toggle
   const btnTogglePassword = document.getElementById('btn-toggle-password');
@@ -1504,7 +1512,9 @@ document.addEventListener('DOMContentLoaded', () => {
       localStorage.setItem('isLoggedIn', 'true');
       localStorage.setItem('userCardData', JSON.stringify(cardData));
       
-      switchPage('dashboard');
+      // Replace #login with #dashboard in history to prevent back button from returning to the login modal
+      history.replaceState({ pageId: 'dashboard' }, '', '#dashboard');
+      switchPage('dashboard', false);
     } else {
       loginFailedAttempts++;
       if (loginFailedAttempts >= 3) {
