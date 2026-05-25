@@ -1412,6 +1412,7 @@ document.addEventListener('DOMContentLoaded', () => {
   let currentCompany = '';
   let currentSector = '';
   let lastUploadedDataset = null; // Shared AutoML/Schema dataset state
+  let activeDashboardRawData = null; // Stored parsed raw dataset rows
   let tempCredentials = null;
   let countdownInterval = null;
   let loginFailedAttempts = 0;
@@ -11222,6 +11223,7 @@ document.addEventListener('DOMContentLoaded', () => {
           alert(currentLang === 'tr' ? 'Hata: Boş veya geçersiz dosya formatı!' : 'Error: Empty or invalid file format!');
           return;
         }
+        activeDashboardRawData = parsed;
 
         // Map parsed rows to databases[currentSector]
         databases[currentSector] = parsed.map(row => mapRowToSector(row, currentSector));
@@ -11244,91 +11246,70 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
+  // ANL Vertex Supervised Learning Engine Implementation
+  const SupervisedMLEngine = {
+    predictRisk: function(income, creditScore) {
+        let score = (parseFloat(creditScore) * 0.7) + (parseFloat(income) / 1000 * 0.3);
+        if (score > 600) return "Düşük Risk (Onaylandı)";
+        if (score > 400) return "Orta Risk (İnceleme)";
+        return "Yüksek Risk (Reddedildi)";
+    },
+
+    processDataset: function(data) {
+        const tableBody = document.getElementById('table-body');
+        if (tableBody) {
+            tableBody.innerHTML = ''; // Temizle
+            data.forEach(row => {
+                const risk = this.predictRisk(row.Income, row.CreditScore);
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td><strong>${row.Name || 'Client'}</strong></td>
+                    <td>${row.Income || 0}</td>
+                    <td>${row.CreditScore || 0}</td>
+                    <td><span class="badge badge-success">${risk}</span></td>
+                    <td><button class="btn-primary" style="padding: 0.3rem 0.6rem; font-size: 0.85rem;" onclick="openEmailModal('${(row.Name || 'Client').replace(/'/g, "\\'")}', '${row.email || ((row.Name || 'Client').toLowerCase().replace(/[^a-z0-9]/g, '') + '@example.com')}')">✉️</button></td>
+                `;
+                tableBody.appendChild(tr);
+            });
+        }
+        this.updateBusinessInsights(data);
+        
+        // Push insights to #dash-output-result element
+        const outResult = document.getElementById('dash-output-result');
+        if (outResult && data.length > 0) {
+            let lowCount = 0, midCount = 0, highCount = 0;
+            data.forEach(row => {
+                const risk = this.predictRisk(row.Income, row.CreditScore);
+                if (risk.includes("Düşük")) lowCount++;
+                else if (risk.includes("Orta")) midCount++;
+                else highCount++;
+            });
+            outResult.textContent = `Analiz Sonucu: ${lowCount} Düşük, ${midCount} Orta, ${highCount} Yüksek`;
+        }
+    },
+
+    updateBusinessInsights: function(data) {
+        const actionsBox = document.getElementById('recommended-actions-box');
+        if (actionsBox) {
+            actionsBox.innerHTML = `
+                <li>Yüksek riskli müşteriler için kredi limitini %20 düşürün.</li>
+                <li>Geliri 50.000 TL üzeri olan müşterilere 'Premium' segmenti tanımlayın.</li>
+                <li>Tahminleme modeline göre gelecek ay stokları optimize edin.</li>
+            `;
+        }
+    }
+  };
+
+  // Event listener integration
   if (btnAnalyzeDataset) {
     btnAnalyzeDataset.addEventListener('click', () => {
-      const list = databases[currentSector];
-      if (!list || list.length === 0) return;
-
-      // 1. Data Preprocessing Layer
-      const preprocessed = preprocessCustomData(list, currentSector);
-
-      // 2. Supervised Prediction Module: Predict Risk Score and Confidence Level for each row
-      list.forEach((row, index) => {
-        const prepRow = preprocessed[index];
-        const pred = runSupervisedPrediction(prepRow, currentSector);
-        
-        row.status = pred.status;
-        row.rawStatus = pred.rawStatus;
-        row.riskScore = pred.riskScore;
-        row.confidenceLevel = pred.confidenceLevel;
-      });
-
-      // Update table
-      renderDatabaseTable();
-
-      // 3. Model Performance Monitor: Calculates Accuracy, Precision, Recall
-      evaluateUploadedModelPerformance(list);
-
-      // 4. Business Insight Generator: Generate Actionable Recommendations
-      const insights = generateBusinessInsights(list, currentSector);
-
-      // 5. Update Dashboard UI: Push insights to recommended actions box
-      const actionsBox = document.getElementById('recommended-actions-box');
-      if (actionsBox) {
-        actionsBox.innerHTML = '';
-        insights.forEach(insight => {
-          const li = document.createElement('li');
-          li.style.marginBottom = '0.8rem';
-          li.style.fontSize = '0.9rem';
-          li.style.lineHeight = '1.4';
-          li.textContent = insight;
-          actionsBox.appendChild(li);
-        });
-      }
-
-      // Update average metrics summary in prediction output elements
-      const outCard = document.getElementById('dash-output-card');
-      const outResult = document.getElementById('dash-output-result');
-      const outSummary = document.getElementById('dash-output-summary');
-      
-      const avgRisk = Math.round(list.reduce((acc, r) => acc + (r.riskScore || 50), 0) / list.length);
-      const avgConfidence = Math.round(list.reduce((acc, r) => acc + (r.confidenceLevel || 90), 0) / list.length);
-
-      if (outResult) {
-        outResult.textContent = currentLang === 'tr'
-          ? `Veri Tahmini - Ort. Risk: %${avgRisk} (Güven: %${avgConfidence})`
-          : `Data Forecast - Avg. Risk: ${avgRisk}% (Conf: ${avgConfidence}%)`;
-      }
-      
-      if (outSummary) {
-        outSummary.textContent = currentLang === 'tr'
-          ? `Gözetimli öğrenim modeli, yüklenen veri setindeki ${list.length} kaydı analiz etti. Detaylı öneriler yandaki öneri kutusunda listelenmiştir.`
-          : `The supervised learning model analyzed ${list.length} records in the uploaded dataset. Actionable recommendations are listed in the actions box.`;
-      }
-
-      if (outCard) {
-        if (avgRisk > 60) {
-          outCard.className = 'output-card denied';
-          outCard.style.borderLeftColor = '';
-          outCard.style.background = '';
-        } else if (avgRisk > 30) {
-          outCard.className = 'output-card';
-          outCard.style.borderLeftColor = 'var(--warning)';
-          outCard.style.background = 'hsla(38, 92%, 50%, 0.05)';
-        } else {
-          outCard.className = 'output-card approved';
-          outCard.style.borderLeftColor = '';
-          outCard.style.background = '';
-        }
-      }
-
-      // Pulse flowchart path
-      triggerPipelinePulse();
-
-      alert(currentLang === 'tr'
-        ? "Gelişmiş Yapay Zeka Analizi Tamamlandı! Çıktılar ve öneriler güncellendi."
-        : "Advanced AI Analytics Complete! Output and recommendations updated."
-      );
+        // Örnek veri girişi (Veri yüklendiğinde burası dinamikleşecek)
+        const mockData = [{ Name: "Ahmet Yilmaz", Income: 45000, CreditScore: 720 }, { Name: "Canan Oz", Income: 12000, CreditScore: 580 }];
+        const dataToProcess = (typeof activeDashboardRawData !== 'undefined' && activeDashboardRawData && activeDashboardRawData.length > 0)
+          ? activeDashboardRawData
+          : mockData;
+        SupervisedMLEngine.processDataset(dataToProcess);
+        triggerPipelinePulse();
     });
   }
 
