@@ -1215,8 +1215,11 @@ document.addEventListener('DOMContentLoaded', () => {
     dashboard: 'dashboard-insights-section',
     schema: 'dashboard-schema-intel-section',
     automl: 'dashboard-automl-section',
+    builder: 'dashboard-autobuilder-section',
     autobuilder: 'dashboard-autobuilder-section',
+    copilot: 'dashboard-aura-os-section',
     aura: 'dashboard-aura-os-section',
+    cloud: 'dashboard-saas-section',
     saas: 'dashboard-saas-section'
   };
 
@@ -1432,11 +1435,15 @@ document.addEventListener('DOMContentLoaded', () => {
           if (timerProgress) timerProgress.style.width = '0%';
           if (countdownTimer) countdownTimer.textContent = '00:00';
           
-          const currentHash = window.location.hash;
-          const hasValidPanel = currentHash && PANELS[currentHash.substring(1)];
-          const targetURL = hasValidPanel ? currentHash : '#dashboard';
-          history.replaceState({ pageId: 'dashboard' }, '', targetURL);
-          switchPage('dashboard', false);
+          // Explicitly update URL hash to #dashboard on login transition
+          window.location.hash = 'dashboard';
+
+          // Replaced direct page switch with structured App login initialization
+          if (typeof App !== 'undefined' && typeof App.initializeDashboardAfterLogin === 'function') {
+            App.initializeDashboardAfterLogin();
+          } else {
+            switchPage('dashboard', false);
+          }
         }
       } catch (e) {
         console.error('Failed to parse session data in transitionToDashboard:', e);
@@ -6460,166 +6467,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  ensureAuthenticatedSession();
-
-  // Set up initial history state
-  const currentInitialHash = window.location.hash;
-  const hasValidPanelAtInit = currentInitialHash && PANELS[currentInitialHash.substring(1)];
-  if (!history.state) {
-    if (hasValidPanelAtInit) {
-      history.replaceState({ pageId: 'dashboard' }, '', currentInitialHash);
-    } else {
-      history.replaceState({ pageId: 'welcome' }, '', '#welcome');
-    }
-  }
-
-  // Handle browser navigation (Back/Forward)
-  window.addEventListener('popstate', (e) => {
-    if (e.state && e.state.pageId) {
-      switchPage(e.state.pageId, false);
-    }
-  });
-
-  // Check for existing session in localStorage
-  function checkSession() {
-    const isLoggedIn = localStorage.getItem('isLoggedIn');
-    const userCardDataRaw = localStorage.getItem('userCardData');
-    if (isLoggedIn === 'true' && userCardDataRaw) {
-      try {
-        const cardData = JSON.parse(userCardDataRaw);
-        if (cardData && cardData.company && cardData.sector) {
-          const isRemembered = cardData.remember === true;
-          const isSessionActive = sessionStorage.getItem('sessionActive') === 'true';
-
-          // If NOT remembered and this is a brand-new browser session, log out / clear storage
-          if (!isRemembered && !isSessionActive) {
-            localStorage.removeItem('isLoggedIn');
-            localStorage.removeItem('userCardData');
-            return;
-          }
-
-          currentCompany = cardData.company;
-          currentSector = cardData.sector;
-          
-          // Recreate tempCredentials
-          tempCredentials = {
-            username: cardData.username || '',
-            password: cardData.password || '',
-            company: cardData.company,
-            sector: cardData.sector,
-            expiresAt: cardData.expiresAt || (Date.now() + 7 * 24 * 60 * 60 * 1000)
-          };
-
-          // Mark session active in sessionStorage since we validated it
-          sessionStorage.setItem('sessionActive', 'true');
-          
-          // Set initial history state to dashboard on auto-login redirect
-          const currentHash = window.location.hash;
-          const hasValidPanel = currentHash && PANELS[currentHash.substring(1)];
-          const targetURL = hasValidPanel ? currentHash : '#dashboard';
-          history.replaceState({ pageId: 'dashboard' }, '', targetURL);
-          
-          // Transition to Dashboard directly!
-          switchPage('dashboard', false);
-        }
-      } catch (e) {
-        console.error('Failed to parse session data:', e);
-        localStorage.removeItem('isLoggedIn');
-        localStorage.removeItem('userCardData');
-      }
-    }
-  }
-
-  checkSession();
-
-  // Auto-login via QR Code scan query parameters
-  const urlParams = new URLSearchParams(window.location.search);
-  if (urlParams.get('qrLogin') === 'true') {
-    const u = urlParams.get('u');
-    const p = urlParams.get('p');
-    const s = urlParams.get('s');
-    const c = urlParams.get('c');
-    if (u && p && s && c) {
-      // Validate credentials against the server first (ensures expiry checks are respected)
-      apiClient.request('/api/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username: u, password: p })
-      })
-      .then(res => {
-        if (res.status === 200) {
-          currentCompany = c;
-          currentSector = s;
-          
-          tempCredentials = {
-            username: u,
-            password: p,
-            company: c,
-            sector: s,
-            expiresAt: Date.now() + 7 * 24 * 60 * 60 * 1000 // 1 week
-          };
-          
-          const cardData = {
-            username: u,
-            password: p,
-            company: c,
-            sector: s,
-            expiresAt: tempCredentials.expiresAt,
-            remember: true
-          };
-          localStorage.setItem('isLoggedIn', 'true');
-          localStorage.setItem('userCardData', JSON.stringify(cardData));
-          sessionStorage.setItem('sessionActive', 'true');
-          
-          // Clear URL params silently and update history to dashboard
-          window.history.replaceState({ pageId: 'dashboard' }, '', '#dashboard');
-          
-          // Activate card on the server to make it permanent
-          apiClient.request('/api/activate-card', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ username: u })
-          }).catch(err => console.error('Error activating card on server:', err));
-          
-          // Transition to Dashboard directly!
-          switchPage('dashboard', false);
-        } else {
-          // Card expired or invalid, clear URL params and show welcome
-          window.history.replaceState({ pageId: 'welcome' }, '', '#welcome');
-          switchPage('welcome', false);
-          alert(currentLang === 'tr' 
-            ? "Geçici giriş kartınızın süresi dolmuş veya geçersizdir!" 
-            : "Your temporary entry card has expired or is invalid!");
-        }
-      })
-      .catch(err => {
-        console.error('QR login validation failed, falling back locally:', err);
-        // Fallback to local login if offline/error
-        currentCompany = c;
-        currentSector = s;
-        tempCredentials = {
-          username: u,
-          password: p,
-          company: c,
-          sector: s,
-          expiresAt: Date.now() + 10 * 60 * 1000
-        };
-        const cardData = {
-          username: u,
-          password: p,
-          company: c,
-          sector: s,
-          expiresAt: tempCredentials.expiresAt,
-          remember: true
-        };
-        localStorage.setItem('isLoggedIn', 'true');
-        localStorage.setItem('userCardData', JSON.stringify(cardData));
-        sessionStorage.setItem('sessionActive', 'true');
-        window.history.replaceState({ pageId: 'dashboard' }, '', '#dashboard');
-        switchPage('dashboard', false);
-      });
-    }
-  }
+  // Initialization sequences moved to App.init() at the bottom of DOMContentLoaded to enforce clean login-first gates.
 
   // Email Notification Modal logic
   window.openEmailModal = function(name, email) {
@@ -6735,53 +6583,12 @@ document.addEventListener('DOMContentLoaded', () => {
     window.location.hash = 'dashboard';
   }
 
-  function handleHashRouting() {
-    const hash = window.location.hash.substring(1) || 'dashboard';
-    const panelId = routeRegistry[hash] ? hash : 'dashboard';
-
-    console.log("Authenticated:", localStorage.getItem('isLoggedIn') === 'true');
-    console.log("Loading route:", window.location.hash || '#dashboard');
-    console.log("Rendering panel:", panelId);
-
-    setActiveMenu(panelId);
-    safeNavigate(panelId);
-  }
-
   function showTab(tabId) {
     const btn = document.getElementById(tabId);
     if (btn) {
       btn.click();
     }
   }
-
-  function initializeNavigation() {
-    console.log("App initialized");
-    // Attach hash change listener
-    window.addEventListener('hashchange', handleHashRouting);
-
-    // Handle click listener on menu items to update hash
-    document.querySelectorAll('.menu-item').forEach(item => {
-      item.addEventListener('click', function(e) {
-        e.preventDefault();
-        const targetId = this.getAttribute('data-target');
-        let panelKey = '';
-        for (const [key, value] of Object.entries(PANELS)) {
-          if (value === targetId) {
-            panelKey = key;
-            break;
-          }
-        }
-        if (panelKey) {
-          window.location.hash = panelKey;
-        }
-      });
-    });
-
-    // Run router once on initialization
-    handleHashRouting();
-  }
-
-  // Navigation controller initialization postponed to the end of DOMContentLoaded to prevent Temporal Dead Zone issues.
 
   const dropZone = document.getElementById('schema-drop-zone');
   const fileInput = document.getElementById('schema-file-input');
@@ -9741,13 +9548,8 @@ document.addEventListener('DOMContentLoaded', () => {
           setupSectorDashboard();
         });
       },
-      bindEvents() {
-        console.log("[Router Debug] Binding events for General Analytics Dashboard...");
-        bindGeneralDashboardEvents();
-      },
-      destroy() {
-        console.log("[Router Debug] Destroying General Analytics Dashboard...");
-      }
+      bindEvents() {},
+      destroy() {}
     },
     schema: {
       id: 'schema',
@@ -9756,16 +9558,9 @@ document.addEventListener('DOMContentLoaded', () => {
         console.log("[Router Debug] Initializing Schema Intelligence...");
         if (typeof initUploadParticles === 'function') initUploadParticles();
       },
-      render() {
-        console.log("[Router Debug] Rendering Schema Intelligence...");
-      },
-      bindEvents() {
-        console.log("[Router Debug] Binding events for Schema Intelligence...");
-        bindSchemaEvents();
-      },
-      destroy() {
-        console.log("[Router Debug] Destroying Schema Intelligence...");
-      }
+      render() {},
+      bindEvents() {},
+      destroy() {}
     },
     automl: {
       id: 'automl',
@@ -9775,16 +9570,10 @@ document.addEventListener('DOMContentLoaded', () => {
         if (typeof initAutoMLUploadParticles === 'function') initAutoMLUploadParticles();
       },
       render() {
-        console.log("[Router Debug] Rendering AutoML...");
         if (typeof updateAutoMLSharedState === 'function') updateAutoMLSharedState();
       },
-      bindEvents() {
-        console.log("[Router Debug] Binding events for AutoML...");
-        bindAutoMLEvents();
-      },
-      destroy() {
-        console.log("[Router Debug] Destroying AutoML...");
-      }
+      bindEvents() {},
+      destroy() {}
     },
     autobuilder: {
       id: 'autobuilder',
@@ -9794,16 +9583,23 @@ document.addEventListener('DOMContentLoaded', () => {
         if (typeof initAutoBuilderUploadParticles === 'function') initAutoBuilderUploadParticles();
       },
       render() {
-        console.log("[Router Debug] Rendering Auto-Builder...");
         if (typeof updateAutoBuilderSharedState === 'function') updateAutoBuilderSharedState();
       },
-      bindEvents() {
-        console.log("[Router Debug] Binding events for Auto-Builder...");
-        bindAutoBuilderEvents();
+      bindEvents() {},
+      destroy() {}
+    },
+    builder: {
+      id: 'builder',
+      sectionId: 'dashboard-autobuilder-section',
+      init() {
+        console.log("[Router Debug] Initializing Auto-Builder...");
+        if (typeof initAutoBuilderUploadParticles === 'function') initAutoBuilderUploadParticles();
       },
-      destroy() {
-        console.log("[Router Debug] Destroying Auto-Builder...");
-      }
+      render() {
+        if (typeof updateAutoBuilderSharedState === 'function') updateAutoBuilderSharedState();
+      },
+      bindEvents() {},
+      destroy() {}
     },
     aura: {
       id: 'aura',
@@ -9814,16 +9610,24 @@ document.addEventListener('DOMContentLoaded', () => {
         if (typeof initAuraOSWarnings === 'function') initAuraOSWarnings();
       },
       render() {
-        console.log("[Router Debug] Rendering Aura AI Copilot...");
         if (typeof initAuraOSModule === 'function') initAuraOSModule();
       },
-      bindEvents() {
-        console.log("[Router Debug] Binding events for Aura AI Copilot...");
-        bindAuraEvents();
+      bindEvents() {},
+      destroy() {}
+    },
+    copilot: {
+      id: 'copilot',
+      sectionId: 'dashboard-aura-os-section',
+      init() {
+        console.log("[Router Debug] Initializing Aura AI Copilot...");
+        if (typeof initAuraOSExplainability === 'function') initAuraOSExplainability();
+        if (typeof initAuraOSWarnings === 'function') initAuraOSWarnings();
       },
-      destroy() {
-        console.log("[Router Debug] Destroying Aura AI Copilot...");
-      }
+      render() {
+        if (typeof initAuraOSModule === 'function') initAuraOSModule();
+      },
+      bindEvents() {},
+      destroy() {}
     },
     saas: {
       id: 'saas',
@@ -9832,15 +9636,26 @@ document.addEventListener('DOMContentLoaded', () => {
         console.log("[Router Debug] Initializing SaaS Cloud...");
         initSaaSCloudModule();
       },
-      render() {
-        console.log("[Router Debug] Rendering SaaS Cloud...");
-      },
+      render() {},
       bindEvents() {
-        console.log("[Router Debug] Binding events for SaaS Cloud...");
         bindSaaSEvents();
       },
       destroy() {
-        console.log("[Router Debug] Destroying SaaS Cloud...");
+        destroySaaSCloudModule();
+      }
+    },
+    cloud: {
+      id: 'cloud',
+      sectionId: 'dashboard-saas-section',
+      init() {
+        console.log("[Router Debug] Initializing SaaS Cloud...");
+        initSaaSCloudModule();
+      },
+      render() {},
+      bindEvents() {
+        bindSaaSEvents();
+      },
+      destroy() {
         destroySaaSCloudModule();
       }
     }
@@ -9903,7 +9718,358 @@ document.addEventListener('DOMContentLoaded', () => {
     panelMountManager.mountPanel(panelId);
   }
 
-  // Initialize navigation controller
-  initializeNavigation();
+  // ================= APP LIFECYCLE MANAGEMENT AND ROUTER SYSTEM =================
+  const App = {
+    DOM: {},
+    isInitialized: false,
+
+    init() {
+      console.log("[App Lifecycle] Running App.init()...");
+      this.cacheDOM();
+      this.bindGlobalEvents();
+      
+      // Initialize navigation event listeners (does not trigger routing immediately)
+      initializeNavigation();
+
+      // Force unauthenticated state on app start to prevent auto-opening the dashboard
+      localStorage.setItem('isLoggedIn', 'false');
+      
+      // QR Login parameters in URL check
+      const urlParams = new URLSearchParams(window.location.search);
+      if (urlParams.get('qrLogin') === 'true') {
+        this.handleQrLogin(urlParams);
+      } else {
+        this.restoreSession();
+        this.checkAuthentication();
+      }
+    },
+
+    cacheDOM() {
+      console.log("[App Lifecycle] Caching DOM elements...");
+      this.DOM = {
+        pageWelcome: document.getElementById('page-welcome'),
+        pageDashboard: document.getElementById('page-dashboard'),
+        loginModal: document.getElementById('login-modal')
+      };
+    },
+
+    bindGlobalEvents() {
+      console.log("[App Lifecycle] Binding global events...");
+      
+      window.addEventListener('popstate', (e) => {
+        if (e.state && e.state.pageId) {
+          this.resolvePage(e.state.pageId);
+        }
+      });
+    },
+
+    restoreSession() {
+      console.log("[App Lifecycle] Restoring session state...");
+      const userCardDataRaw = localStorage.getItem('userCardData');
+      if (userCardDataRaw) {
+        try {
+          const cardData = JSON.parse(userCardDataRaw);
+          if (cardData && cardData.company && cardData.sector) {
+            const expiresAt = cardData.expiresAt;
+            const now = Date.now();
+            const secondsLeft = Math.floor((expiresAt - now) / 1000);
+
+            if (secondsLeft <= 0) {
+              console.log("[App Lifecycle] Restored card is already expired.");
+              localStorage.removeItem('userCardData');
+              localStorage.removeItem('isLoggedIn');
+            } else {
+              currentCompany = cardData.company;
+              currentSector = cardData.sector;
+              tempCredentials = cardData;
+              console.log(`[App Lifecycle] Restored session for ${cardData.username} of ${cardData.company}`);
+              
+              // Populate the welcome page card UI with these restored credentials
+              const tempUsernameInput = document.getElementById('temp-username');
+              const tempPasswordInput = document.getElementById('temp-password');
+              const tempCardSector = document.getElementById('temp-card-sector');
+              const tempCard = document.getElementById('temp-card');
+              const countdownTimer = document.getElementById('countdown-timer');
+              const timerProgress = document.getElementById('timer-progress');
+              
+              if (tempUsernameInput && tempPasswordInput && tempCardSector && tempCard) {
+                tempUsernameInput.value = cardData.username;
+                tempPasswordInput.value = cardData.password;
+                
+                if (typeof sectorLabelsCard !== 'undefined' && sectorLabelsCard[currentLang]) {
+                  tempCardSector.textContent = sectorLabelsCard[currentLang][cardData.sector] || cardData.sector;
+                } else {
+                  tempCardSector.textContent = cardData.sector;
+                }
+                tempCardSector.className = `badge badge-success`;
+                tempCard.style.display = 'block';
+                
+                // Generate QR Code containing login link
+                const loginUrl = `${window.location.origin}${window.location.pathname}?qrLogin=true&u=${encodeURIComponent(cardData.username)}&p=${encodeURIComponent(cardData.password)}&s=${encodeURIComponent(cardData.sector)}&c=${encodeURIComponent(cardData.company)}`;
+                const qrContainer = document.getElementById('qrcode-container');
+                if (qrContainer) {
+                  qrContainer.innerHTML = '';
+                  new QRCode(qrContainer, {
+                    text: loginUrl,
+                    width: 130,
+                    height: 130,
+                    colorDark: '#000000',
+                    colorLight: '#ffffff',
+                    correctLevel: QRCode.CorrectLevel.M
+                  });
+                  const btnCopyLoginUrl = document.getElementById('btn-copy-login-url');
+                  if (btnCopyLoginUrl) btnCopyLoginUrl.setAttribute('data-url', loginUrl);
+                }
+
+                // Restore countdown timer!
+                if (countdownInterval) clearInterval(countdownInterval);
+                const duration = 10 * 60; // 10 minutes in seconds
+                if (countdownTimer && timerProgress) {
+                  const mins = Math.floor(secondsLeft / 60);
+                  const secs = secondsLeft % 60;
+                  countdownTimer.textContent = `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+                  
+                  const pct = (secondsLeft / duration) * 100;
+                  timerProgress.style.width = `${pct}%`;
+                  const hue = (secondsLeft / duration) * 120;
+                  timerProgress.style.backgroundColor = `hsl(${hue}, 85%, 45%)`;
+                }
+
+                let currentSecondsLeft = secondsLeft;
+                countdownInterval = setInterval(() => {
+                  currentSecondsLeft--;
+                  
+                  if (countdownTimer && timerProgress) {
+                    const mins = Math.floor(currentSecondsLeft / 60);
+                    const secs = currentSecondsLeft % 60;
+                    countdownTimer.textContent = `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+                    
+                    const pct = (currentSecondsLeft / duration) * 100;
+                    timerProgress.style.width = `${pct}%`;
+                    const hue = (currentSecondsLeft / duration) * 120;
+                    timerProgress.style.backgroundColor = `hsl(${hue}, 85%, 45%)`;
+                  }
+                  
+                  if (currentSecondsLeft <= 0) {
+                    clearInterval(countdownInterval);
+                    expireCard();
+                  }
+                }, 1000);
+              }
+            }
+          }
+        } catch (e) {
+          console.error("[App Lifecycle] Failed to restore session:", e);
+          this.clearSession();
+        }
+      }
+    },
+
+    checkAuthentication() {
+      console.log("[App Lifecycle] Checking authentication status...");
+      const isLoggedIn = localStorage.getItem('isLoggedIn') === 'true';
+      if (isLoggedIn) {
+        console.log("[App Lifecycle] User is already authenticated. Pre-initializing dashboard...");
+        this.initializeDashboardAfterLogin();
+      } else {
+        console.log("[App Lifecycle] User is not authenticated. Redirecting to login/welcome...");
+        this.showLoginScreen();
+      }
+    },
+
+    showLoginScreen() {
+      console.log("[App Lifecycle] Showing login screen...");
+      
+      localStorage.setItem('isLoggedIn', 'false');
+
+      document.querySelectorAll('.dashboard-section').forEach(s => {
+        s.classList.remove('active');
+      });
+
+      if (this.DOM.pageWelcome) this.DOM.pageWelcome.style.display = 'block';
+      if (this.DOM.pageDashboard) this.DOM.pageDashboard.style.display = 'none';
+
+      const hash = window.location.hash;
+      if (hash === '#login') {
+        showLoginModal();
+      } else {
+        if (window.location.hash !== '#welcome') {
+          window.history.replaceState({ pageId: 'welcome' }, '', '#welcome');
+        }
+        hideLoginModal();
+      }
+    },
+
+    clearSession() {
+      localStorage.removeItem('isLoggedIn');
+      localStorage.removeItem('userCardData');
+      sessionStorage.removeItem('sessionActive');
+      currentCompany = '';
+      currentSector = '';
+      tempCredentials = null;
+    },
+
+    initializeDashboardAfterLogin() {
+      console.log("[App Lifecycle] Initializing dashboard systems...");
+      
+      this.isInitialized = true;
+      
+      updateThemeColor(currentSector || 'vakif');
+      
+      if (this.DOM.pageWelcome) this.DOM.pageWelcome.style.display = 'none';
+      if (this.DOM.pageDashboard) this.DOM.pageDashboard.style.display = 'flex';
+      hideLoginModal();
+
+      this.handleRouting();
+    },
+
+    handleRouting() {
+      const isLoggedIn = localStorage.getItem('isLoggedIn') === 'true';
+      if (!isLoggedIn) {
+        this.showLoginScreen();
+        return;
+      }
+
+      const hash = window.location.hash.substring(1) || 'dashboard';
+      const panelId = routeRegistry[hash] ? hash : 'dashboard';
+
+      console.log(`[Router] Routing to panel: ${panelId}`);
+      setActiveMenu(panelId);
+      safeNavigate(panelId);
+    },
+
+    resolvePage(pageId) {
+      if (pageId === 'welcome' || pageId === 'login') {
+        this.showLoginScreen();
+      } else if (pageId === 'dashboard') {
+        const isLoggedIn = localStorage.getItem('isLoggedIn') === 'true';
+        if (isLoggedIn) {
+          this.initializeDashboardAfterLogin();
+        } else {
+          this.showLoginScreen();
+        }
+      }
+    },
+
+    handleQrLogin(urlParams) {
+      const u = urlParams.get('u');
+      const p = urlParams.get('p');
+      const s = urlParams.get('s');
+      const c = urlParams.get('c');
+      if (u && p && s && c) {
+        console.log("[App Lifecycle] Processing QR Login parameter...");
+        apiClient.request('/api/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username: u, password: p })
+        })
+        .then(res => {
+          if (res.status === 200) {
+            currentCompany = c;
+            currentSector = s;
+            tempCredentials = {
+              username: u,
+              password: p,
+              company: c,
+              sector: s,
+              expiresAt: Date.now() + 7 * 24 * 60 * 60 * 1000
+            };
+            const cardData = {
+              username: u,
+              password: p,
+              company: c,
+              sector: s,
+              expiresAt: tempCredentials.expiresAt,
+              remember: true
+            };
+            localStorage.setItem('isLoggedIn', 'true');
+            localStorage.setItem('userCardData', JSON.stringify(cardData));
+            sessionStorage.setItem('sessionActive', 'true');
+            
+            window.history.replaceState({ pageId: 'dashboard' }, '', '#dashboard');
+            
+            apiClient.request('/api/activate-card', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ username: u })
+            }).catch(err => console.error('Error activating card:', err));
+            
+            this.initializeDashboardAfterLogin();
+          } else {
+            window.history.replaceState({ pageId: 'welcome' }, '', '#welcome');
+            this.showLoginScreen();
+            alert(currentLang === 'tr' 
+              ? "Geçici giriş kartınızın süresi dolmuş veya geçersizdir!" 
+              : "Your temporary entry card has expired or is invalid!");
+          }
+        })
+        .catch(err => {
+          console.error('QR login failed, falling back locally:', err);
+          currentCompany = c;
+          currentSector = s;
+          tempCredentials = {
+            username: u,
+            password: p,
+            company: c,
+            sector: s,
+            expiresAt: Date.now() + 10 * 60 * 1000
+          };
+          const cardData = {
+            username: u,
+            password: p,
+            company: c,
+            sector: s,
+            expiresAt: tempCredentials.expiresAt,
+            remember: true
+          };
+          localStorage.setItem('isLoggedIn', 'true');
+          localStorage.setItem('userCardData', JSON.stringify(cardData));
+          sessionStorage.setItem('sessionActive', 'true');
+          
+          window.history.replaceState({ pageId: 'dashboard' }, '', '#dashboard');
+          this.initializeDashboardAfterLogin();
+        });
+      } else {
+        this.restoreSession();
+        this.checkAuthentication();
+      }
+    }
+  };
+
+  function handleHashRouting() {
+    App.handleRouting();
+  }
+
+  function initializeNavigation() {
+    console.log("App navigation initialization...");
+    window.addEventListener('hashchange', handleHashRouting);
+
+    document.querySelectorAll('.menu-item').forEach(item => {
+      item.addEventListener('click', function(e) {
+        e.preventDefault();
+        
+        if (localStorage.getItem('isLoggedIn') !== 'true') {
+          console.warn("[Router] Navigation blocked: User is not authenticated.");
+          App.showLoginScreen();
+          return;
+        }
+
+        const targetId = this.getAttribute('data-target');
+        let panelKey = '';
+        for (const [key, value] of Object.entries(PANELS)) {
+          if (value === targetId) {
+            panelKey = key;
+            break;
+          }
+        }
+        if (panelKey) {
+          window.location.hash = panelKey;
+        }
+      });
+    });
+  }
+
+  // Initialize App Lifecycle
+  App.init();
 
 });
