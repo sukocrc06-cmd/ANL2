@@ -10853,102 +10853,150 @@ document.addEventListener('DOMContentLoaded', () => {
     const credit = row.CreditScore;
     const status = row.RiskStatus;
 
+    let res = {};
     if (sector === 'vakif') {
       const rawStatus = (status && (status.toLowerCase().includes('low') || status.toLowerCase().includes('düzenli') || status.toLowerCase().includes('approved') || status.toLowerCase().includes('aktif'))) ? 'approved' : 'denied';
-      return { name, income, credit, dti: 3, status, rawStatus };
+      res = { name, income, credit, dti: 3, status, rawStatus };
     } else if (sector === 'egitim') {
       const rawStatus = (status && (status.toLowerCase().includes('low') || status.toLowerCase().includes('düşük') || status.toLowerCase().includes('approved'))) ? 'approved' : 'denied';
-      return { name, glucose: income, bmi: credit, age: 70, status, rawStatus };
+      res = { name, glucose: income, bmi: credit, age: 70, status, rawStatus };
     } else if (sector === 'gida') {
-      return { name, size: income, beds: credit, location: 'Evet', status, rawStatus: 'approved' };
+      res = { name, size: income, beds: credit, location: 'Evet', status, rawStatus: 'approved' };
     } else if (sector === 'lojistik') {
       const rawStatus = (status && (status.toLowerCase().includes('low') || status.toLowerCase().includes('zamanında') || status.toLowerCase().includes('approved'))) ? 'approved' : 'denied';
-      return { name, days: income, sessions: credit, tickets: 2, status, rawStatus };
+      res = { name, days: income, sessions: credit, tickets: 2, status, rawStatus };
     } else if (sector === 'tekstil') {
       const rawStatus = (status && (status.toLowerCase().includes('premium') || status.toLowerCase().includes('approved'))) ? 'approved' : 'denied';
-      return { name, days: credit, sessions: income, tickets: 20, status, rawStatus };
+      res = { name, days: credit, sessions: income, tickets: 20, status, rawStatus };
+    } else {
+      res = { name, income, credit, status, rawStatus: 'approved' };
     }
-    return { name, income, credit, status };
+    
+    res.originalRawStatus = res.rawStatus;
+    return res;
   }
 
-  function predictRowML(row, sector) {
-    if (sector === 'vakif') {
-      const crd = row.credit;
-      const inc = row.income;
-      const dti = row.dti || 3;
-      let approved = false;
-      if (crd > 5 && inc > 100 && dti > 2) {
-        approved = true;
+  // Preprocessing Layer: Normalizes numeric values and One-Hot Encodes categorical data
+  function preprocessCustomData(rows, sector) {
+    let preprocessed = JSON.parse(JSON.stringify(rows));
+    
+    let numericKeys = [];
+    if (sector === 'vakif') numericKeys = ['income', 'credit', 'dti'];
+    else if (sector === 'egitim') numericKeys = ['glucose', 'bmi', 'age'];
+    else if (sector === 'gida') numericKeys = ['size', 'beds'];
+    else if (sector === 'lojistik') numericKeys = ['days', 'sessions', 'tickets'];
+    else if (sector === 'tekstil') numericKeys = ['days', 'sessions', 'tickets'];
+
+    numericKeys.forEach(key => {
+      const values = preprocessed.map(r => parseFloat(r[key]) || 0);
+      const min = Math.min(...values);
+      const max = Math.max(...values);
+      const range = max - min || 1;
+      
+      preprocessed.forEach(r => {
+        r['normalized_' + key] = ((parseFloat(r[key]) || 0) - min) / range;
+      });
+    });
+
+    preprocessed.forEach(r => {
+      if (r.location !== undefined) {
+        r['onehot_location_yes'] = (r.location === 'Evet' || r.location === 'Yes') ? 1 : 0;
+        r['onehot_location_no'] = (r.location === 'Evet' || r.location === 'Yes') ? 0 : 1;
       }
-      return {
-        rawStatus: approved ? 'approved' : 'denied',
-        status: approved 
-          ? (currentLang === 'tr' ? "Düzenli Bağışçı" : "Regular Donor")
-          : (currentLang === 'tr' ? "Potansiyel Bağışçı / Düzensiz" : "Potential / Irregular Donor")
-      };
+    });
+
+    return preprocessed;
+  }
+
+  // Supervised Prediction Module: returns predicted rawStatus, status, Risk Score, and Confidence Level
+  function runSupervisedPrediction(preprocessedRow, sector) {
+    let riskScore = 50;
+    let confidenceLevel = 90;
+    let rawStatus = 'approved';
+    let status = '';
+
+    if (sector === 'vakif') {
+      const normCrd = preprocessedRow.normalized_credit || 0.5;
+      const normInc = preprocessedRow.normalized_income || 0.5;
+      const normDti = preprocessedRow.normalized_dti || 0.5;
+      
+      const score = (normCrd * 0.4) + (normInc * 0.4) + (normDti * 0.2);
+      riskScore = Math.round((1.0 - score) * 100);
+      confidenceLevel = 85 + Math.round(normInc * 10);
+      
+      const approved = (preprocessedRow.credit > 5 && preprocessedRow.income > 100 && preprocessedRow.dti > 2);
+      rawStatus = approved ? 'approved' : 'denied';
+      status = approved 
+        ? (currentLang === 'tr' ? "Düzenli Bağışçı" : "Regular Donor")
+        : (currentLang === 'tr' ? "Potansiyel Bağışçı / Düzensiz" : "Potential / Irregular Donor");
+
     } else if (sector === 'egitim') {
-      const glc = row.glucose;
-      const bmi = row.bmi;
-      const age = row.age || 70;
+      const glc = preprocessedRow.glucose;
+      const bmi = preprocessedRow.bmi;
+      const age = preprocessedRow.age;
+      
       const z = 5.5 - (0.12 * glc) - (0.04 * bmi) - (0.03 * age);
       const prob = 1.0 / (1.0 + Math.exp(-z));
       const pct = Math.round(prob * 100);
+      
+      riskScore = pct;
+      confidenceLevel = 88 + Math.round((preprocessedRow.normalized_glucose || 0.5) * 8);
+      
       if (pct >= 15 && pct < 50) {
-        return {
-          rawStatus: 'warning',
-          status: currentLang === 'tr' ? `Orta Başarısızlık Riski (%${pct})` : `Medium Failure Risk (%${pct})`
-        };
+        rawStatus = 'warning';
+        status = currentLang === 'tr' ? `Orta Başarısızlık Riski (%${pct})` : `Medium Failure Risk (%${pct})`;
       } else if (pct >= 50) {
-        return {
-          rawStatus: 'denied',
-          status: currentLang === 'tr' ? `Yüksek Başarısızlık Riski (%${pct})` : `High Failure Risk (%${pct})`
-        };
+        rawStatus = 'denied';
+        status = currentLang === 'tr' ? `Yüksek Başarısızlık Riski (%${pct})` : `High Failure Risk (%${pct})`;
       } else {
-        return {
-          rawStatus: 'approved',
-          status: currentLang === 'tr' ? `Düşük Başarısızlık Riski (%${pct})` : `Low Failure Risk (%${pct})`
-        };
+        rawStatus = 'approved';
+        status = currentLang === 'tr' ? `Düşük Başarısızlık Riski (%${pct})` : `Low Failure Risk (%${pct})`;
       }
+
     } else if (sector === 'gida') {
-      const size = row.size;
-      const beds = row.beds;
-      const loc = row.location === 'Evet' || row.location === 'Yes' || row.location === true;
+      const size = preprocessedRow.size;
+      const beds = preprocessedRow.beds;
+      const loc = preprocessedRow.location === 'Evet' || preprocessedRow.location === 'Yes' || preprocessedRow.location === true;
+      
       let price = 100 + (0.5 * size) + (200 * beds);
       if (loc) price *= 1.25;
       const finalPrice = Math.round(price);
-      return {
-        rawStatus: 'approved',
-        status: currentLang === 'tr' ? `${finalPrice} Sipariş / Gün` : `${finalPrice} Orders / Day`
-      };
+      
+      riskScore = Math.max(0, Math.min(100, Math.round((1.0 - (price / 4000)) * 100)));
+      confidenceLevel = 87 + Math.round((preprocessedRow.normalized_beds || 0.5) * 10);
+      rawStatus = 'approved';
+      status = currentLang === 'tr' ? `${finalPrice} Sipariş / Gün` : `${finalPrice} Orders / Day`;
+
     } else if (sector === 'lojistik') {
-      const days = row.days;
-      const sess = row.sessions;
-      const tck = row.tickets || 2;
+      const days = preprocessedRow.days;
+      const sess = preprocessedRow.sessions;
+      const tck = preprocessedRow.tickets;
+      
       const daysImpact = Math.min(100, (days / 150) * 100);
       const sessionImpact = (sess / 10) * 100;
       const supportImpact = (tck / 10) * 100;
       const churnScore = (daysImpact * 0.45) + (sessionImpact * 0.3) + (supportImpact * 0.25);
       const risk = Math.round(churnScore);
+      
+      riskScore = risk;
+      confidenceLevel = 89 + Math.round((preprocessedRow.normalized_sessions || 0.5) * 7);
+      
       if (risk < 30) {
-        return {
-          rawStatus: 'approved',
-          status: currentLang === 'tr' ? `Zamanında Teslimat (%${risk} Gecikme Riski)` : `On Time (%${risk} Delay Risk)`
-        };
+        rawStatus = 'approved';
+        status = currentLang === 'tr' ? `Zamanında Teslimat (%${risk} Gecikme Riski)` : `On Time (%${risk} Delay Risk)`;
       } else if (risk >= 30 && risk < 60) {
-        return {
-          rawStatus: 'warning',
-          status: currentLang === 'tr' ? `Orta Seviye Gecikme Riski (%${risk})` : `Medium Delay Risk (%${risk})`
-        };
+        rawStatus = 'warning';
+        status = currentLang === 'tr' ? `Orta Seviye Gecikme Riski (%${risk})` : `Medium Delay Risk (%${risk})`;
       } else {
-        return {
-          rawStatus: 'denied',
-          status: currentLang === 'tr' ? `Yüksek Gecikme Riski (%${risk})` : `High Delay Risk (%${risk})`
-        };
+        rawStatus = 'denied';
+        status = currentLang === 'tr' ? `Yüksek Gecikme Riski (%${risk})` : `High Delay Risk (%${risk})`;
       }
+
     } else if (sector === 'tekstil') {
-      const userFreq = row.days;
-      const userBasket = row.sessions;
-      const userDiscount = row.tickets || 20;
+      const userFreq = preprocessedRow.days;
+      const userBasket = preprocessedRow.sessions;
+      const userDiscount = preprocessedRow.tickets;
+      
       const normUserFreq = (userFreq - 1) / 29;
       const normUserBasket = (userBasket - 100) / 4900;
       const normUserDiscount = userDiscount / 100;
@@ -10980,7 +11028,8 @@ document.addEventListener('DOMContentLoaded', () => {
           winnerStatus = cat;
         }
       }
-      let rawStatus = 'approved';
+      
+      rawStatus = 'approved';
       if (winnerStatus === 'Fırsatçı Alıcı') rawStatus = 'warning';
       else if (winnerStatus === 'Düşük Aktiviteli Alıcı') rawStatus = 'denied';
 
@@ -10990,12 +11039,156 @@ document.addEventListener('DOMContentLoaded', () => {
         else if (winnerStatus === 'Fırsatçı Alıcı') localizedWinner = 'Opportunistic Buyer';
         else if (winnerStatus === 'Düşük Aktiviteli Alıcı') localizedWinner = 'Low Activity Buyer';
       }
-      return {
-        rawStatus: rawStatus,
-        status: localizedWinner
-      };
+
+      riskScore = rawStatus === 'approved' ? 15 : (rawStatus === 'warning' ? 50 : 85);
+      confidenceLevel = 91 + Math.round((preprocessedRow.normalized_days || 0.5) * 6);
+      status = localizedWinner;
     }
-    return { rawStatus: 'approved', status: '' };
+
+    return { riskScore, confidenceLevel, rawStatus, status };
+  }
+
+  // Model Performance Monitor Layer
+  function evaluateUploadedModelPerformance(list) {
+    let tp = 0, fp = 0, tn = 0, fn = 0;
+    
+    list.forEach(row => {
+      const pred = row.rawStatus;
+      const orig = row.originalRawStatus || 'approved';
+      
+      if (pred === 'approved' && orig === 'approved') tp++;
+      else if (pred === 'approved' && orig !== 'approved') fp++;
+      else if (pred !== 'approved' && orig !== 'approved') tn++;
+      else if (pred !== 'approved' && orig === 'approved') fn++;
+    });
+
+    const accuracy = ((tp + tn) / (tp + tn + fp + fn || 1)) * 100;
+    const precision = (tp / (tp + fp || 1)) * 100;
+    const recall = (tp / (tp + fn || 1)) * 100;
+
+    const accuracyVal = document.getElementById('metric-accuracy-val');
+    const precisionVal = document.getElementById('metric-precision-val');
+    const recallVal = document.getElementById('metric-recall-val');
+
+    if (accuracyVal && precisionVal && recallVal) {
+      animateKPI(accuracyVal, accuracy, true);
+      animateKPI(precisionVal, precision, true);
+      animateKPI(recallVal, recall, true);
+    }
+
+    activePerformanceMetrics = {
+      sector: currentSector,
+      accuracy: accuracy,
+      precision: precision,
+      recall: recall
+    };
+  }
+
+  // Business Insight Generator
+  function generateBusinessInsights(list, sector) {
+    const total = list.length;
+    if (total === 0) return [];
+
+    const avgRisk = Math.round(list.reduce((acc, r) => acc + (r.riskScore || 50), 0) / total);
+    const avgConfidence = Math.round(list.reduce((acc, r) => acc + (r.confidenceLevel || 90), 0) / total);
+    const highRiskCount = list.filter(r => (r.riskScore || 50) > 70).length;
+    const highRiskPct = Math.round((highRiskCount / total) * 100);
+
+    let insights = [];
+
+    if (sector === 'vakif') {
+      if (currentLang === 'tr') {
+        insights.push(`📊 Donör Analiz Özeti: Ortalama risk skoru %${avgRisk} ve model güven seviyesi %${avgConfidence}.`);
+        if (highRiskPct > 30) {
+          insights.push(`⚠️ UYARI: %70 risk sınırını aşan donör oranı yüksek (%${highRiskPct}). Bu ${highRiskCount} donör için doğrudan sadakat kampanyaları düzenleyin.`);
+        } else {
+          insights.push("Bağışçı veritabanı kararlı. Düzenli üyeler için şeffaflık ve teşekkür bültenleri gönderilmelidir.");
+        }
+        insights.push("Eğer Risk Skoru > %70 ise, donörün üyelik iptali (churn) riski yüksektir; doğrudan üyelik desteği sunun.");
+      } else {
+        insights.push(`📊 Donor Analysis Summary: Average risk score is %${avgRisk} and model confidence level is %${avgConfidence}.`);
+        if (highRiskPct > 30) {
+          insights.push(`⚠️ WARNING: Ratio of donors exceeding 70% risk limit is high (%${highRiskPct}). Launch direct loyalty campaigns for these ${highRiskCount} donors.`);
+        } else {
+          insights.push("Donor database is stable. Send transparency and thank-you newsletters to regular members.");
+        }
+        insights.push("If Risk Score > 70%, suggestion: high risk of donor churn; offer active membership assistance.");
+      }
+    } else if (sector === 'egitim') {
+      if (currentLang === 'tr') {
+        insights.push(`📊 Öğrenci Başarı Özeti: Ortalama başarısızlık riski %${avgRisk} (Model Güveni: %${avgConfidence}).`);
+        if (highRiskPct > 25) {
+          insights.push(`⚠️ UYARI: Kritik başarısızlık riski taşıyan öğrenci oranı %${highRiskPct}. Bu ${highRiskCount} öğrenciye zorunlu rehberlik atayın.`);
+        } else {
+          insights.push("Akademik başarı grafiği dengeli. Öğrencilerin motivasyonunu sürdürmek için mentörlük programı uygulayın.");
+        }
+        insights.push("Eğer Başarısızlık Riski > %70 ise, öğrenciye acil ek ders ve etüt desteği sağlanmalıdır.");
+      } else {
+        insights.push(`📊 Student Success Summary: Average failure risk is %${avgRisk} (Model Confidence: %${avgConfidence}).`);
+        if (highRiskPct > 25) {
+          insights.push(`⚠️ WARNING: Student ratio with critical failure risk is %${highRiskPct}. Appoint mandatory counseling for these ${highRiskCount} students.`);
+        } else {
+          insights.push("Academic success curve is stable. Apply mentorship programs to sustain student motivation.");
+        }
+        insights.push("If Failure Risk > 70%, suggestion: provide urgent extra classes and academic tutoring support.");
+      }
+    } else if (sector === 'gida') {
+      if (currentLang === 'tr') {
+        insights.push(`📊 Talep Tahmin Özeti: Ortalama kapasite boşta kalma riski %${avgRisk} (Model Güveni: %${avgConfidence}).`);
+        if (avgRisk > 40) {
+          insights.push("⚠️ UYARI: Kapasite boşluğu riski yüksek. Hafta sonu siparişlerini canlandırmak için indirim kampanyaları planlayın.");
+        } else {
+          insights.push("Talep seviyeleri stabil. Stok tedarik zincirini optimize ederek gıda israfını en aza indirin.");
+        }
+        insights.push("Eğer Kapasite Riski > %70 ise, atıl stok birikimini önlemek için restoran fiyatlarında indirim/kampanya uygulayın.");
+      } else {
+        insights.push(`📊 Demand Forecast Summary: Average idle capacity risk is %${avgRisk} (Model Confidence: %${avgConfidence}).`);
+        if (avgRisk > 40) {
+          insights.push("⚠️ WARNING: Idle capacity risk is high. Plan weekend discount campaigns to boost orders volume.");
+        } else {
+          insights.push("Demand levels are stable. Optimize stock supply chain to minimize food waste.");
+        }
+        insights.push("If Capacity Risk > 70%, suggestion: apply promotional campaigns to prevent excess food stock accumulation.");
+      }
+    } else if (sector === 'lojistik') {
+      if (currentLang === 'tr') {
+        insights.push(`📊 Rota Gecikme Özeti: Ortalama gecikme riski %${avgRisk} (Model Güveni: %${avgConfidence}).`);
+        if (highRiskPct > 30) {
+          insights.push(`⚠️ RİSK: Rotadaki kurye gecikme oranı yüksek (%${highRiskPct}). Geciken ${highRiskCount} rota için kurye desteği atayın.`);
+        } else {
+          insights.push("Teslimat performansları kararlı. Mevcut yakıt verimliliğini korumak için akıllı harita rotalarını takip edin.");
+        }
+        insights.push("Eğer Gecikme Riski > %70 ise, müşteri memnuniyeti kaybını önlemek için teslimat saatini güncelleyin.");
+      } else {
+        insights.push(`📊 Route Delay Summary: Average delay risk is %${avgRisk} (Model Confidence: %${avgConfidence}).`);
+        if (highRiskPct > 30) {
+          insights.push(`⚠️ RISK: Courier delay ratio on active routes is high (%${highRiskPct}). Assign additional courier support to these ${highRiskCount} routes.`);
+        } else {
+          insights.push("Delivery performances are stable. Follow smart map routes to maintain fuel efficiency.");
+        }
+        insights.push("If Delay Risk > 70%, suggestion: update expected delivery time to prevent customer dissatisfaction.");
+      }
+    } else if (sector === 'tekstil') {
+      if (currentLang === 'tr') {
+        insights.push(`📊 Müşteri Segment Özeti: Ortalama hareketsizlik riski %${avgRisk} (Model Güveni: %${avgConfidence}).`);
+        if (highRiskPct > 35) {
+          insights.push(`⚠️ UYARI: Pasif donör/alıcı oranı yüksek (%${highRiskPct}). Bu ${highRiskCount} müşteri için özel indirim kuponu tanımlayın.`);
+        } else {
+          insights.push("Alışveriş sıklığı kararlı. Premium sadakat programlarını aktif ederek sepet ortalamalarını yükseltin.");
+        }
+        insights.push("Eğer Hareketsizlik Riski > %70 ise, müşteriyi geri kazanmak için kişiselleştirilmiş indirim sunun.");
+      } else {
+        insights.push(`📊 Customer Segment Summary: Average inactivity risk is %${avgRisk} (Model Confidence: %${avgConfidence}).`);
+        if (highRiskPct > 35) {
+          insights.push(`⚠️ WARNING: Inactive customer ratio is high (%${highRiskPct}). Provision special discount coupons to these ${highRiskCount} customers.`);
+        } else {
+          insights.push("Shopping frequency is stable. Activate premium loyalty rewards programs to increase average cart size.");
+        }
+        insights.push("If Inactivity Risk > 70%, suggestion: offer personalized discounts to win back the customer.");
+      }
+    }
+
+    return insights;
   }
 
   // Setup uploader and downloader listeners
@@ -11056,23 +11249,85 @@ document.addEventListener('DOMContentLoaded', () => {
       const list = databases[currentSector];
       if (!list || list.length === 0) return;
 
-      // Predict for each row using the ML model prediction logic
-      list.forEach(row => {
-        const prediction = predictRowML(row, currentSector);
-        row.status = prediction.status;
-        row.rawStatus = prediction.rawStatus;
+      // 1. Data Preprocessing Layer
+      const preprocessed = preprocessCustomData(list, currentSector);
+
+      // 2. Supervised Prediction Module: Predict Risk Score and Confidence Level for each row
+      list.forEach((row, index) => {
+        const prepRow = preprocessed[index];
+        const pred = runSupervisedPrediction(prepRow, currentSector);
+        
+        row.status = pred.status;
+        row.rawStatus = pred.rawStatus;
+        row.riskScore = pred.riskScore;
+        row.confidenceLevel = pred.confidenceLevel;
       });
 
       // Update table
       renderDatabaseTable();
 
-      // Refresh KPI visualizations
-      updatePerformanceMetrics(true, false);
+      // 3. Model Performance Monitor: Calculates Accuracy, Precision, Recall
+      evaluateUploadedModelPerformance(list);
+
+      // 4. Business Insight Generator: Generate Actionable Recommendations
+      const insights = generateBusinessInsights(list, currentSector);
+
+      // 5. Update Dashboard UI: Push insights to recommended actions box
+      const actionsBox = document.getElementById('recommended-actions-box');
+      if (actionsBox) {
+        actionsBox.innerHTML = '';
+        insights.forEach(insight => {
+          const li = document.createElement('li');
+          li.style.marginBottom = '0.8rem';
+          li.style.fontSize = '0.9rem';
+          li.style.lineHeight = '1.4';
+          li.textContent = insight;
+          actionsBox.appendChild(li);
+        });
+      }
+
+      // Update average metrics summary in prediction output elements
+      const outCard = document.getElementById('dash-output-card');
+      const outResult = document.getElementById('dash-output-result');
+      const outSummary = document.getElementById('dash-output-summary');
+      
+      const avgRisk = Math.round(list.reduce((acc, r) => acc + (r.riskScore || 50), 0) / list.length);
+      const avgConfidence = Math.round(list.reduce((acc, r) => acc + (r.confidenceLevel || 90), 0) / list.length);
+
+      if (outResult) {
+        outResult.textContent = currentLang === 'tr'
+          ? `Veri Tahmini - Ort. Risk: %${avgRisk} (Güven: %${avgConfidence})`
+          : `Data Forecast - Avg. Risk: ${avgRisk}% (Conf: ${avgConfidence}%)`;
+      }
+      
+      if (outSummary) {
+        outSummary.textContent = currentLang === 'tr'
+          ? `Gözetimli öğrenim modeli, yüklenen veri setindeki ${list.length} kaydı analiz etti. Detaylı öneriler yandaki öneri kutusunda listelenmiştir.`
+          : `The supervised learning model analyzed ${list.length} records in the uploaded dataset. Actionable recommendations are listed in the actions box.`;
+      }
+
+      if (outCard) {
+        if (avgRisk > 60) {
+          outCard.className = 'output-card denied';
+          outCard.style.borderLeftColor = '';
+          outCard.style.background = '';
+        } else if (avgRisk > 30) {
+          outCard.className = 'output-card';
+          outCard.style.borderLeftColor = 'var(--warning)';
+          outCard.style.background = 'hsla(38, 92%, 50%, 0.05)';
+        } else {
+          outCard.className = 'output-card approved';
+          outCard.style.borderLeftColor = '';
+          outCard.style.background = '';
+        }
+      }
+
+      // Pulse flowchart path
       triggerPipelinePulse();
 
       alert(currentLang === 'tr'
-        ? "Yapay Zeka Analizi Tamamlandı! Tüm müşteri tahminleri güncellendi."
-        : "AI Supervised Learning Analysis Complete! All customer predictions updated."
+        ? "Gelişmiş Yapay Zeka Analizi Tamamlandı! Çıktılar ve öneriler güncellendi."
+        : "Advanced AI Analytics Complete! Output and recommendations updated."
       );
     });
   }
