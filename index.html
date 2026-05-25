@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="icon" href="data:,">
   <title data-i18n="site_title">ANL Vertex - Denetimli Makine Öğrenimi Portalı</title>
   <meta name="description" content="ANL Vertex - Şirketlere özel gözetimli makine öğrenimi modelleriyle veri analizi, sektörel tahminleme ve raporlama portalı.">
   <link rel="stylesheet" href="style.css">
@@ -452,9 +453,10 @@
 
         <!-- Remember Me & Forgot Password fields -->
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.2rem; font-size: 0.8rem; color: var(--text-secondary);">
-          <label style="display: flex; align-items: center; gap: 0.4rem; cursor: pointer; user-select: none;" data-i18n="label_remember_me">
-            <input type="checkbox" id="login-remember" style="accent-color: var(--primary);"> Beni Hatırla
-          </label>
+          <div style="display: flex; align-items: center; gap: 0.4rem;">
+            <input type="checkbox" id="login-remember" style="accent-color: var(--primary);">
+            <label style="cursor: pointer; user-select: none;" for="login-remember" data-i18n="label_remember_me">Beni Hatırla</label>
+          </div>
           <a href="#" style="color: var(--primary); text-decoration: none; font-weight: 500;" data-i18n="btn_forgot_password" onclick="alert(currentLang === 'tr' ? 'Geçici giriş kartınızdaki şifreyi kopyalayıp buraya yapıştırmalısınız. Şifrenizi unuttuysanız yeni bir Giriş Kartı oluşturun.' : 'You must copy and paste the password from your temporary access card. If you forgot your password, generate a new Access Card.'); return false;">Şifremi Unuttum?</a>
         </div>
 
@@ -1739,7 +1741,7 @@
             <div style="display: flex; flex-direction: column; gap: 0.8rem; flex: 1; justify-content: center;">
               <!-- Select Organization -->
               <div>
-                <label style="font-size: 0.65rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; display: block; margin-bottom: 0.3rem;" data-i18n="saas_label_org">Active Tenant</label>
+                <label for="saas-select-company" style="font-size: 0.65rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; display: block; margin-bottom: 0.3rem;" data-i18n="saas_label_org">Active Tenant</label>
                 <div class="aura-mode-select-wrapper">
                   <select id="saas-select-company" class="aura-mode-select" style="padding: 0.5rem 1rem; font-size: 0.8rem;">
                     <option value="asya holding a.ş.">Asya Holding A.Ş.</option>
@@ -1752,7 +1754,7 @@
 
               <!-- Select Role -->
               <div>
-                <label style="font-size: 0.65rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; display: block; margin-bottom: 0.3rem;" data-i18n="saas_label_role">Security Role</label>
+                <label for="saas-select-role" style="font-size: 0.65rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; display: block; margin-bottom: 0.3rem;" data-i18n="saas_label_role">Security Role</label>
                 <div class="aura-mode-select-wrapper">
                   <select id="saas-select-role" class="aura-mode-select" style="padding: 0.5rem 1rem; font-size: 0.8rem;">
                     <option value="Super Admin">Super Admin</option>
@@ -1767,7 +1769,7 @@
 
               <!-- Select Cluster -->
               <div>
-                <label style="font-size: 0.65rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; display: block; margin-bottom: 0.3rem;" data-i18n="saas_label_cluster">Compute Workspace</label>
+                <label for="saas-select-workspace" style="font-size: 0.65rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; display: block; margin-bottom: 0.3rem;" data-i18n="saas_label_cluster">Compute Workspace</label>
                 <div class="aura-mode-select-wrapper">
                   <select id="saas-select-workspace" class="aura-mode-select" style="padding: 0.5rem 1rem; font-size: 0.8rem;">
                     <option value="prod">Production Cluster (Dallas-HQ)</option>
