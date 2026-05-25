@@ -20,8 +20,8 @@ const translations = {
     en: "Access the System"
   },
   welcome_desc: {
-    tr: "ANL Vertex analitik paneline erişmek için kurumsal kimlik bilgilerinizi kullanarak giriş yapın.",
-    en: "Please log in using your corporate credentials to access the ANL Vertex analytics panel."
+    tr: "ANL Vertex analitik paneline giriş yapabilmek için geçici bir giriş kartı oluşturmanız gerekmektedir. Şirket adınızı girin ve sektörünüzü seçin.",
+    en: "To log in to the ANL Vertex analytics panel, you need to generate a temporary access card. Enter your company name and select your sector."
   },
   label_company_name: {
     tr: "Şirket Adı:",
@@ -364,8 +364,8 @@ const translations = {
     en: "ANL Vertex Secure Gateway"
   },
   login_desc: {
-    tr: "Kurumsal kimlik bilgilerinizi giriniz.",
-    en: "Enter your corporate credentials."
+    tr: "Geçici erişim kartınızda üretilen kullanıcı adı ve şifreyi giriniz.",
+    en: "Enter the username and password generated on your temporary access card."
   },
   label_login_username: {
     tr: "Kullanıcı Adı:",
@@ -384,12 +384,12 @@ const translations = {
     en: "Forgot Password?"
   },
   login_error: {
-    tr: "❌ Kullanıcı adı veya şifre hatalı!",
-    en: "❌ Incorrect username or password!"
+    tr: "❌ Kullanıcı adı veya şifre hatalı, ya da kartın 10 dakikalık süresi doldu!",
+    en: "❌ Incorrect username or password, or the card's 10-minute validity period has expired!"
   },
   login_error_limit: {
-    tr: "❌ Kullanıcı adı veya şifre hatalı!",
-    en: "❌ Incorrect username or password!"
+    tr: "❌ Giriş kartınızın geçerliliği yitirilmiş olabilir, lütfen yeni bir kart oluşturun.",
+    en: "❌ Your card may have expired; please create a new one."
   },
   btn_cancel: {
     tr: "İptal",
@@ -1341,6 +1341,10 @@ document.addEventListener('DOMContentLoaded', () => {
           const p = body.password;
 
           let card = this.findMockCard(u, p);
+          
+          if (!card && tempCredentials && tempCredentials.username === u && tempCredentials.password === p) {
+            card = tempCredentials;
+          }
 
           if (!card && u === 'enterprise_admin' && p === 'mock_password') {
             card = {
@@ -1396,6 +1400,8 @@ document.addEventListener('DOMContentLoaded', () => {
   let currentCompany = '';
   let currentSector = '';
   let lastUploadedDataset = null; // Shared AutoML/Schema dataset state
+  let tempCredentials = null;
+  let countdownInterval = null;
   let loginFailedAttempts = 0;
   let activePerformanceMetrics = null;
   let sectorDataLoaded = false;
@@ -1410,6 +1416,24 @@ document.addEventListener('DOMContentLoaded', () => {
         if (cardData && cardData.company && cardData.sector) {
           currentCompany = cardData.company;
           currentSector = cardData.sector;
+          
+          tempCredentials = {
+            username: cardData.username || '',
+            password: cardData.password || '',
+            company: cardData.company,
+            sector: cardData.sector,
+            expiresAt: cardData.expiresAt || (Date.now() + 7 * 24 * 60 * 60 * 1000)
+          };
+          
+          if (countdownInterval) {
+            clearInterval(countdownInterval);
+            countdownInterval = null;
+          }
+          
+          const timerProgress = document.getElementById('timer-progress');
+          const countdownTimer = document.getElementById('countdown-timer');
+          if (timerProgress) timerProgress.style.width = '0%';
+          if (countdownTimer) countdownTimer.textContent = '00:00';
           
           // Explicitly update URL hash to #dashboard on login transition
           window.location.hash = 'dashboard';
@@ -1801,17 +1825,521 @@ document.addEventListener('DOMContentLoaded', () => {
   let regressionDots = []; // Real estate background dots
 
   // HTML Element Selectors
-  // HTML Element Selectors
   const pageWelcome = document.getElementById('page-welcome');
   const pageDashboard = document.getElementById('page-dashboard');
+  const loginModal = document.getElementById('login-modal');
   
   // Forms & Modal controls
+  const accessCardForm = document.getElementById('access-card-form');
   const loginForm = document.getElementById('login-form');
+  const btnOpenLogin = document.getElementById('btn-open-login');
+  const btnCloseModal = document.getElementById('btn-close-modal');
+  const btnCancelLogin = document.getElementById('btn-cancel-login');
   const loginErrorMsg = document.getElementById('login-error');
+
+  // Generated Access Card components
+  const tempCard = document.getElementById('temp-card');
+  const tempUsernameInput = document.getElementById('temp-username');
+  const tempPasswordInput = document.getElementById('temp-password');
+  const tempCardSector = document.getElementById('temp-card-sector');
+  const countdownTimer = document.getElementById('countdown-timer');
+  const timerProgress = document.getElementById('timer-progress');
+  const btnAutoLogin = document.getElementById('btn-open-login-from-card');
+
+  // Copy Buttons
+  const btnCopyUsername = document.getElementById('btn-copy-username');
+  const btnCopyPassword = document.getElementById('btn-copy-password');
+
+  // ================= STATE 1: ACCESS CARD GENERATION & TIMER =================
+
+  // Utility to generate strong password
+  function generatePassword(length = 12) {
+    const chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*()_+';
+    let password = '';
+    for (let i = 0; i < length; i++) {
+      password += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    return password;
+  }
+
+  // Cleanup company name for username mapping
+  function sanitizeUsername(name) {
+    let clean = name.toLowerCase()
+      .replace(/ğ/g, 'g')
+      .replace(/ü/g, 'u')
+      .replace(/ş/g, 's')
+      .replace(/ı/g, 'i')
+      .replace(/ö/g, 'o')
+      .replace(/ç/g, 'c')
+      .replace(/\s+/g, '_') // Replace spaces with underscores
+      .replace(/[^a-z0-9_]/g, ''); // Keep only alphanumeric and underscores
+    
+    const cleanCompany = clean || 'company';
+    const randomId = Math.floor(1000 + Math.random() * 9000); // 1000-9999
+    return `vertex_${cleanCompany}_${randomId}`;
+  }
+
+  // Dynamic Form Validation: Hide "Giriş Kartı Oluştur" button until valid inputs are entered
+  const companyNameInput = document.getElementById('company-name-input');
+  const btnCreateCard = document.getElementById('btn-create-card');
+
+  function validateCardForm() {
+    const isCompanyValid = companyNameInput && companyNameInput.value.trim() !== '';
+    const isSectorValid = sectorSelect && sectorSelect.value !== '';
+    
+    if (isCompanyValid && isSectorValid) {
+      btnCreateCard.style.display = 'block';
+      btnCreateCard.disabled = false;
+    } else {
+      btnCreateCard.style.display = 'none';
+      btnCreateCard.disabled = true;
+    }
+  }
+
+  if (companyNameInput && sectorSelect && btnCreateCard) {
+    companyNameInput.addEventListener('input', validateCardForm);
+    sectorSelect.addEventListener('change', validateCardForm);
+    validateCardForm();
+  }
+
+  // Form Submit: Create Access Card
+  accessCardForm.addEventListener('submit', (e) => {
+    e.preventDefault();
+    loginFailedAttempts = 0; // Reset failed counter
+    const company = document.getElementById('company-name-input').value.trim();
+    const sector = document.getElementById('sector-select').value;
+
+    if (!company || !sector) return;
+
+    // Generate credentials
+    const username = sanitizeUsername(company);
+    const password = generatePassword(10);
+    const duration = 10 * 60; // 10 minutes in seconds
+
+    // Store globally
+    tempCredentials = {
+      username,
+      password,
+      company,
+      sector,
+      expiresAt: Date.now() + (duration * 1000)
+    };
+
+    // Save to localStorage so it persists across refreshes
+    localStorage.setItem('vertex_temp_card', JSON.stringify(tempCredentials));
+
+    // Fill UI inputs
+    if (tempUsernameInput) tempUsernameInput.value = username;
+    if (tempPasswordInput) tempPasswordInput.value = password;
+
+    // Update sector badge
+    if (tempCardSector) {
+      if (typeof sectorLabelsCard !== 'undefined' && sectorLabelsCard[currentLang]) {
+        tempCardSector.textContent = sectorLabelsCard[currentLang][sector] || sector;
+      } else {
+        tempCardSector.textContent = sector;
+      }
+      tempCardSector.className = 'badge badge-success';
+    }
+
+    // Display temporary card container
+    if (tempCard) tempCard.style.display = 'block';
+
+    // Start countdown
+    startTemporaryCardCountdown(tempCredentials.expiresAt);
+
+    // Register card on the mock server
+    apiClient.request('/api/create-card', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        username,
+        password,
+        company,
+        sector
+      })
+    })
+    .then(res => {
+      console.log('Card registered on server successfully', res);
+    })
+    .catch(err => {
+      console.error('Error creating card on server:', err);
+    });
+  });
+
+  // Action: Expire Credentials Card
+  function expireCard() {
+    tempCredentials = null;
+    localStorage.removeItem('vertex_temp_card');
+    if (tempCard) tempCard.style.display = 'none';
+    if (currentLang === 'tr') {
+      alert("Geçici giriş kartınızın 10 dakikalık kullanım süresi dolmuş ve geçerliliğini yitirmiştir. Lütfen yeni bir kart oluşturun.");
+    } else {
+      alert("Your temporary entry card has expired after 10 minutes. Please generate a new card.");
+    }
+    const compInput = document.getElementById('company-name-input');
+    if (compInput) compInput.value = '';
+    const secSelect = document.getElementById('sector-select');
+    if (secSelect) secSelect.value = '';
+    validateCardForm();
+  }
+
+  function startTemporaryCardCountdown(expiresAt) {
+    if (countdownInterval) clearInterval(countdownInterval);
+    const duration = 10 * 60; // 10 minutes in seconds
+
+    const updateTimer = () => {
+      const now = Date.now();
+      const secondsLeft = Math.max(0, Math.floor((expiresAt - now) / 1000));
+      
+      if (countdownTimer && timerProgress) {
+        const mins = Math.floor(secondsLeft / 60);
+        const secs = secondsLeft % 60;
+        countdownTimer.textContent = `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+        
+        const pct = (secondsLeft / duration) * 100;
+        timerProgress.style.width = `${pct}%`;
+        const hue = (secondsLeft / duration) * 120;
+        timerProgress.style.backgroundColor = `hsl(${hue}, 85%, 45%)`;
+      }
+      
+      if (secondsLeft <= 0) {
+        clearInterval(countdownInterval);
+        countdownInterval = null;
+        expireCard();
+      }
+    };
+
+    updateTimer(); // Initial call
+    countdownInterval = setInterval(updateTimer, 1000);
+  }
+
+  function checkAndRestoreTemporaryCard() {
+    const tempCardRaw = localStorage.getItem('vertex_temp_card');
+    if (!tempCardRaw) return;
+    try {
+      const cardData = JSON.parse(tempCardRaw);
+      if (cardData && cardData.company && cardData.sector) {
+        const expiresAt = cardData.expiresAt;
+        const now = Date.now();
+        const secondsLeft = Math.floor((expiresAt - now) / 1000);
+
+        if (secondsLeft <= 0) {
+          console.log("[App Lifecycle] Restored temporary card is already expired.");
+          localStorage.removeItem('vertex_temp_card');
+          tempCredentials = null;
+        } else {
+          currentCompany = cardData.company;
+          currentSector = cardData.sector;
+          tempCredentials = cardData;
+          console.log(`[App Lifecycle] Restoring temporary card for ${cardData.username}`);
+          
+          if (tempUsernameInput && tempPasswordInput && tempCardSector && tempCard) {
+            tempUsernameInput.value = cardData.username;
+            tempPasswordInput.value = cardData.password;
+            
+            if (typeof sectorLabelsCard !== 'undefined' && sectorLabelsCard[currentLang]) {
+              tempCardSector.textContent = sectorLabelsCard[currentLang][cardData.sector] || cardData.sector;
+            } else {
+              tempCardSector.textContent = cardData.sector;
+            }
+            tempCardSector.className = `badge badge-success`;
+            tempCard.style.display = 'block';
+            
+            // Generate QR Code containing login link if container exists
+            const loginUrl = `${window.location.origin}${window.location.pathname}?qrLogin=true&u=${encodeURIComponent(cardData.username)}&p=${encodeURIComponent(cardData.password)}&s=${encodeURIComponent(cardData.sector)}&c=${encodeURIComponent(cardData.company)}`;
+            const qrContainer = document.getElementById('qrcode-container');
+            if (qrContainer) {
+              qrContainer.innerHTML = '';
+              new QRCode(qrContainer, {
+                text: loginUrl,
+                width: 130,
+                height: 130,
+                colorDark: '#000000',
+                colorLight: '#ffffff',
+                correctLevel: QRCode.CorrectLevel.M
+              });
+              const btnCopyLoginUrl = document.getElementById('btn-copy-login-url');
+              if (btnCopyLoginUrl) btnCopyLoginUrl.setAttribute('data-url', loginUrl);
+            }
+
+            startTemporaryCardCountdown(expiresAt);
+          }
+        }
+      }
+    } catch (e) {
+      console.error("[App Lifecycle] Failed to restore temporary card:", e);
+      localStorage.removeItem('vertex_temp_card');
+    }
+  }
+
+  // Clipboard Copiers
+  function setupCopyButton(btn, input) {
+    btn.addEventListener('click', () => {
+      input.select();
+      document.execCommand('copy');
+      const originalText = btn.textContent;
+      btn.textContent = currentLang === 'tr' ? 'Kopyalandı!' : 'Copied!';
+      btn.style.background = 'var(--success)';
+      setTimeout(() => {
+        btn.textContent = originalText;
+        btn.style.background = '';
+      }, 1500);
+    });
+  }
+  if (btnCopyUsername && tempUsernameInput) setupCopyButton(btnCopyUsername, tempUsernameInput);
+  if (btnCopyPassword && tempPasswordInput) setupCopyButton(btnCopyPassword, tempPasswordInput);
+
+  // Copy Login Link button event listener
+  const btnCopyLoginUrl = document.getElementById('btn-copy-login-url') || document.createElement('button');
+  btnCopyLoginUrl.addEventListener('click', () => {
+    const url = btnCopyLoginUrl.getAttribute('data-url');
+    if (!url) return;
+    
+    // Copy URL to clipboard
+    const tempInput = document.createElement('input');
+    tempInput.value = url;
+    document.body.appendChild(tempInput);
+    tempInput.select();
+    document.execCommand('copy');
+    document.body.removeChild(tempInput);
+
+    const originalText = btnCopyLoginUrl.textContent;
+    btnCopyLoginUrl.textContent = currentLang === 'tr' ? 'Kopyalandı!' : 'Copied!';
+    btnCopyLoginUrl.style.background = 'var(--success)';
+    setTimeout(() => {
+      btnCopyLoginUrl.textContent = originalText;
+      btnCopyLoginUrl.style.background = '';
+    }, 1500);
+  });
+
+  // Download Temporary Card as PNG Image (Physical Key feel)
+  const btnDownloadCard = document.getElementById('btn-download-card') || document.createElement('button');
+  btnDownloadCard.addEventListener('click', () => {
+    if (!tempCredentials) return;
+    
+    const canvas = document.createElement('canvas');
+    canvas.width = 700;
+    canvas.height = 440;
+    const ctx = canvas.getContext('2d');
+    
+    // 1. Background Gradient
+    const bgGrad = ctx.createLinearGradient(0, 0, 700, 440);
+    bgGrad.addColorStop(0, '#110b29');
+    bgGrad.addColorStop(1, '#0b132b');
+    ctx.fillStyle = bgGrad;
+    ctx.fillRect(0, 0, 700, 440);
+    
+    // 2. Radial Glow
+    const radialGlow = ctx.createRadialGradient(500, 100, 50, 500, 100, 300);
+    radialGlow.addColorStop(0, 'rgba(0, 180, 216, 0.15)');
+    radialGlow.addColorStop(1, 'rgba(0, 0, 0, 0)');
+    ctx.fillStyle = radialGlow;
+    ctx.fillRect(0, 0, 700, 440);
+    
+    // 3. Neon Border (Gradient Rounded Border)
+    ctx.lineWidth = 4;
+    const borderGrad = ctx.createLinearGradient(0, 0, 700, 440);
+    borderGrad.addColorStop(0, '#00b4d8');
+    borderGrad.addColorStop(0.5, '#7209b7');
+    borderGrad.addColorStop(1, '#f72585');
+    ctx.strokeStyle = borderGrad;
+    
+    function drawRoundedRect(cx, cy, w, h, r) {
+      ctx.beginPath();
+      ctx.moveTo(cx + r, cy);
+      ctx.lineTo(cx + w - r, cy);
+      ctx.quadraticCurveTo(cx + w, cy, cx + w, cy + r);
+      ctx.lineTo(cx + w, cy + h - r);
+      ctx.quadraticCurveTo(cx + w, cy + h, cx + w - r, cy + h);
+      ctx.lineTo(cx + r, cy + h);
+      ctx.quadraticCurveTo(cx, cy + h, cx, cy + h - r);
+      ctx.lineTo(cx, cy + r);
+      ctx.quadraticCurveTo(cx, cy, cx + r, cy);
+      ctx.closePath();
+    }
+    
+    drawRoundedRect(10, 10, 680, 420, 24);
+    ctx.stroke();
+    
+    // 4. Draw Logo Icon (Vertex Network Shape)
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = 'rgba(0, 180, 216, 0.8)';
+    ctx.fillStyle = 'rgba(0, 180, 216, 0.2)';
+    ctx.beginPath();
+    ctx.moveTo(600, 40);
+    ctx.lineTo(630, 25);
+    ctx.lineTo(650, 50);
+    ctx.lineTo(630, 75);
+    ctx.lineTo(600, 60);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+    
+    ctx.beginPath();
+    ctx.moveTo(600, 40);
+    ctx.lineTo(650, 50);
+    ctx.moveTo(630, 25);
+    ctx.lineTo(630, 75);
+    ctx.stroke();
+    
+    // 5. ANL Vertex Card Header
+    ctx.fillStyle = '#ffffff';
+    ctx.font = 'bold 24px system-ui, -apple-system, sans-serif';
+    ctx.fillText('ANL VERTEX', 40, 55);
+    
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.4)';
+    ctx.font = '10px system-ui, -apple-system, sans-serif';
+    ctx.fillText('ACCESS SECURITY GATEWAY', 40, 75);
+    
+    // Separator line
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.08)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(40, 95);
+    ctx.lineTo(660, 95);
+    ctx.stroke();
+    
+    // 6. Draw Credentials Labels
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.4)';
+    ctx.font = 'bold 11px system-ui, -apple-system, sans-serif';
+    ctx.fillText(currentLang === 'tr' ? 'LİSANSLI ŞİRKET' : 'LICENSED COMPANY', 40, 125);
+    ctx.fillText(currentLang === 'tr' ? 'AKTİF SEKTÖR' : 'ACTIVE SECTOR', 40, 195);
+    ctx.fillText(currentLang === 'tr' ? 'KULLANICI ADI' : 'USERNAME', 40, 265);
+    ctx.fillText(currentLang === 'tr' ? 'GÜÇLÜ ŞİFRE' : 'STRONG PASSWORD', 40, 335);
+    
+    // 7. Values
+    ctx.fillStyle = '#ffffff';
+    ctx.font = 'bold 18px system-ui, -apple-system, sans-serif';
+    ctx.fillText(tempCredentials.company.toUpperCase(), 40, 150);
+    
+    ctx.fillStyle = '#00b4d8';
+    const sectorLabels = sectorLabelsCard[currentLang] || {};
+    const sectorText = sectorLabels[tempCredentials.sector] || tempCredentials.sector;
+    ctx.fillText(sectorText.toUpperCase(), 40, 220);
+    
+    ctx.fillStyle = '#ffffff';
+    ctx.font = '16px monospace';
+    ctx.fillText(tempCredentials.username, 40, 290);
+    ctx.fillText(tempCredentials.password, 40, 360);
+    
+    // 8. Bottom Expiration Warning
+    ctx.fillStyle = '#ff3366';
+    ctx.font = 'bold 11px system-ui, -apple-system, sans-serif';
+    ctx.fillText(
+      currentLang === 'tr' 
+        ? '⚠️ BU KART 10 DAKİKA İÇİNDE KULLANILMAZSA OTOMATİK OLARAK SİLİNİR' 
+        : '⚠️ EXPIRES IN 10 MINUTES AND WILL BE AUTOMATICALLY DELETED', 
+      40, 400
+    );
+    
+    // 9. Draw QR Code Frame (Rounded White box)
+    ctx.fillStyle = '#ffffff';
+    drawRoundedRect(500, 125, 160, 160, 12);
+    ctx.fill();
+    
+    // 10. Copy QR Canvas pixels onto download card canvas
+    const qrCanvas = document.querySelector('#qrcode-container canvas');
+    const qrImg = document.querySelector('#qrcode-container img');
+    if (qrCanvas) {
+      ctx.drawImage(qrCanvas, 510, 135, 140, 140);
+    } else if (qrImg && qrImg.complete) {
+      ctx.drawImage(qrImg, 510, 135, 140, 140);
+    }
+    
+    // Scan instructions under QR box
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.4)';
+    ctx.font = '10px system-ui, -apple-system, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(currentLang === 'tr' ? 'Hızlı Giriş İçin Taratın' : 'Scan for Fast Login', 580, 305);
+    ctx.textAlign = 'left'; // reset
+    
+    // 11. Trigger Download
+    const link = document.createElement('a');
+    link.download = `${tempCredentials.company.replace(/\s+/g, '_').toLowerCase()}_vertex_card.png`;
+    link.href = canvas.toDataURL('image/png');
+    link.click();
+  });
+
+
+  // ================= STATE 2: LOGIN MODAL STATE =================
+  
+  // Show / Hide login dialog
+  function showLoginModal() {
+    loginErrorMsg.style.display = 'none';
+    loginModal.classList.add('active');
+
+    // Force-replay loginCardEntrance spring animation every time modal opens
+    const card = loginModal.querySelector('.login-modal-card');
+    if (card) {
+      // Strip animation, force reflow, then restore so keyframe fires fresh
+      card.style.animation = 'none';
+      void card.offsetWidth; // reflow
+      card.style.animation = '';
+    }
+
+    // Auto-focus the login-username field after animation settles
+    setTimeout(() => {
+      const userField = document.getElementById('login-username');
+      if (userField) userField.focus();
+    }, 280);
+  }
+
+  function hideLoginModal() {
+    loginModal.classList.remove('active');
+    loginForm.reset();
+    
+    // Reset password input type and eye icon visibility
+    const passField = document.getElementById('login-password');
+    if (passField) passField.setAttribute('type', 'password');
+    
+    const toggleEye = document.getElementById('eye-icon');
+    if (toggleEye) {
+      toggleEye.innerHTML = `
+        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+        <circle cx="12" cy="12" r="3"/>
+      `;
+    }
+  }
+
+  const handleCloseLogin = () => {
+    if (history.state && history.state.pageId === 'login') {
+      history.back();
+    } else {
+      switchPage('welcome');
+    }
+  };
+
+  btnOpenLogin.addEventListener('click', () => switchPage('login'));
+  btnCloseModal.addEventListener('click', handleCloseLogin);
+  btnCancelLogin.addEventListener('click', handleCloseLogin);
+
+  // Password Visibility Toggle
+  const btnTogglePassword = document.getElementById('btn-toggle-password');
+  const loginPassword = document.getElementById('login-password');
+  const eyeIcon = document.getElementById('eye-icon');
+
+  if (btnTogglePassword && loginPassword && eyeIcon) {
+    btnTogglePassword.addEventListener('click', () => {
+      const type = loginPassword.getAttribute('type') === 'password' ? 'text' : 'password';
+      loginPassword.setAttribute('type', type);
+      
+      if (type === 'text') {
+        eyeIcon.innerHTML = `
+          <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/>
+          <line x1="1" y1="1" x2="23" y2="23"/>
+        `;
+      } else {
+        eyeIcon.innerHTML = `
+          <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+          <circle cx="12" cy="12" r="3"/>
+        `;
+      }
+    });
+  }
 
   // Keyboard Submission: Enter Key Event Listener
   const loginUsername = document.getElementById('login-username');
-  const loginPassword = document.getElementById('login-password');
   if (loginUsername && loginPassword) {
     const handleEnterKey = (e) => {
       if (e.key === 'Enter') {
@@ -1823,6 +2351,20 @@ document.addEventListener('DOMContentLoaded', () => {
     loginUsername.addEventListener('keydown', handleEnterKey);
     loginPassword.addEventListener('keydown', handleEnterKey);
   }
+
+  // Auto Login button clicked in card
+  if (btnAutoLogin) {
+    btnAutoLogin.addEventListener('click', () => {
+      if (!tempCredentials) return;
+      showLoginModal();
+      // Populate form fields
+      const userField = document.getElementById('login-username');
+      if (userField) userField.value = tempCredentials.username;
+      const passField = document.getElementById('login-password');
+      if (passField) passField.value = tempCredentials.password;
+    });
+  }
+
 
   // Login Submit Event
   loginForm.addEventListener('submit', async (e) => {
@@ -1837,7 +2379,76 @@ document.addEventListener('DOMContentLoaded', () => {
       loginErrorMsg.style.display = 'block';
     }
 
-    // Direct server credential match check
+    const rememberCheckbox = document.getElementById('login-remember');
+    const remember = rememberCheckbox ? rememberCheckbox.checked : false;
+
+    // A. Check against temporary card stored in localStorage or memory
+    const tempCardRaw = localStorage.getItem('vertex_temp_card');
+    let activeTempCard = tempCredentials;
+    if (tempCardRaw) {
+      try {
+        activeTempCard = JSON.parse(tempCardRaw);
+      } catch (err) {
+        console.error('Failed to parse temp card from localStorage:', err);
+      }
+    }
+
+    if (activeTempCard && user === activeTempCard.username && pass === activeTempCard.password) {
+      if (Date.now() > activeTempCard.expiresAt) {
+        // Card expired! Show error and block login
+        loginErrorMsg.innerHTML = currentLang === 'tr'
+          ? "❌ Kartın süresi doldu. Lütfen yeni bir giriş kartı oluşturun."
+          : "❌ Card expired. Please generate a new access card.";
+        loginErrorMsg.style.display = 'block';
+
+        // Clean up expired card
+        localStorage.removeItem('vertex_temp_card');
+        tempCredentials = null;
+        if (countdownInterval) {
+          clearInterval(countdownInterval);
+          countdownInterval = null;
+        }
+        if (tempCard) tempCard.style.display = 'none';
+        return;
+      }
+
+      // Card is valid! Log in and transition
+      if (countdownInterval) {
+        clearInterval(countdownInterval);
+        countdownInterval = null;
+      }
+      
+      const cardData = {
+        username: activeTempCard.username,
+        password: activeTempCard.password,
+        company: activeTempCard.company,
+        sector: activeTempCard.sector,
+        userId: activeTempCard.username,
+        sessionToken: 'token_' + activeTempCard.username + '_' + Date.now(),
+        expiresAt: Date.now() + 7 * 24 * 60 * 60 * 1000,
+        remember: remember
+      };
+      localStorage.setItem('isLoggedIn', 'true');
+      localStorage.setItem('userCardData', JSON.stringify(cardData));
+      sessionStorage.setItem('sessionActive', 'true');
+
+      // Remove temporary card as user is logged in
+      localStorage.removeItem('vertex_temp_card');
+      tempCredentials = null;
+      if (tempCard) tempCard.style.display = 'none';
+
+      // Send activation to server
+      apiClient.request('/api/activate-card', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username: user })
+      }).catch(err => console.error('Error activating card on server:', err));
+
+      transitionToDashboard();
+      return;
+    }
+
+    // 2. Direct server credential match check (bypassing all time checks)
     try {
       const res = await apiClient.request('/api/login', {
         method: 'POST',
@@ -1853,6 +2464,11 @@ document.addEventListener('DOMContentLoaded', () => {
       if (res.status === 200) {
         const data = await res.json();
         
+        if (countdownInterval) {
+          clearInterval(countdownInterval);
+          countdownInterval = null;
+        }
+
         const cardData = {
           username: user,
           password: pass,
@@ -1861,7 +2477,7 @@ document.addEventListener('DOMContentLoaded', () => {
           userId: data.userId || user,
           sessionToken: data.sessionToken,
           expiresAt: Date.now() + 7 * 24 * 60 * 60 * 1000,
-          remember: false
+          remember: remember
         };
         localStorage.setItem('isLoggedIn', 'true');
         localStorage.setItem('userCardData', JSON.stringify(cardData));
@@ -1886,15 +2502,21 @@ document.addEventListener('DOMContentLoaded', () => {
       history.pushState({ pageId }, '', `#${pageId}`);
     }
 
-    if (pageId === 'welcome' || pageId === 'login') {
+    if (pageId === 'welcome') {
       if (localStorage.getItem('isLoggedIn') === 'true') {
         performLogout();
       }
       pageWelcome.style.display = 'block';
       pageDashboard.style.display = 'none';
+      hideLoginModal();
+    } else if (pageId === 'login') {
+      pageWelcome.style.display = 'block';
+      pageDashboard.style.display = 'none';
+      showLoginModal();
     } else if (pageId === 'dashboard') {
       pageWelcome.style.display = 'none';
       pageDashboard.style.display = 'flex';
+      hideLoginModal();
 
       // Set sector theme color dynamically on login transition
       updateThemeColor(currentSector);
@@ -1912,6 +2534,11 @@ document.addEventListener('DOMContentLoaded', () => {
     // Reset global state
     currentCompany = '';
     currentSector = '';
+    tempCredentials = null;
+    if (countdownInterval) {
+      clearInterval(countdownInterval);
+      countdownInterval = null;
+    }
 
     // Clear persisted session
     localStorage.removeItem('isLoggedIn');
@@ -1923,6 +2550,11 @@ document.addEventListener('DOMContentLoaded', () => {
     document.querySelectorAll('.sector-promo-card').forEach(card => {
       card.classList.remove('active-selection');
     });
+
+    // Clear form inputs
+    accessCardForm.reset();
+    validateCardForm(); // Hide create button
+    tempCard.style.display = 'none';
   }
 
   function getLocalizedRowStatus(row, sector, lang) {
@@ -9837,15 +10469,23 @@ document.addEventListener('DOMContentLoaded', () => {
       // Force unauthenticated state on app start to prevent auto-opening the dashboard
       localStorage.setItem('isLoggedIn', 'false');
       
-      this.restoreSession();
-      this.checkAuthentication();
+      // QR Login parameters in URL check
+      const urlParams = new URLSearchParams(window.location.search);
+      if (urlParams.get('qrLogin') === 'true') {
+        this.handleQrLogin(urlParams);
+      } else {
+        this.restoreSession();
+        checkAndRestoreTemporaryCard();
+        this.checkAuthentication();
+      }
     },
 
     cacheDOM() {
       console.log("[App Lifecycle] Caching DOM elements...");
       this.DOM = {
         pageWelcome: document.getElementById('page-welcome'),
-        pageDashboard: document.getElementById('page-dashboard')
+        pageDashboard: document.getElementById('page-dashboard'),
+        loginModal: document.getElementById('login-modal')
       };
     },
 
@@ -9871,13 +10511,87 @@ document.addEventListener('DOMContentLoaded', () => {
             const secondsLeft = Math.floor((expiresAt - now) / 1000);
 
             if (secondsLeft <= 0) {
-              console.log("[App Lifecycle] Restored session is already expired.");
+              console.log("[App Lifecycle] Restored card is already expired.");
               localStorage.removeItem('userCardData');
               localStorage.removeItem('isLoggedIn');
             } else {
               currentCompany = cardData.company;
               currentSector = cardData.sector;
+              tempCredentials = cardData;
               console.log(`[App Lifecycle] Restored session for ${cardData.username} of ${cardData.company}`);
+              
+              // Populate the welcome page card UI with these restored credentials
+              const tempUsernameInput = document.getElementById('temp-username');
+              const tempPasswordInput = document.getElementById('temp-password');
+              const tempCardSector = document.getElementById('temp-card-sector');
+              const tempCard = document.getElementById('temp-card');
+              const countdownTimer = document.getElementById('countdown-timer');
+              const timerProgress = document.getElementById('timer-progress');
+              
+              if (tempUsernameInput && tempPasswordInput && tempCardSector && tempCard) {
+                tempUsernameInput.value = cardData.username;
+                tempPasswordInput.value = cardData.password;
+                
+                if (typeof sectorLabelsCard !== 'undefined' && sectorLabelsCard[currentLang]) {
+                  tempCardSector.textContent = sectorLabelsCard[currentLang][cardData.sector] || cardData.sector;
+                } else {
+                  tempCardSector.textContent = cardData.sector;
+                }
+                tempCardSector.className = `badge badge-success`;
+                tempCard.style.display = 'block';
+                
+                // Generate QR Code containing login link
+                const loginUrl = `${window.location.origin}${window.location.pathname}?qrLogin=true&u=${encodeURIComponent(cardData.username)}&p=${encodeURIComponent(cardData.password)}&s=${encodeURIComponent(cardData.sector)}&c=${encodeURIComponent(cardData.company)}`;
+                const qrContainer = document.getElementById('qrcode-container');
+                if (qrContainer) {
+                  qrContainer.innerHTML = '';
+                  new QRCode(qrContainer, {
+                    text: loginUrl,
+                    width: 130,
+                    height: 130,
+                    colorDark: '#000000',
+                    colorLight: '#ffffff',
+                    correctLevel: QRCode.CorrectLevel.M
+                  });
+                  const btnCopyLoginUrl = document.getElementById('btn-copy-login-url');
+                  if (btnCopyLoginUrl) btnCopyLoginUrl.setAttribute('data-url', loginUrl);
+                }
+
+                // Restore countdown timer!
+                if (countdownInterval) clearInterval(countdownInterval);
+                const duration = 10 * 60; // 10 minutes in seconds
+                if (countdownTimer && timerProgress) {
+                  const mins = Math.floor(secondsLeft / 60);
+                  const secs = secondsLeft % 60;
+                  countdownTimer.textContent = `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+                  
+                  const pct = (secondsLeft / duration) * 100;
+                  timerProgress.style.width = `${pct}%`;
+                  const hue = (secondsLeft / duration) * 120;
+                  timerProgress.style.backgroundColor = `hsl(${hue}, 85%, 45%)`;
+                }
+
+                let currentSecondsLeft = secondsLeft;
+                countdownInterval = setInterval(() => {
+                  currentSecondsLeft--;
+                  
+                  if (countdownTimer && timerProgress) {
+                    const mins = Math.floor(currentSecondsLeft / 60);
+                    const secs = currentSecondsLeft % 60;
+                    countdownTimer.textContent = `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+                    
+                    const pct = (currentSecondsLeft / duration) * 100;
+                    timerProgress.style.width = `${pct}%`;
+                    const hue = (currentSecondsLeft / duration) * 120;
+                    timerProgress.style.backgroundColor = `hsl(${hue}, 85%, 45%)`;
+                  }
+                  
+                  if (currentSecondsLeft <= 0) {
+                    clearInterval(countdownInterval);
+                    expireCard();
+                  }
+                }, 1000);
+              }
             }
           }
         } catch (e) {
@@ -9912,8 +10626,14 @@ document.addEventListener('DOMContentLoaded', () => {
       if (this.DOM.pageWelcome) this.DOM.pageWelcome.style.display = 'block';
       if (this.DOM.pageDashboard) this.DOM.pageDashboard.style.display = 'none';
 
-      if (window.location.hash !== '#welcome' && window.location.hash !== '#login') {
-        window.history.replaceState({ pageId: 'welcome' }, '', '#welcome');
+      const hash = window.location.hash;
+      if (hash === '#login') {
+        showLoginModal();
+      } else {
+        if (window.location.hash !== '#welcome') {
+          window.history.replaceState({ pageId: 'welcome' }, '', '#welcome');
+        }
+        hideLoginModal();
       }
     },
 
@@ -9924,6 +10644,7 @@ document.addEventListener('DOMContentLoaded', () => {
       sessionStorage.removeItem('sessionActive');
       currentCompany = '';
       currentSector = '';
+      tempCredentials = null;
     },
 
     initializeDashboardAfterLogin() {
@@ -9935,6 +10656,7 @@ document.addEventListener('DOMContentLoaded', () => {
       
       if (this.DOM.pageWelcome) this.DOM.pageWelcome.style.display = 'none';
       if (this.DOM.pageDashboard) this.DOM.pageDashboard.style.display = 'flex';
+      hideLoginModal();
 
       this.handleRouting();
     },
@@ -9967,7 +10689,89 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     },
 
-
+    handleQrLogin(urlParams) {
+      const u = urlParams.get('u');
+      const p = urlParams.get('p');
+      const s = urlParams.get('s');
+      const c = urlParams.get('c');
+      if (u && p && s && c) {
+        console.log("[App Lifecycle] Processing QR Login parameter...");
+        apiClient.request('/api/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username: u, password: p })
+        })
+        .then(res => {
+          if (res.status === 200) {
+            currentCompany = c;
+            currentSector = s;
+            tempCredentials = {
+              username: u,
+              password: p,
+              company: c,
+              sector: s,
+              expiresAt: Date.now() + 7 * 24 * 60 * 60 * 1000
+            };
+            const cardData = {
+              username: u,
+              password: p,
+              company: c,
+              sector: s,
+              expiresAt: tempCredentials.expiresAt,
+              remember: true
+            };
+            localStorage.setItem('isLoggedIn', 'true');
+            localStorage.setItem('userCardData', JSON.stringify(cardData));
+            sessionStorage.setItem('sessionActive', 'true');
+            
+            window.history.replaceState({ pageId: 'dashboard' }, '', '#dashboard');
+            
+            apiClient.request('/api/activate-card', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ username: u })
+            }).catch(err => console.error('Error activating card:', err));
+            
+            this.initializeDashboardAfterLogin();
+          } else {
+            window.history.replaceState({ pageId: 'welcome' }, '', '#welcome');
+            this.showLoginScreen();
+            alert(currentLang === 'tr' 
+              ? "Geçici giriş kartınızın süresi dolmuş veya geçersizdir!" 
+              : "Your temporary entry card has expired or is invalid!");
+          }
+        })
+        .catch(err => {
+          console.error('QR login failed, falling back locally:', err);
+          currentCompany = c;
+          currentSector = s;
+          tempCredentials = {
+            username: u,
+            password: p,
+            company: c,
+            sector: s,
+            expiresAt: Date.now() + 10 * 60 * 1000
+          };
+          const cardData = {
+            username: u,
+            password: p,
+            company: c,
+            sector: s,
+            expiresAt: tempCredentials.expiresAt,
+            remember: true
+          };
+          localStorage.setItem('isLoggedIn', 'true');
+          localStorage.setItem('userCardData', JSON.stringify(cardData));
+          sessionStorage.setItem('sessionActive', 'true');
+          
+          window.history.replaceState({ pageId: 'dashboard' }, '', '#dashboard');
+          this.initializeDashboardAfterLogin();
+        });
+      } else {
+        this.restoreSession();
+        this.checkAuthentication();
+      }
+    }
   };
 
   function handleHashRouting() {

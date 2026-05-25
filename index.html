@@ -11,50 +11,454 @@
 <body>
 
   <!-- ================= STATE 1: WELCOME PAGE ================= -->
-  <div id="page-welcome" class="page-container welcome-theme-light">
-    <!-- Top Lang Switcher -->
-    <div class="lang-switcher-top">
-      <button class="btn-lang active" data-lang="tr">TR</button>
-      <button class="btn-lang" data-lang="en">EN</button>
-    </div>
-
-    <!-- Centered Login Card -->
-    <div class="login-center-card">
-      <div class="login-brand">
-        <!-- SVG Logo -->
+  <div id="page-welcome" class="page-container">
+    <!-- Branding Header -->
+    <header class="navbar container fade-in">
+      <div class="brand">
+        <!-- SVG LOGO: ANL Vertex interlinked nodes -->
         <svg class="logo-svg" width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
           <path d="M12 2L2 7l10 5 10-5-10-5z"/>
           <path d="M2 17l10 5 10-5"/>
           <path d="M2 12l10 5 10-5"/>
-          <circle cx="12" cy="12" r="2" fill="currentColor" stroke="none"/>
+          <circle cx="12" cy="12" r="2" fill="var(--primary)" stroke="none"/>
+          <circle cx="2" cy="7" r="1.5" fill="var(--secondary)" stroke="none"/>
+          <circle cx="22" cy="7" r="1.5" fill="var(--secondary)" stroke="none"/>
         </svg>
         <span class="brand-name">ANL Vertex</span>
       </div>
+      <div class="nav-actions" style="display: flex; align-items: center; gap: 1rem;">
+        <div class="lang-switcher">
+          <button class="btn-lang active" data-lang="tr">TR</button>
+          <button class="btn-lang" data-lang="en">EN</button>
+        </div>
+        <button class="btn-primary" id="btn-open-login" style="padding: 0.6rem 1.4rem;" data-i18n="btn_login">Giriş Yap</button>
+      </div>
+    </header>
 
-      <h2 class="login-card-title" data-i18n="login_title">Sisteme Giriş Yapın</h2>
-      <p class="login-card-subtitle" data-i18n="login_desc">Kurumsal kimlik bilgilerinizi giriniz.</p>
+    <main class="container">
+      <div class="welcome-grid">
+        <!-- Form Section -->
+        <div class="welcome-hero-card glass-card fade-in">
+          <div class="badge badge-success" style="margin-bottom: 0.8rem;" data-i18n="badge_card_gen">Giriş Kartı Oluşturucu</div>
+          <h2 data-i18n="welcome_title">Sisteme Erişim Sağlayın</h2>
+          <p style="color: var(--text-secondary); margin-bottom: 1.5rem; font-size: 0.95rem;" data-i18n="welcome_desc">
+            ANL Vertex analitik paneline giriş yapabilmek için geçici bir giriş kartı oluşturmanız gerekmektedir. Şirket adınızı girin ve sektörünüzü seçin.
+          </p>
+
+          <!-- Access Card Creation Form -->
+          <form id="access-card-form" onsubmit="event.preventDefault();">
+            <div class="control-group">
+              <label class="control-label" for="company-name-input" data-i18n="label_company_name">Şirket Adı:</label>
+              <input type="text" id="company-name-input" class="text-input" placeholder="Örn: Asya Holding A.Ş." required>
+            </div>
+
+            <div class="control-group">
+              <label class="control-label" for="sector-select" data-i18n="label_sector_select">Sektör Seçin:</label>
+              <select id="sector-select" class="select-input" required>
+                <option value="" disabled selected data-i18n="opt_select_sector">Bir sektör seçin...</option>
+                <option value="vakif" data-i18n="opt_vakif">Dernekler ve Vakıflar (Bağış Sınıflandırması)</option>
+                <option value="egitim" data-i18n="opt_egitim">Eğitim Sektörü (Başarı Olasılığı)</option>
+                <option value="gida" data-i18n="opt_gida">Gıda Sektörü (Sipariş Regresyonu)</option>
+                <option value="lojistik" data-i18n="opt_lojistik">Ulaşım ve Lojistik (Gecikme Risk Ağırlığı)</option>
+                <option value="tekstil" data-i18n="opt_tekstil">Tekstil Perakende (Müşteri Segmentasyonu)</option>
+              </select>
+            </div>
+
+            <button type="submit" class="btn-primary" id="btn-create-card" style="display: none; width: 100%; margin-top: 0.5rem;" data-i18n="btn_create_card">
+              Giriş Kartı Oluştur
+            </button>
+
+          </form>
+
+          <!-- Expiring Temporary Access Card -->
+          <div id="temp-card" class="temp-card-container fade-in" style="display: none; margin-top: 1.5rem;">
+            <div class="temp-card-header">
+              <span class="temp-card-title" data-i18n="temp_card_title">Geçici Giriş Kartı</span>
+              <span class="badge badge-success" id="temp-card-sector">Finans</span>
+            </div>
+            
+            <div class="temp-card-body">
+              <div class="credential-item">
+                <span class="credential-label" data-i18n="label_username">Kullanıcı Adı</span>
+                <div class="credential-val-box">
+                  <input type="text" id="temp-username" class="credential-input" readonly>
+                  <button class="btn-copy" id="btn-copy-username" title="Kopyala" data-i18n="btn_copy">Kopyala</button>
+                </div>
+              </div>
+
+              <div class="credential-item">
+                <span class="credential-label" data-i18n="label_password">Güçlü Şifre</span>
+                <div class="credential-val-box">
+                  <input type="text" id="temp-password" class="credential-input" readonly>
+                  <button class="btn-copy" id="btn-copy-password" title="Kopyala" data-i18n="btn_copy">Kopyala</button>
+                </div>
+              </div>
+
+              <div class="timer-section" style="margin-top: 1.2rem;">
+                <div class="timer-title" data-i18n="timer_title" style="font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 0.3rem;">Kart Geçerlilik Süresi</div>
+                <div class="timer-clock" id="countdown-timer" style="font-size: 1.5rem; font-weight: 700; color: var(--primary);">10:00</div>
+                <div class="timer-bar-container" style="background: rgba(255, 255, 255, 0.05); height: 6px; border-radius: 3px; margin-top: 0.5rem; overflow: hidden;">
+                  <div class="timer-bar" id="timer-progress" style="background: var(--primary); height: 100%; width: 100%; transition: width 1s linear;"></div>
+                </div>
+              </div>
+
+              <div style="margin-top: 1.5rem; display: flex; gap: 0.8rem;">
+                <button class="btn-primary" id="btn-open-login-from-card" style="flex: 1; padding: 0.75rem; background: var(--secondary); border: none; border-radius: 8px; color: #fff; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 0.4rem;">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
+                  <span data-i18n="btn_open_login_modal">Giriş Yap</span>
+                </button>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Introduction Details Column -->
+        <div class="welcome-promo glass-card fade-in">
+          <div class="badge badge-success" style="margin-bottom: 0.8rem;" data-i18n="badge_intro">ANL Vertex Tanıtım</div>
+          <h2 data-i18n="intro_title">Yapay Zeka Destekli Sektörel Analiz</h2>
+          <p style="color: var(--text-secondary); margin-bottom: 1.5rem; line-height: 1.6;" data-i18n="intro_desc">
+            <strong>ANL Vertex</strong>, işletmelerin sahip olduğu karmaşık verileri denetimli makine öğrenimi modelleri kullanarak analiz eden ve karar mekanizmalarını otomatikleştiren bir iş zekası portalıdır.
+          </p>
+
+          <div class="feature-list" style="display: flex; flex-direction: column; gap: 1.2rem;">
+            <div class="feature-item">
+              <div class="feature-icon" style="color: var(--primary);">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.21 15.89A10 10 0 1 1 8 2.83M22 12A10 10 0 0 0 12 2v10z"/></svg>
+              </div>
+              <div class="feature-text">
+                <strong data-i18n="feat_1_title">Gözetimli ML Altyapısı (Supervised Learning)</strong>
+                <p style="font-size: 0.85rem; color: var(--text-muted);" data-i18n="feat_1_desc">Sistemlerinizdeki etiketli geçmiş verilerden örüntüler öğrenir, yeni veri girdilerinde yüksek doğruluklu tahminler üretir.</p>
+              </div>
+            </div>
+
+            <div class="feature-item">
+              <div class="feature-icon" style="color: var(--secondary);">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+              </div>
+              <div class="feature-text">
+                <strong data-i18n="feat_2_title">PDF Raporlama & Dokümantasyon</strong>
+                <p style="font-size: 0.85rem; color: var(--text-muted);" data-i18n="feat_2_desc">Tek tıkla, şirketinizin verilerini, model analiz sonuçlarını ve aksiyon önerilerini içeren resmi A4 PDF raporu indirin.</p>
+              </div>
+            </div>
+
+            <div class="feature-item">
+              <div class="feature-icon" style="color: var(--success);">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
+              </div>
+              <div class="feature-text">
+                <strong data-i18n="feat_3_title">Aksiyon Önerileri Modülü</strong>
+                <p style="font-size: 0.85rem; color: var(--text-muted);" data-i18n="feat_3_desc">Sadece tahmin üretmekle kalmaz, model çıktısına göre firmanızın alabileceği stratejik iş kararlarını belirler.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Section 1: Sector Showcase Grid -->
+      <section class="landing-showcase scroll-reveal" style="margin-top: 5rem;">
+        <div style="text-align: center; margin-bottom: 3rem;">
+          <div class="badge badge-success" style="margin-bottom: 0.8rem;" data-i18n="badge_sectors">Sektörel Çözümler</div>
+          <h2 data-i18n="sectors_title">Modellerin Sektörel Dağılımı</h2>
+          <p style="color: var(--text-secondary); max-width: 600px; margin: 0 auto; font-size: 0.95rem;" data-i18n="sectors_desc">
+            ANL Vertex, farklı sektörlerdeki veri türlerine göre özelleştirilmiş denetimli öğrenme algoritmaları kullanır.
+          </p>
+        </div>
+
+        <div class="sector-cards-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 2rem;">
+          
+          <div class="sector-promo-card glass-card" data-sector="vakif" style="padding: 1.8rem; position: relative; overflow: hidden; border-top: 3px solid var(--primary); display: flex; flex-direction: column; justify-content: space-between;">
+            <div>
+              <div style="color: var(--primary); margin-bottom: 1rem;">
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+              </div>
+              <h4 data-i18n="card_vakif_title">Dernekler ve Vakıflar</h4>
+              <p style="font-size: 0.85rem; color: var(--text-secondary); line-height: 1.5; margin-bottom: 1.5rem;" data-i18n="card_vakif_desc">
+                Gözetimli **Karar Ağaçları (Decision Trees)** kullanarak bağışçıların ziyaret sıklığı ve geçmiş desteklerine göre düzenli donör olma olasılıklarını sınıflandırır.
+              </p>
+            </div>
+            <span style="font-size: 0.75rem; font-weight: 600; color: var(--primary);" data-i18n="card_vakif_footer">Bağış Sınıflandırması &rarr;</span>
+          </div>
+
+          <div class="sector-promo-card glass-card" data-sector="egitim" style="padding: 1.8rem; position: relative; overflow: hidden; border-top: 3px solid var(--secondary); display: flex; flex-direction: column; justify-content: space-between;">
+            <div>
+              <div style="color: var(--secondary); margin-bottom: 1rem;">
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c0 2 2 3 6 3s6-1 6-3v-5"/></svg>
+              </div>
+              <h4 data-i18n="card_egitim_title">Eğitim Sektörü</h4>
+              <p style="font-size: 0.85rem; color: var(--text-secondary); line-height: 1.5; margin-bottom: 1.5rem;" data-i18n="card_egitim_desc">
+                **Lojistik Olasılık (Logistic Regression)** modelleriyle öğrencilerin çalışma saatleri ve derse katılım oranlarına göre başarı/başarısızlık olasılığını hesaplar.
+              </p>
+            </div>
+            <span style="font-size: 0.75rem; font-weight: 600; color: var(--secondary);" data-i18n="card_egitim_footer">Başarı Tahmin Olasılığı &rarr;</span>
+          </div>
+
+          <div class="sector-promo-card glass-card" data-sector="gida" style="padding: 1.8rem; position: relative; overflow: hidden; border-top: 3px solid var(--success); display: flex; flex-direction: column; justify-content: space-between;">
+            <div>
+              <div style="color: var(--success); margin-bottom: 1rem;">
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8h1a4 4 0 0 1 0 8h-1M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/><line x1="6" y1="2" x2="6" y2="8"/><line x1="10" y1="2" x2="10" y2="8"/><line x1="14" y1="2" x2="14" y2="8"/></svg>
+              </div>
+              <h4 data-i18n="card_gida_title">Gıda Sektörü</h4>
+              <p style="font-size: 0.85rem; color: var(--text-secondary); line-height: 1.5; margin-bottom: 1.5rem;" data-i18n="card_gida_desc">
+                **Çoklu Doğrusal Regresyon (Linear Regression)** analizleriyle sipariş yoğunluğu ve restoran puanına göre günlük yemek talebini ve sipariş sayılarını modeller.
+              </p>
+            </div>
+            <span style="font-size: 0.75rem; font-weight: 600; color: var(--success);" data-i18n="card_gida_footer">Sipariş Regresyonu &rarr;</span>
+          </div>
+
+          <div class="sector-promo-card glass-card" data-sector="lojistik" style="padding: 1.8rem; position: relative; overflow: hidden; border-top: 3px solid var(--danger); display: flex; flex-direction: column; justify-content: space-between;">
+            <div>
+              <div style="color: var(--danger); margin-bottom: 1rem;">
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
+              </div>
+              <h4 data-i18n="card_lojistik_title">Ulaşım ve Lojistik</h4>
+              <p style="font-size: 0.85rem; color: var(--text-secondary); line-height: 1.5; margin-bottom: 1.5rem;" data-i18n="card_lojistik_desc">
+                Gözetimli **Etki Ağırlık Katsayıları** ile teslimat mesafesi, kurye sayısı ve trafik yoğunluğu girdilerine göre gecikme risklerini hesaplar.
+              </p>
+            </div>
+            <span style="font-size: 0.75rem; font-weight: 600; color: var(--danger);" data-i18n="card_lojistik_footer">Gecikme Analizi &rarr;</span>
+          </div>
+
+          <div class="sector-promo-card glass-card" data-sector="tekstil" style="padding: 1.8rem; position: relative; overflow: hidden; border-top: 3px solid var(--warning); display: flex; flex-direction: column; justify-content: space-between;">
+            <div>
+              <div style="color: var(--warning); margin-bottom: 1rem;">
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
+              </div>
+              <h4 data-i18n="card_tekstil_title">Tekstil Perakende</h4>
+              <p style="font-size: 0.85rem; color: var(--text-secondary); line-height: 1.5; margin-bottom: 1.5rem;" data-i18n="card_tekstil_desc">
+                Gözetimli **K-En Yakın Komşu (K-NN Classification)** modeliyle alışveriş sıklığı ve sepet tutarlarına göre müşteri segmentlerini sınıflandırır.
+              </p>
+            </div>
+            <span style="font-size: 0.75rem; font-weight: 600; color: var(--warning);" data-i18n="card_tekstil_footer">Müşteri Segmentasyonu &rarr;</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- Section 2: Pipeline Workflow -->
+      <section class="landing-workflow scroll-reveal" style="margin-top: 5rem; margin-bottom: 2rem;">
+        <div style="text-align: center; margin-bottom: 3.5rem;">
+          <div class="badge badge-success" style="margin-bottom: 0.8rem;" data-i18n="badge_workflow">İş Akış Şeması</div>
+          <h2 data-i18n="workflow_title">Uçtan Uca Gözetimli Modelleme Döngüsü</h2>
+          <p style="color: var(--text-secondary); max-width: 600px; margin: 0 auto; font-size: 0.95rem;" data-i18n="workflow_desc">
+            Verilerinizin sisteme yüklenmesinden alınabilecek aksiyon önerilerine kadar olan döngü:
+          </p>
+        </div>
+
+        <div class="pipeline-container" style="display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap;">
+          
+          <div class="pipeline-step" style="flex: 1; min-width: 200px; text-align: center; background: rgba(255,255,255,0.02); padding: 1.8rem 1.5rem; border-radius: 15px; border: 1px solid var(--border-color); position: relative; transition: var(--transition-smooth);">
+            <div class="pipeline-num" style="position: absolute; top: -15px; left: 50%; transform: translateX(-50%); width: 30px; height: 30px; border-radius: 50%; background: var(--primary); display: flex; align-items: center; justify-content: center; font-weight: bold; font-family: var(--font-display); font-size: 0.85rem; box-shadow: 0 0 10px var(--primary-glow);">1</div>
+            <h5 style="margin-top: 0.5rem; margin-bottom: 0.5rem; font-size: 1rem;" data-i18n="step_1_title">Etiketli Veri Girişi</h5>
+            <p style="font-size: 0.75rem; color: var(--text-secondary);" data-i18n="step_1_desc">CSV yüklemesi veya manuel formlar ile geçmiş etiketli veriler veritabanına eklenir.</p>
+          </div>
+
+          <div class="pipeline-arrow" style="color: var(--border-color); font-size: 1.5rem; font-weight: bold; padding: 0 0.5rem;">&rarr;</div>
+
+          <div class="pipeline-step" style="flex: 1; min-width: 200px; text-align: center; background: rgba(255,255,255,0.02); padding: 1.8rem 1.5rem; border-radius: 15px; border: 1px solid var(--border-color); position: relative; transition: var(--transition-smooth);">
+            <div class="pipeline-num" style="position: absolute; top: -15px; left: 50%; transform: translateX(-50%); width: 30px; height: 30px; border-radius: 50%; background: var(--secondary); display: flex; align-items: center; justify-content: center; font-weight: bold; font-family: var(--font-display); font-size: 0.85rem; box-shadow: 0 0 10px var(--secondary-glow);">2</div>
+            <h5 style="margin-top: 0.5rem; margin-bottom: 0.5rem; font-size: 1rem;" data-i18n="step_2_title">Katsayı & Ağırlık Eğitimi</h5>
+            <p style="font-size: 0.75rem; color: var(--text-secondary);" data-i18n="step_2_desc">Gözetimli öğrenme algoritmaları değişkenlerin ağırlıklarını ve katsayılarını hesaplar.</p>
+          </div>
+
+          <div class="pipeline-arrow" style="color: var(--border-color); font-size: 1.5rem; font-weight: bold; padding: 0 0.5rem;">&rarr;</div>
+
+          <div class="pipeline-step" style="flex: 1; min-width: 200px; text-align: center; background: rgba(255,255,255,0.02); padding: 1.8rem 1.5rem; border-radius: 15px; border: 1px solid var(--border-color); position: relative; transition: var(--transition-smooth);">
+            <div class="pipeline-num" style="position: absolute; top: -15px; left: 50%; transform: translateX(-50%); width: 30px; height: 30px; border-radius: 50%; background: var(--success); display: flex; align-items: center; justify-content: center; font-weight: bold; font-family: var(--font-display); font-size: 0.85rem; box-shadow: 0 0 10px var(--success-glow);">3</div>
+            <h5 style="margin-top: 0.5rem; margin-bottom: 0.5rem; font-size: 1rem;" data-i18n="step_3_title">Doğrusal Tahmin & Çıktı</h5>
+            <p style="font-size: 0.75rem; color: var(--text-secondary);" data-i18n="step_3_desc">Model yeni gelen girdi verisinin onay/red, olasılık derecesi veya değer eğrisini hesaplar.</p>
+          </div>
+
+          <div class="pipeline-arrow" style="color: var(--border-color); font-size: 1.5rem; font-weight: bold; padding: 0 0.5rem;">&rarr;</div>
+
+          <div class="pipeline-step" style="flex: 1; min-width: 200px; text-align: center; background: rgba(255,255,255,0.02); padding: 1.8rem 1.5rem; border-radius: 15px; border: 1px solid var(--border-color); position: relative; transition: var(--transition-smooth);">
+            <div class="pipeline-num" style="position: absolute; top: -15px; left: 50%; transform: translateX(-50%); width: 30px; height: 30px; border-radius: 50%; background: var(--warning); display: flex; align-items: center; justify-content: center; font-weight: bold; font-family: var(--font-display); font-size: 0.85rem; color: white; box-shadow: 0 0 10px rgba(245, 158, 11, 0.2);">4</div>
+            <h5 style="margin-top: 0.5rem; margin-bottom: 0.5rem; font-size: 1rem;" data-i18n="step_4_title">Önerilen Aksiyon</h5>
+            <p style="font-size: 0.75rem; color: var(--text-secondary);" data-i18n="step_4_desc">Elde edilen analitik tahminlere göre şirketin alması gereken ticari eylemleri belirler.</p>
+          </div>
+
+        </div>
+      </section>
+
+      <!-- Section: Supervised ML Academy -->
+      <section class="ml-academy scroll-reveal" style="margin-top: 5rem;">
+        <div style="text-align: center; margin-bottom: 3.5rem;">
+          <div class="badge badge-success" style="margin-bottom: 0.8rem;" data-i18n="badge_academy">Eğitim & Akademi</div>
+          <h2 data-i18n="academy_title">Denetimli Makine Öğrenimi Nedir?</h2>
+          <p style="color: var(--text-secondary); max-width: 600px; margin: 0 auto; font-size: 0.95rem;" data-i18n="academy_desc">
+            Gözetimli öğrenmenin temelleri, işletmelere sunduğu katkılar ve ANL Vertex'in uyguladığı gerçek dünya senaryoları.
+          </p>
+        </div>
+
+        <div class="academy-grid" style="display: grid; grid-template-columns: 1.2fr 1fr; gap: 3rem; align-items: start;">
+          <!-- Left: Explanation -->
+          <div class="glass-card" style="padding: 2.5rem;">
+            <h3 style="margin-bottom: 1.2rem; color: var(--primary);" data-i18n="acad_left_title">Temel Tanım ve Öğrenme Yapısı</h3>
+            <p style="color: var(--text-secondary); line-height: 1.7; margin-bottom: 1.5rem; font-size: 0.95rem;" data-i18n="acad_left_p1">
+              <strong>Denetimli Makine Öğrenimi (Supervised Learning)</strong>, bir algoritmanın <em>etiketlenmiş (labeled)</em> geçmiş verilerden örüntüler öğrenmesidir. Veri kümesinde girdiler (bağımsız değişkenler) ile bunların doğru çıktısı (hedef etiket) önceden bellidir.
+            </p>
+            <p style="color: var(--text-secondary); line-height: 1.7; margin-bottom: 2rem; font-size: 0.95rem;" data-i18n="acad_left_p2">
+              Model eğitildikten sonra, daha önce hiç karşılaşmadığı yeni girdi değerlerini analiz ederek yüksek doğruluk oranlarıyla tahmin veya sınıflandırma yapar. Bir öğretmenin gözetiminde çözümlü örnekleri inceleyerek konuyu kavrayan bir öğrenci mantığına sahiptir.
+            </p>
+
+            <h4 style="margin-bottom: 1rem; color: var(--secondary);" data-i18n="acad_left_h4">İşletmelere Nasıl Yardımcı Olur?</h4>
+            <div style="display: flex; flex-direction: column; gap: 1rem;">
+              <div style="display: flex; gap: 0.8rem; align-items: start;">
+                <div style="color: var(--success); margin-top: 0.2rem; font-weight: bold;">✔</div>
+                <div style="font-size: 0.9rem; color: var(--text-secondary);" data-i18n="acad_help_1"><strong>Karar Verme Sürecini Hızlandırır:</strong> Kredi onayı veya segmentasyon gibi manuel analiz gerektiren adımları milisaniyeler içerisinde otomatikleştirir.</div>
+              </div>
+              <div style="display: flex; gap: 0.8rem; align-items: start;">
+                <div style="color: var(--success); margin-top: 0.2rem; font-weight: bold;">✔</div>
+                <div style="font-size: 0.9rem; color: var(--text-secondary);" data-i18n="acad_help_2"><strong>Kaynak İsrafını Engeller:</strong> Doğrusal talep regresyonları sayesinde gıda veya tekstil sipariş adetlerini önceden saptayarak stok kontrolünü optimize eder.</div>
+              </div>
+              <div style="display: flex; gap: 0.8rem; align-items: start;">
+                <div style="color: var(--success); margin-top: 0.2rem; font-weight: bold;">✔</div>
+                <div style="font-size: 0.9rem; color: var(--text-secondary);" data-i18n="acad_help_3"><strong>Erken Risk Yönetimi:</strong> Eğitimde başarısızlık veya lojistikte gecikme gibi durumlar oluşmadan önce modelin çıkardığı olasılıklara göre önleyici önlemler alınmasını sağlar.</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Right: Applied Examples -->
+          <div class="glass-card" style="padding: 2.5rem; display: flex; flex-direction: column; gap: 1.5rem;">
+            <h3 style="color: var(--secondary);" data-i18n="acad_right_title">ANL Vertex Uygulamalı Örnekleri</h3>
+            
+            <div class="academy-example-item" style="border-left: 3px solid var(--primary); padding-left: 1rem;">
+              <span style="font-size: 0.75rem; font-weight: bold; color: var(--primary); text-transform: uppercase;" data-i18n="acad_ex_1_badge">Karar Ağaçları (Decision Trees)</span>
+              <h5 style="margin: 0.2rem 0; font-size: 1rem;" data-i18n="acad_ex_1_title">Vakıf Donör Sınıflandırması</h5>
+              <p style="font-size: 0.8rem; color: var(--text-muted); line-height: 1.4; margin: 0;" data-i18n="acad_ex_1_desc">
+                <strong>Çalışma Prensibi:</strong> Verileri mantıksal soru dallarına (Örn: Katılım > 5?) ayırarak hiyerarşik sınırlar çizer.
+                <br><strong>Uygulama:</strong> Bağışçıların düzenli veya düzensiz donör durumlarını sınıflandırır.
+              </p>
+            </div>
+
+            <div class="academy-example-item" style="border-left: 3px solid var(--secondary); padding-left: 1rem;">
+              <span style="font-size: 0.75rem; font-weight: bold; color: var(--secondary); text-transform: uppercase;" data-i18n="acad_ex_2_badge">Lojistik Regresyon (Logistic Regression)</span>
+              <h5 style="margin: 0.2rem 0; font-size: 1rem;" data-i18n="acad_ex_2_title">Öğrenci Başarı Riski</h5>
+              <p style="font-size: 0.8rem; color: var(--text-muted); line-height: 1.4; margin: 0;" data-i18n="acad_ex_2_desc">
+                <strong>Çalışma Prensibi:</strong> Bağımsız değişkenleri Sigmoid eğrisi kullanarak 0 ile 1 aralığında bir olasılık değerine dönüştürür.
+                <br><strong>Uygulama:</strong> Çalışma saati ve devamsızlığa göre başarısızlık risk oranını çıkarır.
+              </p>
+            </div>
+
+            <div class="academy-example-item" style="border-left: 3px solid var(--success); padding-left: 1rem;">
+              <span style="font-size: 0.75rem; font-weight: bold; color: var(--success); text-transform: uppercase;" data-i18n="acad_ex_3_badge">Doğrusal Regresyon (Linear Regression)</span>
+              <h5 style="margin: 0.2rem 0; font-size: 1rem;" data-i18n="acad_ex_3_title">Gıda Sipariş Talep Uydurması</h5>
+              <p style="font-size: 0.8rem; color: var(--text-muted); line-height: 1.4; margin: 0;" data-i18n="acad_ex_3_desc">
+                <strong>Çalışma Prensibi:</strong> Veri noktalarına en yakın doğrusal trend çizgisini çizerek gelecekteki sayısal değerleri tahmin eder.
+                <br><strong>Uygulama:</strong> Sipariş yoğunluğu ve restoran puanına göre günlük talep adedini hesaplar.
+              </p>
+            </div>
+
+            <div class="academy-example-item" style="border-left: 3px solid var(--warning); padding-left: 1rem;">
+              <span style="font-size: 0.75rem; font-weight: bold; color: var(--warning); text-transform: uppercase;" data-i18n="acad_ex_4_badge">K-En Yakın Komşu (K-NN Clustering)</span>
+              <h5 style="margin: 0.2rem 0; font-size: 1rem;" data-i18n="acad_ex_4_title">Tekstil Perakende Segmentasyonu</h5>
+              <p style="font-size: 0.8rem; color: var(--text-muted); line-height: 1.4; margin: 0;" data-i18n="acad_ex_4_desc">
+                <strong>Çalışma Prensibi:</strong> Yeni bir verinin en yakınındaki K adet tarihsel veri noktasını inceleyip çoğunluğun ait olduğu gruba dahil eder.
+                <br><strong>Uygulama:</strong> Sepet büyüklüğü ve indirim hassasiyetine göre Premium veya Fırsatçı alıcıları belirler.
+              </p>
+            </div>
+
+          </div>
+        </div>
+      </section>
+
+      <!-- Section 3: Metric Numbers Banner -->
+      <section class="landing-metrics scroll-reveal" style="margin-top: 5rem; margin-bottom: 3rem;">
+        <div class="glass-card" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 2rem; text-align: center; padding: 2.5rem 1.5rem; background: linear-gradient(135deg, rgba(255,255,255,0.01), rgba(14, 165, 233, 0.02)); border-color: rgba(14, 165, 233, 0.15);">
+          <div>
+            <div style="font-family: var(--font-display); font-size: 3rem; font-weight: 800; color: var(--primary); line-height: 1; margin-bottom: 0.5rem;">%98.4</div>
+            <div style="font-size: 0.85rem; color: var(--text-secondary); font-weight: 500;" data-i18n="metric_accuracy">Tahmin Doğruluğu (Accuracy)</div>
+          </div>
+          <div>
+            <div style="font-family: var(--font-display); font-size: 3rem; font-weight: 800; color: var(--secondary); line-height: 1; margin-bottom: 0.5rem;">&lt; 10ms</div>
+            <div style="font-size: 0.85rem; color: var(--text-secondary); font-weight: 500;" data-i18n="metric_speed">Karar Hesaplama Hızı</div>
+          </div>
+          <div>
+            <div style="font-family: var(--font-display); font-size: 3rem; font-weight: 800; color: var(--success); line-height: 1; margin-bottom: 0.5rem;">500+</div>
+            <div style="font-size: 0.85rem; color: var(--text-secondary); font-weight: 500;" data-i18n="metric_integrations">Aktif Kurumsal Entegrasyon</div>
+          </div>
+          <div>
+            <div style="font-family: var(--font-display); font-size: 3rem; font-weight: 800; color: var(--danger); line-height: 1; margin-bottom: 0.5rem;" data-i18n="metric_sectors">5 Sektör</div>
+            <div style="font-size: 0.85rem; color: var(--text-secondary); font-weight: 500;" data-i18n="metric_library">Yerleşik ML Kütüphanesi</div>
+          </div>
+        </div>
+      </section>
+
+    </main>
+
+    <footer class="welcome-footer" style="text-align: center; margin-top: 5rem; padding: 2rem 0; border-top: 1px solid var(--border-color); color: var(--text-muted); font-size: 0.85rem;" data-i18n="footer_copy">
+      <p>&copy; 2026 ANL Vertex Inc. Tüm Hakları Saklıdır. HTML, CSS, JavaScript ve Java HTTP Server ile Güçlendirilmiştir.</p>
+    </footer>
+  </div>
+
+  <!-- ================= STATE 2: LOGIN MODAL ================= -->
+  <div id="login-modal" class="modal-overlay">
+    <!-- Glowing background lights -->
+    <div class="login-glow glow-cyan"></div>
+    <div class="login-glow glow-violet"></div>
+    
+    <div class="login-modal-card glass-card">
+      <div class="modal-header">
+        <div style="display: flex; align-items: center; gap: 0.8rem;">
+          <!-- Secure Shield/Lock Icon -->
+          <div class="login-secure-icon-container">
+            <svg class="secure-logo-svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+              <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+              <circle cx="12" cy="16" r="1.5" fill="currentColor"/>
+            </svg>
+          </div>
+          <div>
+            <h3 style="margin: 0; font-size: 1.2rem;" data-i18n="login_title">Sisteme Giriş Yapın</h3>
+            <span style="font-size: 0.75rem; color: var(--text-muted); display: block; margin-top: -2px;" data-i18n="login_subtitle">ANL Vertex Güvenli Geçit</span>
+          </div>
+        </div>
+        <button id="btn-close-modal" class="btn-close">&times;</button>
+      </div>
+      <p style="color: var(--text-secondary); font-size: 0.85rem; margin-bottom: 1.5rem; margin-top: 0.5rem;" data-i18n="login_desc">
+        Geçici erişim kartınızda üretilen kullanıcı adı ve şifreyi giriniz.
+      </p>
 
       <form id="login-form" onsubmit="event.preventDefault();">
         <div class="control-group">
-          <label class="control-label" for="login-username" data-i18n="label_login_username">Kullanıcı Adı / E-posta:</label>
-          <input type="text" id="login-username" class="text-input light-input" placeholder="enterprise_admin" required autocomplete="off">
+          <label class="control-label" for="login-username" data-i18n="label_login_username">Kullanıcı Adı:</label>
+          <input type="text" id="login-username" class="text-input" placeholder="şirketadı_vertex" required autocomplete="off">
         </div>
 
-        <div class="control-group">
+        <div class="control-group" style="margin-bottom: 0.8rem;">
           <label class="control-label" for="login-password" data-i18n="label_login_password">Şifre:</label>
-          <input type="password" id="login-password" class="text-input light-input" placeholder="••••••••" required autocomplete="off">
+          <div class="password-wrapper" style="position: relative; display: flex; align-items: center; width: 100%;">
+            <input type="password" id="login-password" class="text-input" placeholder="••••••••••••" required autocomplete="off" style="width: 100%; padding-right: 2.5rem;">
+            <button type="button" id="btn-toggle-password" style="position: absolute; right: 0.8rem; background: none; border: none; color: var(--text-secondary); cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 0.2rem;" title="Şifreyi Göster / Hide Password">
+              <svg id="eye-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                <circle cx="12" cy="12" r="3"/>
+              </svg>
+            </button>
+          </div>
         </div>
 
-        <div id="login-error" class="login-error-msg" style="display: none; margin-bottom: 1.5rem; color: var(--danger); font-size: 0.85rem;" data-i18n="login_error">
-          ❌ Kullanıcı adı veya şifre hatalı!
+        <!-- Remember Me & Forgot Password fields -->
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.2rem; font-size: 0.8rem; color: var(--text-secondary);">
+          <div style="display: flex; align-items: center; gap: 0.4rem;">
+            <input type="checkbox" id="login-remember" style="accent-color: var(--primary);">
+            <label style="cursor: pointer; user-select: none;" for="login-remember" data-i18n="label_remember_me">Beni Hatırla</label>
+          </div>
+          <a href="#" style="color: var(--primary); text-decoration: none; font-weight: 500;" data-i18n="btn_forgot_password" onclick="alert(currentLang === 'tr' ? 'Geçici giriş kartınızdaki şifreyi kopyalayıp buraya yapıştırmalısınız. Şifrenizi unuttuysanız yeni bir Giriş Kartı oluşturun.' : 'You must copy and paste the password from your temporary access card. If you forgot your password, generate a new Access Card.'); return false;">Şifremi Unuttum?</a>
         </div>
 
-        <button type="submit" class="btn-primary btn-login-submit" data-i18n="btn_submit_login">Giriş Yap</button>
+        <div id="login-error" class="login-error-msg" style="display: none; margin-bottom: 1rem;" data-i18n="login_error">
+          ❌ Kullanıcı adı veya şifre hatalı, ya da kartın 10 dakikalık süresi doldu!
+        </div>
+
+        <div class="btn-group" style="margin-top: 1rem;">
+          <button type="button" class="btn-secondary" id="btn-cancel-login" style="flex: 1;" data-i18n="btn_cancel">İptal</button>
+          <button type="submit" class="btn-primary" style="flex: 2;" data-i18n="btn_submit_login">Giriş Yap</button>
+        </div>
         
         <!-- Helpful guidelines footer in card -->
         <div style="text-align: center; margin-top: 1.5rem; font-size: 0.75rem; border-top: 1px solid var(--border-color); padding-top: 1rem; color: var(--text-muted);">
           <span data-i18n="login_footer_question">Sorun mu yaşıyorsunuz?</span>
-          <a href="#" style="color: var(--text-secondary); text-decoration: underline; margin-left: 0.2rem;" data-i18n="login_guide_link" onclick="alert(currentLang === 'tr' ? 'Varsayılan yönetici hesabı: enterprise_admin / mock_password' : 'Default administrator account: enterprise_admin / mock_password'); return false;">Erişim Kılavuzu</a>
+          <a href="#" style="color: var(--text-secondary); text-decoration: underline; margin-left: 0.2rem;" data-i18n="login_guide_link" onclick="alert(currentLang === 'tr' ? 'Geçici erişim kartınızdaki kimlik bilgileri 10 dakika boyunca geçerlidir. Süre biterse yeni kart oluşturabilirsiniz.' : 'The credentials on your temporary access card are valid for 10 minutes. If they expire, you can generate a new card.'); return false;">Erişim Kılavuzu</a>
         </div>
       </form>
     </div>
