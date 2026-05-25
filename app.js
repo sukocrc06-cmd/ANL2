@@ -427,6 +427,18 @@ const translations = {
     tr: "Excel olarak indir",
     en: "Download as Excel"
   },
+  btn_download_template: {
+    tr: "Şablon İndir",
+    en: "Download Template"
+  },
+  btn_upload_dataset: {
+    tr: "Veri Seti Yükle",
+    en: "Upload Dataset"
+  },
+  btn_analyze_dataset: {
+    tr: "Analiz Et",
+    en: "Analyze"
+  },
   dash_subtitle: {
     tr: "Denetimli makine öğrenimi modeli ile veri seti tahminleme ve analitik izleme ekranı.",
     en: "Dataset prediction and analytical monitoring screen with a supervised machine learning model."
@@ -10810,6 +10822,292 @@ document.addEventListener('DOMContentLoaded', () => {
               window.location.hash = panelKey;
             }
         });
+    });
+  }
+
+  // ================= DYNAMIC CUSTOM DATASET UPLOADER & ANALYZER =================
+  function downloadCSVTemplate() {
+    const csvContent = "Name,Income,CreditScore,RiskStatus\r\n"
+      + "Mehmet Efendi,80,8,Düzenli Bağışçı\r\n"
+      + "Dernek Dostu,20,2,Potansiyel Bağışçı\r\n"
+      + "Vakıf Destek,300,12,Düzenli Bağışçı\r\n"
+      + "Elif Su,50,5,Düzenli Bağışçı\r\n"
+      + "Canan Gül,80,3,Potansiyel Bağışçı\r\n";
+      
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    link.setAttribute("download", "template_customer_data.csv");
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  }
+
+  function parseCustomCSV(text) {
+    const lines = text.split(/\r?\n/).map(l => l.trim()).filter(l => l.length > 0);
+    if (lines.length <= 1) return [];
+
+    const headers = lines[0].split(',').map(h => h.replace(/['"]+/g, '').trim());
+    
+    // Find column indexes
+    const nameIdx = headers.findIndex(h => h.toLowerCase() === 'name');
+    const incomeIdx = headers.findIndex(h => h.toLowerCase() === 'income');
+    const creditIdx = headers.findIndex(h => h.toLowerCase() === 'creditscore');
+    const statusIdx = headers.findIndex(h => h.toLowerCase() === 'riskstatus');
+
+    if (nameIdx === -1 || incomeIdx === -1 || creditIdx === -1) {
+      // Fallback parser by indexes
+      return lines.slice(1).map(line => {
+        const cells = line.split(',').map(c => c.replace(/['"]+/g, '').trim());
+        return {
+          Name: cells[0] || 'Client',
+          Income: parseFloat(cells[1]) || 0,
+          CreditScore: parseFloat(cells[2]) || 0,
+          RiskStatus: cells[3] || ''
+        };
+      });
+    }
+
+    return lines.slice(1).map(line => {
+      const cells = line.split(',').map(c => c.replace(/['"]+/g, '').trim());
+      return {
+        Name: cells[nameIdx] || 'Client',
+        Income: parseFloat(cells[incomeIdx]) || 0,
+        CreditScore: parseFloat(cells[creditIdx]) || 0,
+        RiskStatus: cells[statusIdx] || ''
+      };
+    });
+  }
+
+  function mapRowToSector(row, sector) {
+    const name = row.Name;
+    const income = row.Income;
+    const credit = row.CreditScore;
+    const status = row.RiskStatus;
+
+    if (sector === 'vakif') {
+      const rawStatus = (status && (status.toLowerCase().includes('low') || status.toLowerCase().includes('düzenli') || status.toLowerCase().includes('approved') || status.toLowerCase().includes('aktif'))) ? 'approved' : 'denied';
+      return { name, income, credit, dti: 3, status, rawStatus };
+    } else if (sector === 'egitim') {
+      const rawStatus = (status && (status.toLowerCase().includes('low') || status.toLowerCase().includes('düşük') || status.toLowerCase().includes('approved'))) ? 'approved' : 'denied';
+      return { name, glucose: income, bmi: credit, age: 70, status, rawStatus };
+    } else if (sector === 'gida') {
+      return { name, size: income, beds: credit, location: 'Evet', status, rawStatus: 'approved' };
+    } else if (sector === 'lojistik') {
+      const rawStatus = (status && (status.toLowerCase().includes('low') || status.toLowerCase().includes('zamanında') || status.toLowerCase().includes('approved'))) ? 'approved' : 'denied';
+      return { name, days: income, sessions: credit, tickets: 2, status, rawStatus };
+    } else if (sector === 'tekstil') {
+      const rawStatus = (status && (status.toLowerCase().includes('premium') || status.toLowerCase().includes('approved'))) ? 'approved' : 'denied';
+      return { name, days: credit, sessions: income, tickets: 20, status, rawStatus };
+    }
+    return { name, income, credit, status };
+  }
+
+  function predictRowML(row, sector) {
+    if (sector === 'vakif') {
+      const crd = row.credit;
+      const inc = row.income;
+      const dti = row.dti || 3;
+      let approved = false;
+      if (crd > 5 && inc > 100 && dti > 2) {
+        approved = true;
+      }
+      return {
+        rawStatus: approved ? 'approved' : 'denied',
+        status: approved 
+          ? (currentLang === 'tr' ? "Düzenli Bağışçı" : "Regular Donor")
+          : (currentLang === 'tr' ? "Potansiyel Bağışçı / Düzensiz" : "Potential / Irregular Donor")
+      };
+    } else if (sector === 'egitim') {
+      const glc = row.glucose;
+      const bmi = row.bmi;
+      const age = row.age || 70;
+      const z = 5.5 - (0.12 * glc) - (0.04 * bmi) - (0.03 * age);
+      const prob = 1.0 / (1.0 + Math.exp(-z));
+      const pct = Math.round(prob * 100);
+      if (pct >= 15 && pct < 50) {
+        return {
+          rawStatus: 'warning',
+          status: currentLang === 'tr' ? `Orta Başarısızlık Riski (%${pct})` : `Medium Failure Risk (%${pct})`
+        };
+      } else if (pct >= 50) {
+        return {
+          rawStatus: 'denied',
+          status: currentLang === 'tr' ? `Yüksek Başarısızlık Riski (%${pct})` : `High Failure Risk (%${pct})`
+        };
+      } else {
+        return {
+          rawStatus: 'approved',
+          status: currentLang === 'tr' ? `Düşük Başarısızlık Riski (%${pct})` : `Low Failure Risk (%${pct})`
+        };
+      }
+    } else if (sector === 'gida') {
+      const size = row.size;
+      const beds = row.beds;
+      const loc = row.location === 'Evet' || row.location === 'Yes' || row.location === true;
+      let price = 100 + (0.5 * size) + (200 * beds);
+      if (loc) price *= 1.25;
+      const finalPrice = Math.round(price);
+      return {
+        rawStatus: 'approved',
+        status: currentLang === 'tr' ? `${finalPrice} Sipariş / Gün` : `${finalPrice} Orders / Day`
+      };
+    } else if (sector === 'lojistik') {
+      const days = row.days;
+      const sess = row.sessions;
+      const tck = row.tickets || 2;
+      const daysImpact = Math.min(100, (days / 150) * 100);
+      const sessionImpact = (sess / 10) * 100;
+      const supportImpact = (tck / 10) * 100;
+      const churnScore = (daysImpact * 0.45) + (sessionImpact * 0.3) + (supportImpact * 0.25);
+      const risk = Math.round(churnScore);
+      if (risk < 30) {
+        return {
+          rawStatus: 'approved',
+          status: currentLang === 'tr' ? `Zamanında Teslimat (%${risk} Gecikme Riski)` : `On Time (%${risk} Delay Risk)`
+        };
+      } else if (risk >= 30 && risk < 60) {
+        return {
+          rawStatus: 'warning',
+          status: currentLang === 'tr' ? `Orta Seviye Gecikme Riski (%${risk})` : `Medium Delay Risk (%${risk})`
+        };
+      } else {
+        return {
+          rawStatus: 'denied',
+          status: currentLang === 'tr' ? `Yüksek Gecikme Riski (%${risk})` : `High Delay Risk (%${risk})`
+        };
+      }
+    } else if (sector === 'tekstil') {
+      const userFreq = row.days;
+      const userBasket = row.sessions;
+      const userDiscount = row.tickets || 20;
+      const normUserFreq = (userFreq - 1) / 29;
+      const normUserBasket = (userBasket - 100) / 4900;
+      const normUserDiscount = userDiscount / 100;
+      
+      const list = databases.tekstil;
+      const scoredList = list.map(pt => {
+        const normPtFreq = (pt.days - 1) / 29;
+        const normPtBasket = (pt.sessions - 100) / 4900;
+        const normPtDiscount = pt.tickets / 100;
+        const dist = Math.sqrt(
+          Math.pow(normUserFreq - normPtFreq, 2) +
+          Math.pow(normUserBasket - normPtBasket, 2) +
+          Math.pow(normUserDiscount - normPtDiscount, 2)
+        );
+        return { item: pt, dist };
+      });
+      scoredList.sort((a, b) => a.dist - b.dist);
+      const neighbors = scoredList.slice(0, 3);
+      const votes = {};
+      neighbors.forEach(n => {
+        const cat = n.item.status;
+        votes[cat] = (votes[cat] || 0) + 1;
+      });
+      let winnerStatus = 'Premium Alıcı';
+      let maxVotes = 0;
+      for (let cat in votes) {
+        if (votes[cat] > maxVotes) {
+          maxVotes = votes[cat];
+          winnerStatus = cat;
+        }
+      }
+      let rawStatus = 'approved';
+      if (winnerStatus === 'Fırsatçı Alıcı') rawStatus = 'warning';
+      else if (winnerStatus === 'Düşük Aktiviteli Alıcı') rawStatus = 'denied';
+
+      let localizedWinner = winnerStatus;
+      if (currentLang === 'en') {
+        if (winnerStatus === 'Premium Alıcı') localizedWinner = 'Premium Buyer';
+        else if (winnerStatus === 'Fırsatçı Alıcı') localizedWinner = 'Opportunistic Buyer';
+        else if (winnerStatus === 'Düşük Aktiviteli Alıcı') localizedWinner = 'Low Activity Buyer';
+      }
+      return {
+        rawStatus: rawStatus,
+        status: localizedWinner
+      };
+    }
+    return { rawStatus: 'approved', status: '' };
+  }
+
+  // Setup uploader and downloader listeners
+  const customDatasetInput = document.getElementById('custom-dataset-input');
+  const btnUploadDataset = document.getElementById('btn-upload-dataset');
+  const btnAnalyzeDataset = document.getElementById('btn-analyze-dataset');
+  const btnDownloadTemplate = document.getElementById('btn-download-template');
+
+  if (btnUploadDataset && customDatasetInput) {
+    btnUploadDataset.addEventListener('click', () => {
+      customDatasetInput.click();
+    });
+  }
+
+  if (btnDownloadTemplate) {
+    btnDownloadTemplate.addEventListener('click', () => {
+      downloadCSVTemplate();
+    });
+  }
+
+  if (customDatasetInput) {
+    customDatasetInput.addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = function(evt) {
+        const text = evt.target.result;
+        const parsed = parseCustomCSV(text);
+        if (parsed.length === 0) {
+          alert(currentLang === 'tr' ? 'Hata: Boş veya geçersiz dosya formatı!' : 'Error: Empty or invalid file format!');
+          return;
+        }
+
+        // Map parsed rows to databases[currentSector]
+        databases[currentSector] = parsed.map(row => mapRowToSector(row, currentSector));
+
+        // Re-render table with uploaded data
+        renderDatabaseTable();
+
+        // Enable and show the analyze button
+        if (btnAnalyzeDataset) {
+          btnAnalyzeDataset.style.display = 'flex';
+          btnAnalyzeDataset.removeAttribute('disabled');
+        }
+
+        alert(currentLang === 'tr' 
+          ? `Veri seti yüklendi! Toplam ${parsed.length} satır eklendi. Analiz Et butonuna basarak tahminleri hesaplayabilirsiniz.` 
+          : `Dataset loaded! Total ${parsed.length} rows added. Click Analyze to calculate predictions.`
+        );
+      };
+      reader.readAsText(file);
+    });
+  }
+
+  if (btnAnalyzeDataset) {
+    btnAnalyzeDataset.addEventListener('click', () => {
+      const list = databases[currentSector];
+      if (!list || list.length === 0) return;
+
+      // Predict for each row using the ML model prediction logic
+      list.forEach(row => {
+        const prediction = predictRowML(row, currentSector);
+        row.status = prediction.status;
+        row.rawStatus = prediction.rawStatus;
+      });
+
+      // Update table
+      renderDatabaseTable();
+
+      // Refresh KPI visualizations
+      updatePerformanceMetrics(true, false);
+      triggerPipelinePulse();
+
+      alert(currentLang === 'tr'
+        ? "Yapay Zeka Analizi Tamamlandı! Tüm müşteri tahminleri güncellendi."
+        : "AI Supervised Learning Analysis Complete! All customer predictions updated."
+      );
     });
   }
 

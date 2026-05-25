@@ -520,14 +520,29 @@
     <!-- Main Content Area -->
     <main class="dashboard-main">
       <div id="dashboard-insights-section" class="dashboard-section active">
-        <header class="dashboard-header">
-        <div>
-          <h1 id="dash-title">Finansal Kredi Karar Analizi</h1>
-          <p style="color: var(--text-secondary); font-size: 0.9rem;" data-i18n="dash_subtitle">
-            Denetimli makine öğrenimi modeli ile veri seti tahminleme ve analitik izleme ekranı.
-          </p>
-        </div>
-      </header>
+        <header class="dashboard-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+          <div>
+            <h1 id="dash-title">Finansal Kredi Karar Analizi</h1>
+            <p style="color: var(--text-secondary); font-size: 0.9rem;" data-i18n="dash_subtitle">
+              Denetimli makine öğrenimi modeli ile veri seti tahminleme ve analitik izleme ekranı.
+            </p>
+          </div>
+          <div style="display: flex; gap: 0.8rem; align-items: center;">
+            <button id="btn-download-template" class="btn-secondary" style="display: flex; align-items: center; gap: 0.5rem;" title="Şablon CSV İndir" data-i18n-title="btn_download_template_title">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+              <span data-i18n="btn_download_template">Şablon İndir</span>
+            </button>
+            <button id="btn-upload-dataset" class="btn-primary" style="display: flex; align-items: center; gap: 0.5rem;">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+              <span data-i18n="btn_upload_dataset">Veri Seti Yükle</span>
+            </button>
+            <input type="file" id="custom-dataset-input" accept=".csv, .xlsx" style="display: none;">
+            <button id="btn-analyze-dataset" class="btn-primary" style="display: none; align-items: center; gap: 0.5rem; background: var(--secondary);" disabled>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+              <span data-i18n="btn_analyze_dataset">Analiz Et</span>
+            </button>
+          </div>
+        </header>
 
       <div class="dashboard-grid">
         
