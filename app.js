@@ -4826,7 +4826,7 @@ document.addEventListener('DOMContentLoaded', () => {
     donutRing.style.stroke = ringColor;
 
     if (overallPct) {
-      overallPct.textContent = `${Math.max(0, overallFairness)}%`;
+      animateKPI(overallPct, Math.max(0, overallFairness), false);
       overallPct.style.color = ringColor;
     }
 
@@ -4851,7 +4851,7 @@ document.addEventListener('DOMContentLoaded', () => {
         <div class="fairness-bar-header">
           <span class="fairness-bar-feature-name">${feat.icon} ${feat.label[currentLang]}</span>
           <div style="display:flex; align-items:center; gap:0.5rem;">
-            <span class="fairness-bar-pct ${cls}">${score}%</span>
+            <span class="fairness-bar-pct ${cls}">0%</span>
             <span class="fairness-status-badge ${cls}">${statusLabels[cls][currentLang]}</span>
           </div>
         </div>
@@ -4861,10 +4861,15 @@ document.addEventListener('DOMContentLoaded', () => {
         <div class="fairness-bar-desc">${feat.desc[currentLang]}</div>
       `;
       barsContainer.appendChild(row);
-      // Animate fill width after paint
+      // Animate fill width and count up percentage text after paint
       requestAnimationFrame(() => {
         const fill = row.querySelector('.fairness-bar-fill');
         if (fill) fill.style.width = `${score}%`;
+        
+        const pctText = row.querySelector('.fairness-bar-pct');
+        if (pctText) {
+          animateKPI(pctText, score, false);
+        }
       });
     });
 
@@ -6193,6 +6198,22 @@ document.addEventListener('DOMContentLoaded', () => {
     }, 600);
   }
 
+  function animateKPI(element, finalValue, isDecimal = false) {
+    if (!element) return;
+    const duration = 1200; // 1.2s count up duration
+    const startTime = performance.now();
+    
+    function update(now) {
+      const progress = Math.min(1, (now - startTime) / duration);
+      const current = progress * finalValue;
+      element.textContent = isDecimal ? `${current.toFixed(2)}%` : `${Math.round(current)}%`;
+      if (progress < 1) {
+        requestAnimationFrame(update);
+      }
+    }
+    requestAnimationFrame(update);
+  }
+
   function updatePerformanceMetrics(fluctuate = false, training = false) {
     const accuracyVal = document.getElementById('metric-accuracy-val');
     const precisionVal = document.getElementById('metric-precision-val');
@@ -6240,9 +6261,15 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
 
-    accuracyVal.textContent = `${activePerformanceMetrics.accuracy.toFixed(2)}%`;
-    precisionVal.textContent = `${activePerformanceMetrics.precision.toFixed(2)}%`;
-    recallVal.textContent = `${activePerformanceMetrics.recall.toFixed(2)}%`;
+    if (!training && !fluctuate) {
+      animateKPI(accuracyVal, activePerformanceMetrics.accuracy, true);
+      animateKPI(precisionVal, activePerformanceMetrics.precision, true);
+      animateKPI(recallVal, activePerformanceMetrics.recall, true);
+    } else {
+      accuracyVal.textContent = `${activePerformanceMetrics.accuracy.toFixed(2)}%`;
+      precisionVal.textContent = `${activePerformanceMetrics.precision.toFixed(2)}%`;
+      recallVal.textContent = `${activePerformanceMetrics.recall.toFixed(2)}%`;
+    }
   }
 
   // ─── Pipeline timing state ───────────────────────────────────────────────────

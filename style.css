@@ -1049,6 +1049,19 @@ canvas {
 .output-card.approved {
   border-left-color: var(--success);
   background: hsla(142, 71%, 45%, 0.05);
+  animation: approved-pulse-ring 2s cubic-bezier(0.25, 0, 0, 1) infinite;
+}
+
+@keyframes approved-pulse-ring {
+  0% {
+    box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.4), 0 0 25px rgba(16, 185, 129, 0.15);
+  }
+  70% {
+    box-shadow: 0 0 0 10px rgba(16, 185, 129, 0), 0 0 25px rgba(16, 185, 129, 0.15);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(16, 185, 129, 0), 0 0 25px rgba(16, 185, 129, 0.15);
+  }
 }
 
 .output-card.denied {
@@ -1642,16 +1655,23 @@ canvas {
 
 .flow-arrow {
   color: var(--text-muted);
-  font-size: 1.2rem;
-  font-weight: bold;
   user-select: none;
   transition: var(--transition-smooth);
-  animation: pulseArrow 2s infinite alternate;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
-@keyframes pulseArrow {
-  0% { opacity: 0.3; transform: translateX(-2px); }
-  100% { opacity: 0.7; transform: translateX(2px); }
+.flow-arrow svg {
+  color: var(--text-muted);
+  width: 40px;
+  height: 20px;
+  transition: var(--transition-smooth);
+}
+
+.flow-arrow svg .arrow-line {
+  stroke-dasharray: 6, 4;
+  transition: var(--transition-smooth);
 }
 
 /* Active states for Pipeline Flowchart nodes */
@@ -1671,15 +1691,26 @@ canvas {
   color: var(--text-primary);
 }
 
-.flow-arrow.active {
+.flow-arrow.active svg {
   color: var(--primary);
-  text-shadow: 0 0 8px var(--primary);
+  filter: drop-shadow(0 0 6px var(--primary));
   animation: activeArrowPulse 0.5s infinite alternate;
 }
 
+.flow-arrow.active svg .arrow-line {
+  animation: flow-dash 0.8s linear infinite;
+  stroke: var(--primary);
+}
+
+@keyframes flow-dash {
+  to {
+    stroke-dashoffset: -10;
+  }
+}
+
 @keyframes activeArrowPulse {
-  0% { transform: scale(1) translateX(0); opacity: 0.7; }
-  100% { transform: scale(1.15) translateX(3px); opacity: 1; }
+  0% { transform: scale(1); opacity: 0.8; }
+  100% { transform: scale(1.1); opacity: 1; }
 }
 
 /* Responsive wrap adjustments */
@@ -1691,7 +1722,6 @@ canvas {
   }
   .flow-arrow {
     transform: rotate(90deg);
-    animation: none;
     margin: 0.2rem 0;
   }
 }
