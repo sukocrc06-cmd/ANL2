@@ -1927,36 +1927,34 @@ document.addEventListener('DOMContentLoaded', () => {
     const username = sanitizeUsername(company);
     const password = generatePassword(10);
 
-    const onRegistrationSuccess = () => {
-      // Show simple 'Success' message
-      if (currentLang === 'tr') {
-        alert("Giriş Kartı başarıyla oluşturuldu! Sisteme yönlendiriliyorsunuz...");
-      } else {
-        alert("Access Card created successfully! Redirecting you to the system...");
-      }
-
-      // Automatically log the user in directly
-      const cardData = {
-        username: username,
-        password: password,
-        company: company,
-        sector: sector,
-        userId: username,
-        sessionToken: 'token_' + username + '_' + Date.now(),
-        expiresAt: Date.now() + 7 * 24 * 60 * 60 * 1000,
-        remember: true
-      };
-      localStorage.setItem('isLoggedIn', 'true');
-      localStorage.setItem('userCardData', JSON.stringify(cardData));
-      sessionStorage.setItem('sessionActive', 'true');
-
-      // Clear any temporary credentials storage to avoid old logic trigger
-      localStorage.removeItem('vertex_temp_card');
-      tempCredentials = null;
-
-      // transition to dashboard
-      transitionToDashboard();
+    // Store globally
+    tempCredentials = {
+      username,
+      password,
+      company,
+      sector,
+      expiresAt: Date.now() + 100 * 365 * 24 * 60 * 60 * 1000 // Valid indefinitely
     };
+
+    // Save to localStorage so it persists across refreshes
+    localStorage.setItem('vertex_temp_card', JSON.stringify(tempCredentials));
+
+    // Fill UI inputs
+    if (tempUsernameInput) tempUsernameInput.value = username;
+    if (tempPasswordInput) tempPasswordInput.value = password;
+
+    // Update sector badge
+    if (tempCardSector) {
+      if (typeof sectorLabelsCard !== 'undefined' && sectorLabelsCard[currentLang]) {
+        tempCardSector.textContent = sectorLabelsCard[currentLang][sector] || sector;
+      } else {
+        tempCardSector.textContent = sector;
+      }
+      tempCardSector.className = 'badge badge-success';
+    }
+
+    // Display temporary card container
+    if (tempCard) tempCard.style.display = 'block';
 
     // Register card on the mock server
     apiClient.request('/api/create-card', {
@@ -1971,11 +1969,9 @@ document.addEventListener('DOMContentLoaded', () => {
     })
     .then(res => {
       console.log('Card registered on server successfully', res);
-      onRegistrationSuccess();
     })
     .catch(err => {
-      console.error('Error creating card on server, falling back locally:', err);
-      onRegistrationSuccess();
+      console.error('Error creating card on server:', err);
     });
   });
 
@@ -2032,50 +2028,38 @@ document.addEventListener('DOMContentLoaded', () => {
     try {
       const cardData = JSON.parse(tempCardRaw);
       if (cardData && cardData.company && cardData.sector) {
-        const expiresAt = cardData.expiresAt;
-        const now = Date.now();
-        const secondsLeft = Math.floor((expiresAt - now) / 1000);
-
-        if (secondsLeft <= 0) {
-          console.log("[App Lifecycle] Restored temporary card is already expired.");
-          localStorage.removeItem('vertex_temp_card');
-          tempCredentials = null;
-        } else {
-          currentCompany = cardData.company;
-          currentSector = cardData.sector;
-          tempCredentials = cardData;
-          console.log(`[App Lifecycle] Restoring temporary card for ${cardData.username}`);
+        currentCompany = cardData.company;
+        currentSector = cardData.sector;
+        tempCredentials = cardData;
+        console.log(`[App Lifecycle] Restoring temporary card for ${cardData.username}`);
+        
+        if (tempUsernameInput && tempPasswordInput && tempCardSector && tempCard) {
+          tempUsernameInput.value = cardData.username;
+          tempPasswordInput.value = cardData.password;
           
-          if (tempUsernameInput && tempPasswordInput && tempCardSector && tempCard) {
-            tempUsernameInput.value = cardData.username;
-            tempPasswordInput.value = cardData.password;
-            
-            if (typeof sectorLabelsCard !== 'undefined' && sectorLabelsCard[currentLang]) {
-              tempCardSector.textContent = sectorLabelsCard[currentLang][cardData.sector] || cardData.sector;
-            } else {
-              tempCardSector.textContent = cardData.sector;
-            }
-            tempCardSector.className = `badge badge-success`;
-            tempCard.style.display = 'block';
-            
-            // Generate QR Code containing login link if container exists
-            const loginUrl = `${window.location.origin}${window.location.pathname}?qrLogin=true&u=${encodeURIComponent(cardData.username)}&p=${encodeURIComponent(cardData.password)}&s=${encodeURIComponent(cardData.sector)}&c=${encodeURIComponent(cardData.company)}`;
-            const qrContainer = document.getElementById('qrcode-container');
-            if (qrContainer) {
-              qrContainer.innerHTML = '';
-              new QRCode(qrContainer, {
-                text: loginUrl,
-                width: 130,
-                height: 130,
-                colorDark: '#000000',
-                colorLight: '#ffffff',
-                correctLevel: QRCode.CorrectLevel.M
-              });
-              const btnCopyLoginUrl = document.getElementById('btn-copy-login-url');
-              if (btnCopyLoginUrl) btnCopyLoginUrl.setAttribute('data-url', loginUrl);
-            }
-
-            startTemporaryCardCountdown(expiresAt);
+          if (typeof sectorLabelsCard !== 'undefined' && sectorLabelsCard[currentLang]) {
+            tempCardSector.textContent = sectorLabelsCard[currentLang][cardData.sector] || cardData.sector;
+          } else {
+            tempCardSector.textContent = cardData.sector;
+          }
+          tempCardSector.className = `badge badge-success`;
+          tempCard.style.display = 'block';
+          
+          // Generate QR Code containing login link if container exists
+          const loginUrl = `${window.location.origin}${window.location.pathname}?qrLogin=true&u=${encodeURIComponent(cardData.username)}&p=${encodeURIComponent(cardData.password)}&s=${encodeURIComponent(cardData.sector)}&c=${encodeURIComponent(cardData.company)}`;
+          const qrContainer = document.getElementById('qrcode-container');
+          if (qrContainer) {
+            qrContainer.innerHTML = '';
+            new QRCode(qrContainer, {
+              text: loginUrl,
+              width: 130,
+              height: 130,
+              colorDark: '#000000',
+              colorLight: '#ffffff',
+              correctLevel: QRCode.CorrectLevel.M
+            });
+            const btnCopyLoginUrl = document.getElementById('btn-copy-login-url');
+            if (btnCopyLoginUrl) btnCopyLoginUrl.setAttribute('data-url', loginUrl);
           }
         }
       }
@@ -2406,24 +2390,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     if (activeTempCard && user === activeTempCard.username && pass === activeTempCard.password) {
-      if (Date.now() > activeTempCard.expiresAt) {
-        // Card expired! Show error and block login
-        loginErrorMsg.innerHTML = currentLang === 'tr'
-          ? "❌ Kartın süresi doldu. Lütfen yeni bir giriş kartı oluşturun."
-          : "❌ Card expired. Please generate a new access card.";
-        loginErrorMsg.style.display = 'block';
-
-        // Clean up expired card
-        localStorage.removeItem('vertex_temp_card');
-        tempCredentials = null;
-        if (countdownInterval) {
-          clearInterval(countdownInterval);
-          countdownInterval = null;
-        }
-        if (tempCard) tempCard.style.display = 'none';
-        return;
-      }
-
       // Card is valid! Log in and transition
       if (countdownInterval) {
         clearInterval(countdownInterval);
