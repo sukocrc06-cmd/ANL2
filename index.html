@@ -38,79 +38,16 @@
     <main class="container">
       <div class="welcome-grid">
         <!-- Form Section -->
-        <div class="welcome-hero-card glass-card fade-in">
-          <div class="badge badge-success" style="margin-bottom: 0.8rem;" data-i18n="badge_card_gen">Giriş Kartı Oluşturucu</div>
+        <div class="welcome-hero-card glass-card fade-in" style="display: flex; flex-direction: column; justify-content: center; min-height: 320px;">
+          <div class="badge badge-success" style="margin-bottom: 0.8rem; width: fit-content;" data-i18n="badge_welcome">ANL Vertex Giriş</div>
           <h2 data-i18n="welcome_title">Sisteme Erişim Sağlayın</h2>
-          <p style="color: var(--text-secondary); margin-bottom: 1.5rem; font-size: 0.95rem;" data-i18n="welcome_desc">
-            ANL Vertex analitik paneline giriş yapabilmek için geçici bir giriş kartı oluşturmanız gerekmektedir. Şirket adınızı girin ve sektörünüzü seçin.
+          <p style="color: var(--text-secondary); margin-bottom: 2rem; font-size: 0.95rem; line-height: 1.6;" data-i18n="welcome_desc">
+            ANL Vertex analitik paneline erişmek için kurumsal kimlik bilgilerinizi kullanarak giriş yapın.
           </p>
 
-          <!-- Access Card Creation Form -->
-          <form id="access-card-form" onsubmit="event.preventDefault();">
-            <div class="control-group">
-              <label class="control-label" for="company-name-input" data-i18n="label_company_name">Şirket Adı:</label>
-              <input type="text" id="company-name-input" class="text-input" placeholder="Örn: Asya Holding A.Ş." required>
-            </div>
-
-            <div class="control-group">
-              <label class="control-label" for="sector-select" data-i18n="label_sector_select">Sektör Seçin:</label>
-              <select id="sector-select" class="select-input" required>
-                <option value="" disabled selected data-i18n="opt_select_sector">Bir sektör seçin...</option>
-                <option value="vakif" data-i18n="opt_vakif">Dernekler ve Vakıflar (Bağış Sınıflandırması)</option>
-                <option value="egitim" data-i18n="opt_egitim">Eğitim Sektörü (Başarı Olasılığı)</option>
-                <option value="gida" data-i18n="opt_gida">Gıda Sektörü (Sipariş Regresyonu)</option>
-                <option value="lojistik" data-i18n="opt_lojistik">Ulaşım ve Lojistik (Gecikme Risk Ağırlığı)</option>
-                <option value="tekstil" data-i18n="opt_tekstil">Tekstil Perakende (Müşteri Segmentasyonu)</option>
-              </select>
-            </div>
-
-            <button type="submit" class="btn-primary" id="btn-create-card" style="display: none; width: 100%; margin-top: 0.5rem;" data-i18n="btn_create_card">
-              Giriş Kartı Oluştur
-            </button>
-
-          </form>
-
-          <!-- Expiring Temporary Access Card -->
-          <div id="temp-card" class="temp-card-container fade-in" style="display: none; margin-top: 1.5rem;">
-            <div class="temp-card-header">
-              <span class="temp-card-title" data-i18n="temp_card_title">Geçici Giriş Kartı</span>
-              <span class="badge badge-success" id="temp-card-sector">Finans</span>
-            </div>
-            
-            <div class="temp-card-body">
-              <div class="credential-item">
-                <span class="credential-label" data-i18n="label_username">Kullanıcı Adı</span>
-                <div class="credential-val-box">
-                  <input type="text" id="temp-username" class="credential-input" readonly>
-                  <button class="btn-copy" id="btn-copy-username" title="Kopyala" data-i18n="btn_copy">Kopyala</button>
-                </div>
-              </div>
-
-              <div class="credential-item">
-                <span class="credential-label" data-i18n="label_password">Güçlü Şifre</span>
-                <div class="credential-val-box">
-                  <input type="text" id="temp-password" class="credential-input" readonly>
-                  <button class="btn-copy" id="btn-copy-password" title="Kopyala" data-i18n="btn_copy">Kopyala</button>
-                </div>
-              </div>
-
-              <div class="timer-section" style="margin-top: 1.2rem;">
-                <div class="timer-title" data-i18n="timer_title" style="font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 0.3rem;">Kart Geçerlilik Süresi</div>
-                <div class="timer-clock" id="countdown-timer" style="font-size: 1.5rem; font-weight: 700; color: var(--primary);">10:00</div>
-                <div class="timer-bar-container" style="background: rgba(255, 255, 255, 0.05); height: 6px; border-radius: 3px; margin-top: 0.5rem; overflow: hidden;">
-                  <div class="timer-bar" id="timer-progress" style="background: var(--primary); height: 100%; width: 100%; transition: width 1s linear;"></div>
-                </div>
-              </div>
-
-              <div style="margin-top: 1.5rem; display: flex; gap: 0.8rem;">
-                <button class="btn-primary" id="btn-open-login-from-card" style="flex: 1; padding: 0.75rem; background: var(--secondary); border: none; border-radius: 8px; color: #fff; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 0.4rem;">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
-                  <span data-i18n="btn_open_login_modal">Giriş Yap</span>
-                </button>
-              </div>
-            </div>
-          </div>
-
+          <button class="btn-primary" id="btn-welcome-login" style="width: 100%; padding: 0.85rem; font-size: 1rem; font-weight: 600;" data-i18n="btn_login">
+            Giriş Yap
+          </button>
         </div>
 
         <!-- Introduction Details Column -->
@@ -415,7 +352,7 @@
         <button id="btn-close-modal" class="btn-close">&times;</button>
       </div>
       <p style="color: var(--text-secondary); font-size: 0.85rem; margin-bottom: 1.5rem; margin-top: 0.5rem;" data-i18n="login_desc">
-        Geçici erişim kartınızda üretilen kullanıcı adı ve şifreyi giriniz.
+        Kurumsal kimlik bilgilerinizi giriniz.
       </p>
 
       <form id="login-form" onsubmit="event.preventDefault();">
@@ -443,11 +380,11 @@
             <input type="checkbox" id="login-remember" style="accent-color: var(--primary);">
             <label style="cursor: pointer; user-select: none;" for="login-remember" data-i18n="label_remember_me">Beni Hatırla</label>
           </div>
-          <a href="#" style="color: var(--primary); text-decoration: none; font-weight: 500;" data-i18n="btn_forgot_password" onclick="alert(currentLang === 'tr' ? 'Geçici giriş kartınızdaki şifreyi kopyalayıp buraya yapıştırmalısınız. Şifrenizi unuttuysanız yeni bir Giriş Kartı oluşturun.' : 'You must copy and paste the password from your temporary access card. If you forgot your password, generate a new Access Card.'); return false;">Şifremi Unuttum?</a>
+          <a href="#" style="color: var(--primary); text-decoration: none; font-weight: 500;" data-i18n="btn_forgot_password" onclick="alert(currentLang === 'tr' ? 'Lütfen sistem yöneticinizle iletişime geçin.' : 'Please contact your system administrator.'); return false;">Şifremi Unuttum?</a>
         </div>
 
         <div id="login-error" class="login-error-msg" style="display: none; margin-bottom: 1rem;" data-i18n="login_error">
-          ❌ Kullanıcı adı veya şifre hatalı, ya da kartın 10 dakikalık süresi doldu!
+          ❌ Kullanıcı adı veya şifre hatalı!
         </div>
 
         <div class="btn-group" style="margin-top: 1rem;">
@@ -458,7 +395,7 @@
         <!-- Helpful guidelines footer in card -->
         <div style="text-align: center; margin-top: 1.5rem; font-size: 0.75rem; border-top: 1px solid var(--border-color); padding-top: 1rem; color: var(--text-muted);">
           <span data-i18n="login_footer_question">Sorun mu yaşıyorsunuz?</span>
-          <a href="#" style="color: var(--text-secondary); text-decoration: underline; margin-left: 0.2rem;" data-i18n="login_guide_link" onclick="alert(currentLang === 'tr' ? 'Geçici erişim kartınızdaki kimlik bilgileri 10 dakika boyunca geçerlidir. Süre biterse yeni kart oluşturabilirsiniz.' : 'The credentials on your temporary access card are valid for 10 minutes. If they expire, you can generate a new card.'); return false;">Erişim Kılavuzu</a>
+          <a href="#" style="color: var(--text-secondary); text-decoration: underline; margin-left: 0.2rem;" data-i18n="login_guide_link" onclick="alert(currentLang === 'tr' ? 'Varsayılan yönetici hesabı: enterprise_admin / mock_password' : 'Default administrator account: enterprise_admin / mock_password'); return false;">Erişim Kılavuzu</a>
         </div>
       </form>
     </div>
