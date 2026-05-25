@@ -10285,6 +10285,7 @@ document.addEventListener('DOMContentLoaded', () => {
     renderPanel(routeKey) {
       document.querySelectorAll('.dashboard-section').forEach(s => {
         s.classList.remove('active');
+        s.style.setProperty('display', 'none', 'important');
       });
 
       const config = routeRegistry[routeKey];
@@ -10292,6 +10293,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const panelEl = document.getElementById(config.sectionId);
         if (panelEl) {
           panelEl.classList.add('active');
+          panelEl.style.setProperty('display', 'block', 'important');
         }
       }
     }
@@ -10475,6 +10477,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
       document.querySelectorAll('.dashboard-section').forEach(s => {
         s.classList.remove('active');
+        s.style.setProperty('display', 'none', 'important');
       });
 
       if (this.DOM.pageWelcome) this.DOM.pageWelcome.style.display = 'block';
@@ -10631,21 +10634,72 @@ document.addEventListener('DOMContentLoaded', () => {
     App.handleRouting();
   }
 
-  function initializeNavigation() {
-    console.log("App navigation initialization...");
-    window.addEventListener('hashchange', handleHashRouting);
+  function setupDashboardNavigationController() {
+    const sidebarLinkIds = [
+      'menu-btn-insights',
+      'menu-btn-schema-intel',
+      'menu-btn-automl',
+      'menu-btn-autobuilder',
+      'menu-btn-aura-os',
+      'menu-btn-saas'
+    ];
 
-    document.querySelectorAll('.menu-item').forEach(item => {
-      item.addEventListener('click', function(e) {
+    sidebarLinkIds.forEach(id => {
+      const link = document.getElementById(id);
+      if (!link) {
+        console.warn(`[Navigation Controller] Link with ID "${id}" not found.`);
+        return;
+      }
+
+      link.addEventListener('click', function(e) {
         e.preventDefault();
-        
-        if (localStorage.getItem('isLoggedIn') !== 'true') {
-          console.warn("[Router] Navigation blocked: User is not authenticated.");
+
+        // Ensure user is authenticated before routing
+        const isLoggedIn = localStorage.getItem('isLoggedIn') === 'true';
+        if (!isLoggedIn) {
+          console.warn("[Navigation Controller] Navigation blocked: User is not authenticated.");
           App.showLoginScreen();
           return;
         }
 
+        // Hide landing 'page-welcome' and show 'page-dashboard' layout upon initial login if not already handled
+        const pageWelcome = document.getElementById('page-welcome');
+        const pageDashboard = document.getElementById('page-dashboard');
+        if (pageWelcome) {
+          pageWelcome.style.setProperty('display', 'none', 'important');
+        }
+        if (pageDashboard) {
+          pageDashboard.style.setProperty('display', 'flex', 'important');
+        }
+
+        // Removes the 'active' class from all 'dashboard-section' elements
+        // and hides all 'dashboard-section' elements by setting their 'display' style to 'none'.
+        const sections = document.querySelectorAll('.dashboard-section');
+        sections.forEach(sec => {
+          sec.classList.remove('active');
+          sec.style.setProperty('display', 'none', 'important');
+        });
+
+        // Identifies the target section using the 'data-target' attribute of the clicked link
         const targetId = this.getAttribute('data-target');
+        const targetSection = document.getElementById(targetId);
+
+        if (targetSection) {
+          // Adds the 'active' class to the target section and sets its 'display' style to 'block'
+          targetSection.classList.add('active');
+          targetSection.style.setProperty('display', 'block', 'important');
+        }
+
+        // Update active menu styling
+        document.querySelectorAll('.menu-item').forEach(item => {
+          if (item === this) {
+            item.classList.add('active');
+          } else {
+            item.classList.remove('active');
+          }
+        });
+
+        // Identify corresponding hash key and update window.location.hash
         let panelKey = '';
         for (const [key, value] of Object.entries(PANELS)) {
           if (value === targetId) {
@@ -10658,6 +10712,12 @@ document.addEventListener('DOMContentLoaded', () => {
         }
       });
     });
+  }
+
+  function initializeNavigation() {
+    console.log("App navigation initialization...");
+    window.addEventListener('hashchange', handleHashRouting);
+    setupDashboardNavigationController();
   }
 
   // Initialize App Lifecycle
