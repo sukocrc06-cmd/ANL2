@@ -1768,7 +1768,11 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     };
     if (currentSector) {
-      document.getElementById('dash-sector-badge').textContent = sectorLabels[currentLang][currentSector];
+      const badgeEl = document.getElementById('dash-sector-badge');
+      if (badgeEl) {
+        badgeEl.textContent = sectorLabels[currentLang][currentSector];
+        badgeEl.setAttribute('data-sector', currentSector);
+      }
     }
     
     const dashTitle = document.getElementById('dash-title');
@@ -11248,19 +11252,103 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // ANL Vertex Supervised Learning Engine Implementation
   const SupervisedMLEngine = {
-    predictRisk: function(income, creditScore) {
-        let score = (parseFloat(creditScore) * 0.7) + (parseFloat(income) / 1000 * 0.3);
-        if (score > 600) return "Düşük Risk (Onaylandı)";
-        if (score > 400) return "Orta Risk (İnceleme)";
-        return "Yüksek Risk (Reddedildi)";
+    sectorConfigurations: {
+      vakif: {
+        requiredColumns: ['Name', 'Income', 'CreditScore'],
+        coefficients: { credit: 0.7, income: 0.3 },
+        predict: function(income, creditScore) {
+          let score = (parseFloat(creditScore) * 0.7) + (parseFloat(income) / 1000 * 0.3);
+          if (score > 600) return "Düşük Risk (Onaylandı)";
+          if (score > 400) return "Orta Risk (İnceleme)";
+          return "Yüksek Risk (Reddedildi)";
+        }
+      },
+      egitim: {
+        requiredColumns: ['Name', 'Income', 'CreditScore'],
+        coefficients: { attendance: 0.6, study: 0.4 },
+        predict: function(income, creditScore) {
+          let score = (parseFloat(creditScore) * 0.6) + (parseFloat(income) / 100 * 0.4);
+          if (score > 400) return "Başarılı (Düşük Risk)";
+          if (score > 250) return "Sınırda (Orta Risk)";
+          return "Destek Gerekli (Yüksek Risk)";
+        }
+      },
+      gida: {
+        requiredColumns: ['Name', 'Income', 'CreditScore'],
+        coefficients: { rating: 0.5, orderVolume: 0.5 },
+        predict: function(income, creditScore) {
+          let score = (parseFloat(creditScore) * 0.5) + (parseFloat(income) / 10 * 0.5);
+          if (score > 500) return "Yüksek Talep (Onaylandı)";
+          if (score > 300) return "Normal Talep (İnceleme)";
+          return "Düşük Talep (Reddedildi)";
+        }
+      },
+      lojistik: {
+        requiredColumns: ['Name', 'Income', 'CreditScore'],
+        coefficients: { delay: 0.8, distance: 0.2 },
+        predict: function(income, creditScore) {
+          let score = (parseFloat(creditScore) * 0.8) + (parseFloat(income) / 1000 * 0.2);
+          if (score > 500) return "Zamanında Teslimat (Düşük Risk)";
+          if (score > 350) return "Gecikme Olası (Orta Risk)";
+          return "Kritik Gecikme (Yüksek Risk)";
+        }
+      },
+      tekstil: {
+        requiredColumns: ['Name', 'Income', 'CreditScore'],
+        coefficients: { frequency: 0.6, basket: 0.4 },
+        predict: function(income, creditScore) {
+          let score = (parseFloat(creditScore) * 0.6) + (parseFloat(income) / 100 * 0.4);
+          if (score > 600) return "Premium Segment (Düşük Risk)";
+          if (score > 300) return "Standart Segment (Orta Risk)";
+          return "Pasif Segment (Yüksek Risk)";
+        }
+      },
+      default: {
+        requiredColumns: ['Name', 'Income', 'CreditScore'],
+        coefficients: { defaultCredit: 0.5, defaultIncome: 0.5 },
+        predict: function(income, creditScore) {
+          let score = (parseFloat(creditScore) * 0.5) + (parseFloat(income) / 1000 * 0.5);
+          if (score > 500) return "Düşük Risk (Onaylandı)";
+          if (score > 300) return "Orta Risk (İnceleme)";
+          return "Yüksek Risk (Reddedildi)";
+        }
+      }
+    },
+
+    validateDataset: function(data, sector) {
+        if (!data || data.length === 0) return false;
+        const config = this.sectorConfigurations[sector] || this.sectorConfigurations.default;
+        const required = config.requiredColumns || [];
+        
+        const firstRow = data[0];
+        const keys = Object.keys(firstRow).map(k => k.toLowerCase().trim());
+        
+        return required.every(col => keys.includes(col.toLowerCase().trim()));
+    },
+
+    predictRisk: function(income, creditScore, sector) {
+        const config = this.sectorConfigurations[sector] || this.sectorConfigurations.default;
+        return config.predict(income, creditScore);
     },
 
     processDataset: function(data) {
+        const badge = document.getElementById('dash-sector-badge');
+        const activeSector = (badge ? badge.getAttribute('data-sector') : null) || 'default';
+
+        // Validate dataset columns match selected sector requirements
+        if (!this.validateDataset(data, activeSector)) {
+            alert(currentLang === 'tr' 
+              ? `Hata: Yüklenen veri kümesi sütunları seçilen sektörün (${activeSector.toUpperCase()}) gereksinimleri ile eşleşmiyor!` 
+              : `Error: Uploaded dataset columns do not match the requirements of the selected sector (${activeSector.toUpperCase()})!`
+            );
+            return;
+        }
+
         const tableBody = document.getElementById('table-body');
         if (tableBody) {
             tableBody.innerHTML = ''; // Temizle
             data.forEach(row => {
-                const risk = this.predictRisk(row.Income, row.CreditScore);
+                const risk = this.predictRisk(row.Income, row.CreditScore, activeSector);
                 const tr = document.createElement('tr');
                 tr.innerHTML = `
                     <td><strong>${row.Name || 'Client'}</strong></td>
@@ -11272,30 +11360,64 @@ document.addEventListener('DOMContentLoaded', () => {
                 tableBody.appendChild(tr);
             });
         }
-        this.updateBusinessInsights(data);
+        this.updateBusinessInsights(data, activeSector);
         
         // Push insights to #dash-output-result element
         const outResult = document.getElementById('dash-output-result');
         if (outResult && data.length > 0) {
             let lowCount = 0, midCount = 0, highCount = 0;
             data.forEach(row => {
-                const risk = this.predictRisk(row.Income, row.CreditScore);
-                if (risk.includes("Düşük")) lowCount++;
-                else if (risk.includes("Orta")) midCount++;
+                const risk = this.predictRisk(row.Income, row.CreditScore, activeSector);
+                if (risk.includes("Düşük") || risk.includes("Başarılı") || risk.includes("Premium") || risk.includes("Zamanında") || risk.includes("Yüksek Talep")) lowCount++;
+                else if (risk.includes("Orta") || risk.includes("Sınırda") || risk.includes("Normal") || risk.includes("Gecikme Olası") || risk.includes("Standart")) midCount++;
                 else highCount++;
             });
-            outResult.textContent = `Analiz Sonucu: ${lowCount} Düşük, ${midCount} Orta, ${highCount} Yüksek`;
+            outResult.textContent = currentLang === 'tr'
+              ? `Analiz Sonucu: ${lowCount} Düşük, ${midCount} Orta, ${highCount} Yüksek Risk`
+              : `Analysis Result: ${lowCount} Low, ${midCount} Medium, ${highCount} High Risk`;
         }
     },
 
-    updateBusinessInsights: function(data) {
+    updateBusinessInsights: function(data, sector) {
         const actionsBox = document.getElementById('recommended-actions-box');
         if (actionsBox) {
-            actionsBox.innerHTML = `
-                <li>Yüksek riskli müşteriler için kredi limitini %20 düşürün.</li>
-                <li>Geliri 50.000 TL üzeri olan müşterilere 'Premium' segmenti tanımlayın.</li>
-                <li>Tahminleme modeline göre gelecek ay stokları optimize edin.</li>
-            `;
+            if (sector === 'vakif') {
+                actionsBox.innerHTML = `
+                    <li>Yüksek riskli bağışçılar için doğrudan sadakat ve destek programları başlatın.</li>
+                    <li>Geliri 100.000 TL üzeri olan bağışçılara 'Platinum VIP' statüsü tanımlayın.</li>
+                    <li>Model tahminlerine göre gelecek dönem bağış hacim tahminlerini güncelleyin.</li>
+                `;
+            } else if (sector === 'egitim') {
+                actionsBox.innerHTML = `
+                    <li>Kritik risk düzeyindeki öğrenciler için ek etüt ve birebir rehberlik atayın.</li>
+                    <li>Sınav puanı 85 üzeri olan öğrencileri özel akademik mentörlük grubuna ekleyin.</li>
+                    <li>Ders devam oranı %75 altında kalan velilere bilgilendirme SMS'i gönderin.</li>
+                `;
+            } else if (sector === 'gida') {
+                actionsBox.innerHTML = `
+                    <li>Düşük talep riski taşıyan restoranlar için bölgesel promosyon planları yapın.</li>
+                    <li>Puanı 4.5 üzeri olan restoranları 'Vertex Premium Partner' olarak öne çıkarın.</li>
+                    <li>Tahmin modeline uygun olarak tedarik zinciri stok optimizasyonunu çalıştırın.</li>
+                `;
+            } else if (sector === 'lojistik') {
+                actionsBox.innerHTML = `
+                    <li>Gecikme olasılığı yüksek olan rotalar için alternatif kurye ataması yapın.</li>
+                    <li>Mesafe uzunluğu 100 km üzeri olan teslimatlara ek yakıt desteği planlayın.</li>
+                    <li>Kritik gecikme riski taşıyan müşterileri otomatik olarak bilgilendirin.</li>
+                `;
+            } else if (sector === 'tekstil') {
+                actionsBox.innerHTML = `
+                    <li>Pasif müşteri segmentine özel geri kazanım indirim kuponları tanımlayın.</li>
+                    <li>Aylık alışveriş sıklığı 15 üzeri olan müşterilere sadakat puanı yükleyin.</li>
+                    <li>Premium segment müşterileri için yeni sezon öncelikli satış kampanyası yapın.</li>
+                `;
+            } else {
+                actionsBox.innerHTML = `
+                    <li>Yüksek riskli müşteriler için kredi limitini %20 düşürün.</li>
+                    <li>Geliri 50.000 TL üzeri olan müşterilere 'Premium' segmenti tanımlayın.</li>
+                    <li>Tahminleme modeline göre gelecek ay stokları optimize edin.</li>
+                `;
+            }
         }
     }
   };
