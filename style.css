@@ -463,8 +463,6 @@ input:checked + .slider-toggle:before {
   padding: 2.5rem;
 }
 
-/* Expiring Access Card Container */
-/*
 .temp-card-container {
   margin-top: 2rem;
   padding: 1.5rem;
@@ -488,7 +486,6 @@ input:checked + .slider-toggle:before {
   font-weight: 700;
   font-size: 1.1rem;
 }
-*/
 
 .credential-item {
   margin-bottom: 1rem;

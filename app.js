@@ -56,8 +56,8 @@ const translations = {
     en: "Textile Retail (Customer Segmentation)"
   },
   btn_create_card: {
-    tr: "Giriş Kartı Oluştur",
-    en: "Generate Entry Card"
+    tr: "Geçici Giriş Kartı Oluştur",
+    en: "Generate Temporary Access Card"
   },
   temp_card_title: {
     tr: "Geçici Giriş Kartı",
@@ -1838,17 +1838,17 @@ document.addEventListener('DOMContentLoaded', () => {
   const loginErrorMsg = document.getElementById('login-error');
 
   // Generated Access Card components
-  const tempCard = document.getElementById('temp-card') || document.createElement('div');
-  const tempUsernameInput = document.getElementById('temp-username') || document.createElement('input');
-  const tempPasswordInput = document.getElementById('temp-password') || document.createElement('input');
-  const tempCardSector = document.getElementById('temp-card-sector') || document.createElement('span');
-  const countdownTimer = document.getElementById('countdown-timer') || document.createElement('div');
-  const timerProgress = document.getElementById('timer-progress') || document.createElement('div');
-  const btnAutoLogin = document.getElementById('btn-auto-login') || document.createElement('button');
+  const tempCard = document.getElementById('temp-card');
+  const tempUsernameInput = document.getElementById('temp-username');
+  const tempPasswordInput = document.getElementById('temp-password');
+  const tempCardSector = document.getElementById('temp-card-sector');
+  const countdownTimer = document.getElementById('countdown-timer');
+  const timerProgress = document.getElementById('timer-progress');
+  const btnAutoLogin = document.getElementById('btn-open-login-from-card');
 
   // Copy Buttons
-  const btnCopyUsername = document.getElementById('btn-copy-username') || document.createElement('button');
-  const btnCopyPassword = document.getElementById('btn-copy-password') || document.createElement('button');
+  const btnCopyUsername = document.getElementById('btn-copy-username');
+  const btnCopyPassword = document.getElementById('btn-copy-password');
 
   // ================= STATE 1: ACCESS CARD GENERATION & TIMER =================
 
@@ -1871,8 +1871,12 @@ document.addEventListener('DOMContentLoaded', () => {
       .replace(/ı/g, 'i')
       .replace(/ö/g, 'o')
       .replace(/ç/g, 'c')
-      .replace(/[^a-z0-9]/g, '');
-    return (clean || 'firma') + '_vertex';
+      .replace(/\s+/g, '_') // Replace spaces with underscores
+      .replace(/[^a-z0-9_]/g, ''); // Keep only alphanumeric and underscores
+    
+    const cleanCompany = clean || 'company';
+    const randomId = Math.floor(1000 + Math.random() * 9000); // 1000-9999
+    return `vertex_${cleanCompany}_${randomId}`;
   }
 
   // Dynamic Form Validation: Hide "Giriş Kartı Oluştur" button until valid inputs are entered
@@ -1921,7 +1925,30 @@ document.addEventListener('DOMContentLoaded', () => {
       expiresAt: Date.now() + (duration * 1000)
     };
 
-    // Register card on the server and auto-login
+    // Save to localStorage so it persists across refreshes
+    localStorage.setItem('vertex_temp_card', JSON.stringify(tempCredentials));
+
+    // Fill UI inputs
+    if (tempUsernameInput) tempUsernameInput.value = username;
+    if (tempPasswordInput) tempPasswordInput.value = password;
+
+    // Update sector badge
+    if (tempCardSector) {
+      if (typeof sectorLabelsCard !== 'undefined' && sectorLabelsCard[currentLang]) {
+        tempCardSector.textContent = sectorLabelsCard[currentLang][sector] || sector;
+      } else {
+        tempCardSector.textContent = sector;
+      }
+      tempCardSector.className = 'badge badge-success';
+    }
+
+    // Display temporary card container
+    if (tempCard) tempCard.style.display = 'block';
+
+    // Start countdown
+    startTemporaryCardCountdown(tempCredentials.expiresAt);
+
+    // Register card on the mock server
     apiClient.request('/api/create-card', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -1932,65 +1959,118 @@ document.addEventListener('DOMContentLoaded', () => {
         sector
       })
     })
-    .then(() => {
-      const cardData = {
-        username: username,
-        password: password,
-        company: company,
-        sector: sector,
-        userId: username,
-        sessionToken: 'token_' + username + '_' + Date.now(),
-        expiresAt: tempCredentials.expiresAt,
-        remember: true
-      };
-      localStorage.setItem('isLoggedIn', 'true');
-      localStorage.setItem('userCardData', JSON.stringify(cardData));
-      sessionStorage.setItem('sessionActive', 'true');
-
-      // Send activation to server
-      apiClient.request('/api/activate-card', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username: username })
-      })
-      .then(() => transitionToDashboard())
-      .catch(err => {
-        console.error('Error activating card on server:', err);
-        transitionToDashboard();
-      });
+    .then(res => {
+      console.log('Card registered on server successfully', res);
     })
     .catch(err => {
       console.error('Error creating card on server:', err);
-      // Fallback local login if server call fails
-      const cardData = {
-        username: username,
-        password: password,
-        company: company,
-        sector: sector,
-        userId: username,
-        sessionToken: 'token_' + username + '_' + Date.now(),
-        expiresAt: tempCredentials.expiresAt,
-        remember: true
-      };
-      localStorage.setItem('isLoggedIn', 'true');
-      localStorage.setItem('userCardData', JSON.stringify(cardData));
-      sessionStorage.setItem('sessionActive', 'true');
-      transitionToDashboard();
     });
   });
 
   // Action: Expire Credentials Card
   function expireCard() {
     tempCredentials = null;
-    tempCard.style.display = 'none';
+    localStorage.removeItem('vertex_temp_card');
+    if (tempCard) tempCard.style.display = 'none';
     if (currentLang === 'tr') {
       alert("Geçici giriş kartınızın 10 dakikalık kullanım süresi dolmuş ve geçerliliğini yitirmiştir. Lütfen yeni bir kart oluşturun.");
     } else {
       alert("Your temporary entry card has expired after 10 minutes. Please generate a new card.");
     }
-    document.getElementById('company-name-input').value = '';
-    document.getElementById('sector-select').value = '';
+    const compInput = document.getElementById('company-name-input');
+    if (compInput) compInput.value = '';
+    const secSelect = document.getElementById('sector-select');
+    if (secSelect) secSelect.value = '';
     validateCardForm();
+  }
+
+  function startTemporaryCardCountdown(expiresAt) {
+    if (countdownInterval) clearInterval(countdownInterval);
+    const duration = 10 * 60; // 10 minutes in seconds
+
+    const updateTimer = () => {
+      const now = Date.now();
+      const secondsLeft = Math.max(0, Math.floor((expiresAt - now) / 1000));
+      
+      if (countdownTimer && timerProgress) {
+        const mins = Math.floor(secondsLeft / 60);
+        const secs = secondsLeft % 60;
+        countdownTimer.textContent = `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+        
+        const pct = (secondsLeft / duration) * 100;
+        timerProgress.style.width = `${pct}%`;
+        const hue = (secondsLeft / duration) * 120;
+        timerProgress.style.backgroundColor = `hsl(${hue}, 85%, 45%)`;
+      }
+      
+      if (secondsLeft <= 0) {
+        clearInterval(countdownInterval);
+        countdownInterval = null;
+        expireCard();
+      }
+    };
+
+    updateTimer(); // Initial call
+    countdownInterval = setInterval(updateTimer, 1000);
+  }
+
+  function checkAndRestoreTemporaryCard() {
+    const tempCardRaw = localStorage.getItem('vertex_temp_card');
+    if (!tempCardRaw) return;
+    try {
+      const cardData = JSON.parse(tempCardRaw);
+      if (cardData && cardData.company && cardData.sector) {
+        const expiresAt = cardData.expiresAt;
+        const now = Date.now();
+        const secondsLeft = Math.floor((expiresAt - now) / 1000);
+
+        if (secondsLeft <= 0) {
+          console.log("[App Lifecycle] Restored temporary card is already expired.");
+          localStorage.removeItem('vertex_temp_card');
+          tempCredentials = null;
+        } else {
+          currentCompany = cardData.company;
+          currentSector = cardData.sector;
+          tempCredentials = cardData;
+          console.log(`[App Lifecycle] Restoring temporary card for ${cardData.username}`);
+          
+          if (tempUsernameInput && tempPasswordInput && tempCardSector && tempCard) {
+            tempUsernameInput.value = cardData.username;
+            tempPasswordInput.value = cardData.password;
+            
+            if (typeof sectorLabelsCard !== 'undefined' && sectorLabelsCard[currentLang]) {
+              tempCardSector.textContent = sectorLabelsCard[currentLang][cardData.sector] || cardData.sector;
+            } else {
+              tempCardSector.textContent = cardData.sector;
+            }
+            tempCardSector.className = `badge badge-success`;
+            tempCard.style.display = 'block';
+            
+            // Generate QR Code containing login link if container exists
+            const loginUrl = `${window.location.origin}${window.location.pathname}?qrLogin=true&u=${encodeURIComponent(cardData.username)}&p=${encodeURIComponent(cardData.password)}&s=${encodeURIComponent(cardData.sector)}&c=${encodeURIComponent(cardData.company)}`;
+            const qrContainer = document.getElementById('qrcode-container');
+            if (qrContainer) {
+              qrContainer.innerHTML = '';
+              new QRCode(qrContainer, {
+                text: loginUrl,
+                width: 130,
+                height: 130,
+                colorDark: '#000000',
+                colorLight: '#ffffff',
+                correctLevel: QRCode.CorrectLevel.M
+              });
+              const btnCopyLoginUrl = document.getElementById('btn-copy-login-url');
+              if (btnCopyLoginUrl) btnCopyLoginUrl.setAttribute('data-url', loginUrl);
+            }
+
+            startTemporaryCardCountdown(expiresAt);
+          }
+        }
+      }
+    } catch (e) {
+      console.error("[App Lifecycle] Failed to restore temporary card:", e);
+      localStorage.removeItem('vertex_temp_card');
+    }
   }
 
   // Clipboard Copiers
@@ -2007,8 +2087,8 @@ document.addEventListener('DOMContentLoaded', () => {
       }, 1500);
     });
   }
-  setupCopyButton(btnCopyUsername, tempUsernameInput);
-  setupCopyButton(btnCopyPassword, tempPasswordInput);
+  if (btnCopyUsername && tempUsernameInput) setupCopyButton(btnCopyUsername, tempUsernameInput);
+  if (btnCopyPassword && tempPasswordInput) setupCopyButton(btnCopyPassword, tempPasswordInput);
 
   // Copy Login Link button event listener
   const btnCopyLoginUrl = document.getElementById('btn-copy-login-url') || document.createElement('button');
@@ -2273,13 +2353,17 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // Auto Login button clicked in card
-  btnAutoLogin.addEventListener('click', () => {
-    if (!tempCredentials) return;
-    showLoginModal();
-    // Populate form fields
-    document.getElementById('login-username').value = tempCredentials.username;
-    document.getElementById('login-password').value = tempCredentials.password;
-  });
+  if (btnAutoLogin) {
+    btnAutoLogin.addEventListener('click', () => {
+      if (!tempCredentials) return;
+      showLoginModal();
+      // Populate form fields
+      const userField = document.getElementById('login-username');
+      if (userField) userField.value = tempCredentials.username;
+      const passField = document.getElementById('login-password');
+      if (passField) passField.value = tempCredentials.password;
+    });
+  }
 
 
   // Login Submit Event
@@ -2298,26 +2382,60 @@ document.addEventListener('DOMContentLoaded', () => {
     const rememberCheckbox = document.getElementById('login-remember');
     const remember = rememberCheckbox ? rememberCheckbox.checked : false;
 
-    // 1. Direct local credential match check (bypassing all time checks)
-    if (tempCredentials && user === tempCredentials.username && pass === tempCredentials.password) {
+    // A. Check against temporary card stored in localStorage or memory
+    const tempCardRaw = localStorage.getItem('vertex_temp_card');
+    let activeTempCard = tempCredentials;
+    if (tempCardRaw) {
+      try {
+        activeTempCard = JSON.parse(tempCardRaw);
+      } catch (err) {
+        console.error('Failed to parse temp card from localStorage:', err);
+      }
+    }
+
+    if (activeTempCard && user === activeTempCard.username && pass === activeTempCard.password) {
+      if (Date.now() > activeTempCard.expiresAt) {
+        // Card expired! Show error and block login
+        loginErrorMsg.innerHTML = currentLang === 'tr'
+          ? "❌ Kartın süresi doldu. Lütfen yeni bir giriş kartı oluşturun."
+          : "❌ Card expired. Please generate a new access card.";
+        loginErrorMsg.style.display = 'block';
+
+        // Clean up expired card
+        localStorage.removeItem('vertex_temp_card');
+        tempCredentials = null;
+        if (countdownInterval) {
+          clearInterval(countdownInterval);
+          countdownInterval = null;
+        }
+        if (tempCard) tempCard.style.display = 'none';
+        return;
+      }
+
+      // Card is valid! Log in and transition
       if (countdownInterval) {
         clearInterval(countdownInterval);
         countdownInterval = null;
       }
       
       const cardData = {
-        username: tempCredentials.username,
-        password: tempCredentials.password,
-        company: tempCredentials.company,
-        sector: tempCredentials.sector,
-        userId: tempCredentials.username,
-        sessionToken: 'token_' + tempCredentials.username + '_' + Date.now(),
+        username: activeTempCard.username,
+        password: activeTempCard.password,
+        company: activeTempCard.company,
+        sector: activeTempCard.sector,
+        userId: activeTempCard.username,
+        sessionToken: 'token_' + activeTempCard.username + '_' + Date.now(),
         expiresAt: Date.now() + 7 * 24 * 60 * 60 * 1000,
         remember: remember
       };
       localStorage.setItem('isLoggedIn', 'true');
       localStorage.setItem('userCardData', JSON.stringify(cardData));
       sessionStorage.setItem('sessionActive', 'true');
+
+      // Remove temporary card as user is logged in
+      localStorage.removeItem('vertex_temp_card');
+      tempCredentials = null;
+      if (tempCard) tempCard.style.display = 'none';
 
       // Send activation to server
       apiClient.request('/api/activate-card', {
@@ -2326,7 +2444,6 @@ document.addEventListener('DOMContentLoaded', () => {
         body: JSON.stringify({ username: user })
       }).catch(err => console.error('Error activating card on server:', err));
 
-      // Immediately transition to dashboard
       transitionToDashboard();
       return;
     }
@@ -2426,6 +2543,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Clear persisted session
     localStorage.removeItem('isLoggedIn');
     localStorage.removeItem('userCardData');
+    localStorage.removeItem('vertex_temp_card');
 
     // Reset dynamic theme color scheme and promo selection indicators
     updateThemeColor('default');
@@ -10330,6 +10448,7 @@ document.addEventListener('DOMContentLoaded', () => {
         this.handleQrLogin(urlParams);
       } else {
         this.restoreSession();
+        checkAndRestoreTemporaryCard();
         this.checkAuthentication();
       }
     },
@@ -10494,6 +10613,7 @@ document.addEventListener('DOMContentLoaded', () => {
     clearSession() {
       localStorage.removeItem('isLoggedIn');
       localStorage.removeItem('userCardData');
+      localStorage.removeItem('vertex_temp_card');
       sessionStorage.removeItem('sessionActive');
       currentCompany = '';
       currentSector = '';
