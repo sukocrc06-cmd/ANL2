@@ -1914,39 +1914,37 @@ document.addEventListener('DOMContentLoaded', () => {
     // Generate credentials
     const username = sanitizeUsername(company);
     const password = generatePassword(10);
-    const duration = 10 * 60; // 10 minutes in seconds
 
-    // Store globally
-    tempCredentials = {
-      username,
-      password,
-      company,
-      sector,
-      expiresAt: Date.now() + (duration * 1000)
-    };
-
-    // Save to localStorage so it persists across refreshes
-    localStorage.setItem('vertex_temp_card', JSON.stringify(tempCredentials));
-
-    // Fill UI inputs
-    if (tempUsernameInput) tempUsernameInput.value = username;
-    if (tempPasswordInput) tempPasswordInput.value = password;
-
-    // Update sector badge
-    if (tempCardSector) {
-      if (typeof sectorLabelsCard !== 'undefined' && sectorLabelsCard[currentLang]) {
-        tempCardSector.textContent = sectorLabelsCard[currentLang][sector] || sector;
+    const onRegistrationSuccess = () => {
+      // Show simple 'Success' message
+      if (currentLang === 'tr') {
+        alert("Giriş Kartı başarıyla oluşturuldu! Sisteme yönlendiriliyorsunuz...");
       } else {
-        tempCardSector.textContent = sector;
+        alert("Access Card created successfully! Redirecting you to the system...");
       }
-      tempCardSector.className = 'badge badge-success';
-    }
 
-    // Display temporary card container
-    if (tempCard) tempCard.style.display = 'block';
+      // Automatically log the user in directly
+      const cardData = {
+        username: username,
+        password: password,
+        company: company,
+        sector: sector,
+        userId: username,
+        sessionToken: 'token_' + username + '_' + Date.now(),
+        expiresAt: Date.now() + 7 * 24 * 60 * 60 * 1000,
+        remember: true
+      };
+      localStorage.setItem('isLoggedIn', 'true');
+      localStorage.setItem('userCardData', JSON.stringify(cardData));
+      sessionStorage.setItem('sessionActive', 'true');
 
-    // Start countdown
-    startTemporaryCardCountdown(tempCredentials.expiresAt);
+      // Clear any temporary credentials storage to avoid old logic trigger
+      localStorage.removeItem('vertex_temp_card');
+      tempCredentials = null;
+
+      // transition to dashboard
+      transitionToDashboard();
+    };
 
     // Register card on the mock server
     apiClient.request('/api/create-card', {
@@ -1961,9 +1959,11 @@ document.addEventListener('DOMContentLoaded', () => {
     })
     .then(res => {
       console.log('Card registered on server successfully', res);
+      onRegistrationSuccess();
     })
     .catch(err => {
-      console.error('Error creating card on server:', err);
+      console.error('Error creating card on server, falling back locally:', err);
+      onRegistrationSuccess();
     });
   });
 

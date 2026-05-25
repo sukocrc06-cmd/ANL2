@@ -70,46 +70,7 @@
 
           </form>
 
-          <!-- Expiring Temporary Access Card -->
-          <div id="temp-card" class="temp-card-container fade-in" style="display: none; margin-top: 1.5rem;">
-            <div class="temp-card-header">
-              <span class="temp-card-title" data-i18n="temp_card_title">Geçici Giriş Kartı</span>
-              <span class="badge badge-success" id="temp-card-sector">Finans</span>
-            </div>
-            
-            <div class="temp-card-body">
-              <div class="credential-item">
-                <span class="credential-label" data-i18n="label_username">Kullanıcı Adı</span>
-                <div class="credential-val-box">
-                  <input type="text" id="temp-username" class="credential-input" readonly>
-                  <button class="btn-copy" id="btn-copy-username" title="Kopyala" data-i18n="btn_copy">Kopyala</button>
-                </div>
-              </div>
 
-              <div class="credential-item">
-                <span class="credential-label" data-i18n="label_password">Güçlü Şifre</span>
-                <div class="credential-val-box">
-                  <input type="text" id="temp-password" class="credential-input" readonly>
-                  <button class="btn-copy" id="btn-copy-password" title="Kopyala" data-i18n="btn_copy">Kopyala</button>
-                </div>
-              </div>
-
-              <div class="timer-section" style="margin-top: 1.2rem;">
-                <div class="timer-title" data-i18n="timer_title" style="font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 0.3rem;">Kart Geçerlilik Süresi</div>
-                <div class="timer-clock" id="countdown-timer" style="font-size: 1.5rem; font-weight: 700; color: var(--primary);">10:00</div>
-                <div class="timer-bar-container" style="background: rgba(255, 255, 255, 0.05); height: 6px; border-radius: 3px; margin-top: 0.5rem; overflow: hidden;">
-                  <div class="timer-bar" id="timer-progress" style="background: var(--primary); height: 100%; width: 100%; transition: width 1s linear;"></div>
-                </div>
-              </div>
-
-              <div style="margin-top: 1.5rem; display: flex; gap: 0.8rem;">
-                <button class="btn-primary" id="btn-open-login-from-card" style="flex: 1; padding: 0.75rem; background: var(--secondary); border: none; border-radius: 8px; color: #fff; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 0.4rem;">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
-                  <span data-i18n="btn_open_login_modal">Giriş Yap</span>
-                </button>
-              </div>
-            </div>
-          </div>
 
         </div>
 
