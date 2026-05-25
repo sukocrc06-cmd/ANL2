@@ -7078,12 +7078,16 @@ document.addEventListener('DOMContentLoaded', () => {
         
         transitionToDashboard();
         
-        btnInsights.classList.add('active');
-        btnSchemaIntel.classList.remove('active');
-        secInsights.classList.add('active');
-        secSchemaIntel.classList.remove('active');
-        secInsights.style.display = '';
-        secSchemaIntel.style.display = '';
+        if (btnInsights) btnInsights.classList.add('active');
+        if (btnSchemaIntel) btnSchemaIntel.classList.remove('active');
+        if (secInsights) {
+          secInsights.classList.add('active');
+          secInsights.style.display = '';
+        }
+        if (secSchemaIntel) {
+          secSchemaIntel.classList.remove('active');
+          secSchemaIntel.style.display = '';
+        }
         
         alert(currentLang === 'tr' 
           ? `Başarı! Veri şeması uygulandı. Platform sektörü "${sectorLabelsCard[currentLang][targetSector]}" olarak güncellendi.`
