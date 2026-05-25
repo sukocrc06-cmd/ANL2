@@ -6737,24 +6737,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function handleHashRouting() {
     const hash = window.location.hash.substring(1) || 'dashboard';
-    const isAuthenticated = localStorage.getItem('isLoggedIn') === 'true';
-    const currentRoute = window.location.hash || '#dashboard';
-    const panelId = PANELS[hash] ? hash : 'dashboard';
+    const panelId = routeRegistry[hash] ? hash : 'dashboard';
 
-    console.log("Authenticated:", isAuthenticated);
-    console.log("Loading route:", currentRoute);
+    console.log("Authenticated:", localStorage.getItem('isLoggedIn') === 'true');
+    console.log("Loading route:", window.location.hash || '#dashboard');
     console.log("Rendering panel:", panelId);
 
-    const targetHash = window.location.hash.substring(1);
-    if (PANELS[targetHash]) {
-      hideAllPanels();
-      showPanel(targetHash);
-      setActiveMenu(targetHash);
-    } else if (!targetHash) {
-      window.location.hash = 'dashboard';
-    } else {
-      fallbackToDefault();
-    }
+    setActiveMenu(panelId);
+    safeNavigate(panelId);
   }
 
   function showTab(tabId) {
@@ -6791,8 +6781,7 @@ document.addEventListener('DOMContentLoaded', () => {
     handleHashRouting();
   }
 
-  // Initialize navigation controller
-  initializeNavigation();
+  // Navigation controller initialization postponed to the end of DOMContentLoaded to prevent Temporal Dead Zone issues.
 
   const dropZone = document.getElementById('schema-drop-zone');
   const fileInput = document.getElementById('schema-file-input');
@@ -9373,5 +9362,548 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   window.initAuraOSModule = initAuraOSModule;
+
+  // ================= SAAS ENTERPRISE CLOUD IMPLEMENTATION =================
+  let saasPingInterval = null;
+  let saasWebhookInterval = null;
+  let saasAuditInterval = null;
+  let saasEventsBound = false;
+
+  function initSaaSCloudModule() {
+    console.log("[SaaS Cloud] Launching SaaS module lifecycle...");
+    
+    // Initial Audit logs
+    const auditLogs = document.getElementById('saas-audit-logs');
+    if (auditLogs) {
+      auditLogs.innerHTML = `
+        <div style="color: var(--success); font-weight: bold;">[SOC Audit] System initialized at ${new Date().toLocaleTimeString()}</div>
+        <div style="color: var(--text-muted);">[SOC Audit] Secure tunnel established to Dallas-HQ server.</div>
+        <div style="color: var(--text-muted);">[SOC Audit] Policy sync check passed (SOC2 Type-II, HIPAA compliance active).</div>
+      `;
+    }
+
+    // Node ping fluctuation
+    if (saasPingInterval) clearInterval(saasPingInterval);
+    saasPingInterval = setInterval(() => {
+      const usPing = Math.floor(10 + Math.random() * 8);
+      const euPing = Math.floor(40 + Math.random() * 12);
+      const apPing = Math.floor(70 + Math.random() * 20);
+      const avgPing = Math.round((usPing + euPing + apPing) / 3);
+
+      const usEl = document.getElementById('saas-node-us-ping');
+      const euEl = document.getElementById('saas-node-eu-ping');
+      const apEl = document.getElementById('saas-node-ap-ping');
+      const avgEl = document.getElementById('saas-average-ping');
+
+      if (usEl) usEl.textContent = `US-HQ: ${usPing}ms`;
+      if (euEl) euEl.textContent = `EU-Node: ${euPing}ms`;
+      if (apEl) apEl.textContent = `AP-Node: ${apPing}ms`;
+      if (avgEl) avgEl.textContent = `Avg Ping: ${avgPing}ms`;
+    }, 2500);
+
+    // Webhook stream simulations
+    if (saasWebhookInterval) clearInterval(saasWebhookInterval);
+    const webhookLogs = document.getElementById('saas-webhook-logs');
+    if (webhookLogs) {
+      webhookLogs.innerHTML = `<div style="color: var(--text-muted);">[Webhook Hub] Idle. Listening for integrations...</div>`;
+    }
+    
+    const endpoints = ['/api/v1/predict', '/api/v1/schema/verify', '/api/v1/automl/train', '/api/v1/autobuilder/layout', '/api/v1/aura/copilot'];
+    saasWebhookInterval = setInterval(() => {
+      if (!webhookLogs) return;
+      const time = new Date().toLocaleTimeString();
+      const endpoint = endpoints[Math.floor(Math.random() * endpoints.length)];
+      const nodes = ['Dallas-HQ', 'Frankfurt-Node', 'Tokyo-Node'];
+      const node = nodes[Math.floor(Math.random() * nodes.length)];
+      const code = Math.random() > 0.05 ? '200 OK' : '400 Bad Request';
+      const color = code.includes('200') ? '#06b6d4' : 'var(--danger)';
+      
+      const entry = document.createElement('div');
+      entry.style.color = color;
+      entry.textContent = `[${time}] POST ${endpoint} - ${code} (${node})`;
+      
+      if (webhookLogs.innerHTML.includes('Idle.')) {
+        webhookLogs.innerHTML = '';
+      }
+      webhookLogs.appendChild(entry);
+      webhookLogs.scrollTop = webhookLogs.scrollHeight;
+    }, 3000);
+
+    // Audit log stream
+    if (saasAuditInterval) clearInterval(saasAuditInterval);
+    saasAuditInterval = setInterval(() => {
+      if (!auditLogs) return;
+      const time = new Date().toLocaleTimeString();
+      const messages = [
+        "Audit check: 24 incoming REST requests authenticated successfully.",
+        "System backup: Hourly checkpoint successfully snapshot to S3 AWS bucket.",
+        "Resource load check: Node memory utilization at 34.2%. High compute available.",
+        "Suspicious request block: 0 suspect intrusion vectors detected.",
+        "Policy audit: SSL Certificates validation check passed. HTTPS active."
+      ];
+      const msg = messages[Math.floor(Math.random() * messages.length)];
+      
+      const entry = document.createElement('div');
+      entry.style.color = 'var(--text-muted)';
+      entry.textContent = `[${time}] [Audit] ${msg}`;
+      
+      auditLogs.appendChild(entry);
+      auditLogs.scrollTop = auditLogs.scrollHeight;
+    }, 4500);
+  }
+
+  function destroySaaSCloudModule() {
+    console.log("[SaaS Cloud] Clearing SaaS module intervals...");
+    if (saasPingInterval) clearInterval(saasPingInterval);
+    if (saasWebhookInterval) clearInterval(saasWebhookInterval);
+    if (saasAuditInterval) clearInterval(saasAuditInterval);
+  }
+
+  function bindSaaSEvents() {
+    if (saasEventsBound) return;
+    
+    const selectCompany = document.getElementById('saas-select-company');
+    const selectRole = document.getElementById('saas-select-role');
+    const selectWorkspace = document.getElementById('saas-select-workspace');
+    const privilegeLevel = document.getElementById('saas-privilege-level');
+    const auditLogs = document.getElementById('saas-audit-logs');
+
+    if (selectRole && privilegeLevel) {
+      selectRole.addEventListener('change', () => {
+        const role = selectRole.value;
+        let priv = 'READ ONLY VIEWPORTS';
+        let color = 'var(--text-muted)';
+        
+        if (role === 'Super Admin') {
+          priv = 'FULL ROOT ACCESS';
+          color = 'var(--primary)';
+        } else if (role === 'Organization Admin') {
+          priv = 'TENANT PRIVILEGES';
+          color = 'var(--secondary)';
+        } else if (role === 'Data Analyst') {
+          priv = 'READ & EXECUTE WRITEBACKS';
+          color = 'var(--success)';
+        } else if (role === 'Risk Manager') {
+          priv = 'COMPLIANCE & MITIGATION SCOPE';
+          color = '#f59e0b';
+        }
+
+        privilegeLevel.textContent = priv;
+        privilegeLevel.style.color = color;
+
+        if (auditLogs) {
+          const entry = document.createElement('div');
+          entry.style.color = 'var(--secondary)';
+          entry.textContent = `[${new Date().toLocaleTimeString()}] [Security] Swapped active user role privileges to: ${role} (${priv})`;
+          auditLogs.appendChild(entry);
+          auditLogs.scrollTop = auditLogs.scrollHeight;
+        }
+      });
+    }
+
+    if (selectCompany) {
+      selectCompany.addEventListener('change', () => {
+        if (auditLogs) {
+          const entry = document.createElement('div');
+          entry.style.color = 'var(--secondary)';
+          entry.textContent = `[${new Date().toLocaleTimeString()}] [Tenant] Swapped active organization workspace to: ${selectCompany.value.toUpperCase()}`;
+          auditLogs.appendChild(entry);
+          auditLogs.scrollTop = auditLogs.scrollHeight;
+        }
+      });
+    }
+
+    if (selectWorkspace) {
+      selectWorkspace.addEventListener('change', () => {
+        if (auditLogs) {
+          const entry = document.createElement('div');
+          entry.style.color = 'var(--secondary)';
+          entry.textContent = `[${new Date().toLocaleTimeString()}] [Cluster] Active compute workspace switched to node: ${selectWorkspace.value.toUpperCase()}`;
+          auditLogs.appendChild(entry);
+          auditLogs.scrollTop = auditLogs.scrollHeight;
+        }
+      });
+    }
+
+    const btnGenToken = document.getElementById('btn-saas-generate-token');
+    const tokenBox = document.getElementById('saas-token-display-box');
+    const tokenDisplay = document.getElementById('saas-generated-token');
+    const btnCopyToken = document.getElementById('btn-saas-copy-token');
+
+    if (btnGenToken && tokenBox && tokenDisplay) {
+      btnGenToken.addEventListener('click', () => {
+        const rand = Array.from({length: 24}, () => Math.floor(Math.random()*16).toString(16)).join('');
+        const token = `anl_live_${rand}`;
+        tokenDisplay.textContent = token;
+        tokenBox.style.display = 'flex';
+
+        if (auditLogs) {
+          const entry = document.createElement('div');
+          entry.style.color = 'var(--success)';
+          entry.textContent = `[${new Date().toLocaleTimeString()}] [API Hub] Generated new secure REST token authorization code.`;
+          auditLogs.appendChild(entry);
+          auditLogs.scrollTop = auditLogs.scrollHeight;
+        }
+      });
+    }
+
+    if (btnCopyToken && tokenDisplay) {
+      btnCopyToken.addEventListener('click', () => {
+        navigator.clipboard.writeText(tokenDisplay.textContent)
+          .then(() => alert(currentLang === 'tr' ? 'API Tokanı kopyalandı!' : 'API Token copied to clipboard!'))
+          .catch(() => alert(tokenDisplay.textContent));
+      });
+    }
+
+    const planButtons = document.querySelectorAll('.btn-saas-plan');
+    const planBadge = document.getElementById('saas-billing-plan-badge');
+    const tokenLimitVal = document.getElementById('saas-token-limit-values');
+    const tokenProgressBar = document.getElementById('saas-token-progress-bar');
+    const apiLimitVal = document.getElementById('saas-api-limit-values');
+    const apiProgressBar = document.getElementById('saas-api-progress-bar');
+
+    planButtons.forEach(btn => {
+      btn.addEventListener('click', () => {
+        planButtons.forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        const plan = btn.getAttribute('data-plan');
+
+        if (plan === 'ultra') {
+          if (planBadge) planBadge.textContent = 'AI ULTRA';
+          if (tokenLimitVal) tokenLimitVal.textContent = '4.2M / 10M';
+          if (tokenProgressBar) {
+            tokenProgressBar.style.width = '42%';
+            tokenProgressBar.style.background = 'linear-gradient(90deg, #8b5cf6, var(--primary))';
+          }
+          if (apiLimitVal) apiLimitVal.textContent = '182K / 500K';
+          if (apiProgressBar) {
+            apiProgressBar.style.width = '36.4%';
+            apiProgressBar.style.background = 'linear-gradient(90deg, var(--primary), var(--secondary))';
+          }
+        } else if (plan === 'enterprise') {
+          if (planBadge) planBadge.textContent = 'ENTERPRISE';
+          if (tokenLimitVal) tokenLimitVal.textContent = '12.8M / 50M';
+          if (tokenProgressBar) {
+            tokenProgressBar.style.width = '25.6%';
+            tokenProgressBar.style.background = 'linear-gradient(90deg, #8b5cf6, var(--primary))';
+          }
+          if (apiLimitVal) apiLimitVal.textContent = '480K / 2M';
+          if (apiProgressBar) {
+            apiProgressBar.style.width = '24%';
+            apiProgressBar.style.background = 'linear-gradient(90deg, var(--primary), var(--secondary))';
+          }
+        } else if (plan === 'pro') {
+          if (planBadge) planBadge.textContent = 'PRO';
+          if (tokenLimitVal) tokenLimitVal.textContent = '1.9M / 2M';
+          if (tokenProgressBar) {
+            tokenProgressBar.style.width = '95%';
+            tokenProgressBar.style.background = 'linear-gradient(90deg, #f59e0b, var(--danger))';
+          }
+          if (apiLimitVal) apiLimitVal.textContent = '95K / 100K';
+          if (apiProgressBar) {
+            apiProgressBar.style.width = '95%';
+            apiProgressBar.style.background = 'linear-gradient(90deg, #f59e0b, var(--danger))';
+          }
+        }
+
+        if (auditLogs) {
+          const entry = document.createElement('div');
+          entry.style.color = 'var(--text-secondary)';
+          entry.textContent = `[${new Date().toLocaleTimeString()}] [Billing] Swapped monthly billing threshold metric workspace limits.`;
+          auditLogs.appendChild(entry);
+          auditLogs.scrollTop = auditLogs.scrollHeight;
+        }
+      });
+    });
+
+    const marketInstallBtns = document.querySelectorAll('.btn-saas-install-app');
+    marketInstallBtns.forEach(btn => {
+      btn.addEventListener('click', () => {
+        const app = btn.getAttribute('data-app');
+        btn.textContent = currentLang === 'tr' ? 'Kuruluyor...' : 'Installing...';
+        btn.disabled = true;
+        
+        setTimeout(() => {
+          btn.textContent = currentLang === 'tr' ? 'Aktif' : 'Installed (Active)';
+          btn.style.borderColor = 'var(--success-glow)';
+          btn.style.color = 'var(--success)';
+          
+          if (auditLogs) {
+            const entry = document.createElement('div');
+            entry.style.color = 'var(--success)';
+            entry.textContent = `[${new Date().toLocaleTimeString()}] [Marketplace] Securely installed ML plugin module: ${app.toUpperCase()} AI extension PACK.`;
+            auditLogs.appendChild(entry);
+            auditLogs.scrollTop = auditLogs.scrollHeight;
+          }
+        }, 1500);
+      });
+    });
+
+    const btnSaasInvoice = document.getElementById('btn-download-saas-invoice');
+    if (btnSaasInvoice) {
+      btnSaasInvoice.addEventListener('click', () => {
+        if (typeof jspdf !== 'undefined') {
+          try {
+            const { jsPDF } = jspdf;
+            const doc = new jsPDF();
+            
+            const activePlan = planBadge ? planBadge.textContent : 'AI ULTRA';
+            const companyName = currentCompany || 'ANL Global Systems Inc.';
+            const dateStr = new Date().toLocaleDateString();
+            
+            doc.setFillColor(22, 28, 45);
+            doc.rect(0, 0, 210, 35, 'F');
+            
+            doc.setFont("helvetica", "bold");
+            doc.setFontSize(22);
+            doc.setTextColor(255, 255, 255);
+            doc.text("ANL VERTEX CLOUD", 15, 22);
+            
+            doc.setFontSize(10);
+            doc.setTextColor(150, 150, 150);
+            doc.text("INVOICE STATEMENT", 150, 22);
+            
+            doc.setFont("helvetica", "normal");
+            doc.setTextColor(50, 50, 50);
+            doc.setFontSize(10);
+            doc.text(`Tenant Corp: ${companyName}`, 15, 50);
+            doc.text(`Billing Plan: ${activePlan}`, 15, 56);
+            doc.text(`Statement Date: ${dateStr}`, 15, 62);
+            doc.text(`Invoice ID: INV-ANL-${Math.floor(100000 + Math.random()*900000)}`, 150, 50);
+            
+            doc.setDrawColor(200, 200, 200);
+            doc.line(15, 70, 195, 70);
+            
+            doc.setFont("helvetica", "bold");
+            doc.text("Item / Description", 15, 80);
+            doc.text("Compute Nodes", 100, 80);
+            doc.text("Usage Value", 140, 80);
+            doc.text("Total Cost", 175, 80);
+            
+            doc.setFont("helvetica", "normal");
+            doc.text(`SaaS Subscription Fee - (${activePlan} tier)`, 15, 92);
+            doc.text("US-HQ / EU-Node", 100, 92);
+            doc.text("Flat rate limits", 140, 92);
+            doc.text(activePlan === 'PRO' ? "$99.00" : activePlan === 'ENTERPRISE' ? "$850.00" : "$299.00", 175, 92);
+            
+            doc.text("Model Token Overages", 15, 100);
+            doc.text("AutoML swarm instances", 100, 100);
+            doc.text("No excess tokens", 140, 100);
+            doc.text("$0.00", 175, 100);
+            
+            doc.line(15, 110, 195, 110);
+            
+            doc.setFont("helvetica", "bold");
+            doc.text("Grand Total Due (USD):", 120, 120);
+            doc.setTextColor(37, 99, 235);
+            doc.text(activePlan === 'PRO' ? "$99.00" : activePlan === 'ENTERPRISE' ? "$850.00" : "$299.00", 175, 120);
+            
+            doc.setFont("helvetica", "italic");
+            doc.setTextColor(150, 150, 150);
+            doc.setFontSize(8);
+            doc.text("Thank you for partnering with ANL Vertex SaaS Cloud Computing Solutions. Compliance certificate: SOC2 Type II audit verified.", 15, 140);
+            
+            const filename = `ANL_Invoice_${companyName.replace(/[^a-zA-Z0-9]/g, "_")}.pdf`;
+            doc.save(filename);
+            alert(currentLang === 'tr' ? 'Fatura PDF dosyası indirildi!' : 'Invoice PDF statement downloaded!');
+          } catch (e) {
+            console.error('Failed to generate SaaS invoice:', e);
+            alert('Failed to generate PDF invoice locally: ' + e.message);
+          }
+        } else {
+          alert('jsPDF library is not loaded yet!');
+        }
+      });
+    }
+
+    saasEventsBound = true;
+  }
+
+  // ================= CENTRALIZED ENTERPRISE ROUTING SYSTEM =================
+  function bindGeneralDashboardEvents() {}
+  function bindSchemaEvents() {}
+  function bindAutoMLEvents() {}
+  function bindAutoBuilderEvents() {}
+  function bindAuraEvents() {}
+
+  const routeRegistry = {
+    dashboard: {
+      id: 'dashboard',
+      sectionId: 'dashboard-insights-section',
+      init() {
+        console.log("[Router Debug] Initializing General Analytics Dashboard...");
+        updateThemeColor(currentSector);
+        updateDashboardLanguageSpecifics();
+      },
+      render() {
+        console.log("[Router Debug] Rendering General Analytics Dashboard...");
+        loadSectorSchema(currentSector, () => {
+          setupSectorDashboard();
+        });
+      },
+      bindEvents() {
+        console.log("[Router Debug] Binding events for General Analytics Dashboard...");
+        bindGeneralDashboardEvents();
+      },
+      destroy() {
+        console.log("[Router Debug] Destroying General Analytics Dashboard...");
+      }
+    },
+    schema: {
+      id: 'schema',
+      sectionId: 'dashboard-schema-intel-section',
+      init() {
+        console.log("[Router Debug] Initializing Schema Intelligence...");
+        if (typeof initUploadParticles === 'function') initUploadParticles();
+      },
+      render() {
+        console.log("[Router Debug] Rendering Schema Intelligence...");
+      },
+      bindEvents() {
+        console.log("[Router Debug] Binding events for Schema Intelligence...");
+        bindSchemaEvents();
+      },
+      destroy() {
+        console.log("[Router Debug] Destroying Schema Intelligence...");
+      }
+    },
+    automl: {
+      id: 'automl',
+      sectionId: 'dashboard-automl-section',
+      init() {
+        console.log("[Router Debug] Initializing AutoML...");
+        if (typeof initAutoMLUploadParticles === 'function') initAutoMLUploadParticles();
+      },
+      render() {
+        console.log("[Router Debug] Rendering AutoML...");
+        if (typeof updateAutoMLSharedState === 'function') updateAutoMLSharedState();
+      },
+      bindEvents() {
+        console.log("[Router Debug] Binding events for AutoML...");
+        bindAutoMLEvents();
+      },
+      destroy() {
+        console.log("[Router Debug] Destroying AutoML...");
+      }
+    },
+    autobuilder: {
+      id: 'autobuilder',
+      sectionId: 'dashboard-autobuilder-section',
+      init() {
+        console.log("[Router Debug] Initializing Auto-Builder...");
+        if (typeof initAutoBuilderUploadParticles === 'function') initAutoBuilderUploadParticles();
+      },
+      render() {
+        console.log("[Router Debug] Rendering Auto-Builder...");
+        if (typeof updateAutoBuilderSharedState === 'function') updateAutoBuilderSharedState();
+      },
+      bindEvents() {
+        console.log("[Router Debug] Binding events for Auto-Builder...");
+        bindAutoBuilderEvents();
+      },
+      destroy() {
+        console.log("[Router Debug] Destroying Auto-Builder...");
+      }
+    },
+    aura: {
+      id: 'aura',
+      sectionId: 'dashboard-aura-os-section',
+      init() {
+        console.log("[Router Debug] Initializing Aura AI Copilot...");
+        if (typeof initAuraOSExplainability === 'function') initAuraOSExplainability();
+        if (typeof initAuraOSWarnings === 'function') initAuraOSWarnings();
+      },
+      render() {
+        console.log("[Router Debug] Rendering Aura AI Copilot...");
+        if (typeof initAuraOSModule === 'function') initAuraOSModule();
+      },
+      bindEvents() {
+        console.log("[Router Debug] Binding events for Aura AI Copilot...");
+        bindAuraEvents();
+      },
+      destroy() {
+        console.log("[Router Debug] Destroying Aura AI Copilot...");
+      }
+    },
+    saas: {
+      id: 'saas',
+      sectionId: 'dashboard-saas-section',
+      init() {
+        console.log("[Router Debug] Initializing SaaS Cloud...");
+        initSaaSCloudModule();
+      },
+      render() {
+        console.log("[Router Debug] Rendering SaaS Cloud...");
+      },
+      bindEvents() {
+        console.log("[Router Debug] Binding events for SaaS Cloud...");
+        bindSaaSEvents();
+      },
+      destroy() {
+        console.log("[Router Debug] Destroying SaaS Cloud...");
+        destroySaaSCloudModule();
+      }
+    }
+  };
+
+  const panelMountManager = {
+    activeRouteKey: null,
+    
+    destroyPreviousPanel() {
+      if (this.activeRouteKey && routeRegistry[this.activeRouteKey]) {
+        try {
+          routeRegistry[this.activeRouteKey].destroy();
+        } catch (e) {
+          console.error(`[Router Error] Error destroying panel "${this.activeRouteKey}":`, e);
+        }
+      }
+    },
+
+    mountPanel(routeKey) {
+      const config = routeRegistry[routeKey];
+      if (!config) {
+        console.warn(`[Router Warning] Panel config not found for key: ${routeKey}`);
+        return;
+      }
+      
+      try {
+        config.init();
+        config.render();
+        config.bindEvents();
+        this.activeRouteKey = routeKey;
+      } catch (e) {
+        console.error(`[Router Error] Error mounting panel "${routeKey}":`, e);
+      }
+    },
+
+    renderPanel(routeKey) {
+      document.querySelectorAll('.dashboard-section').forEach(s => {
+        s.classList.remove('active');
+      });
+
+      const config = routeRegistry[routeKey];
+      if (config) {
+        const panelEl = document.getElementById(config.sectionId);
+        if (panelEl) {
+          panelEl.classList.add('active');
+        }
+      }
+    }
+  };
+
+  function safeNavigate(panelId) {
+    console.log(`[Router] Navigating to: ${panelId}`);
+    if (!routeRegistry[panelId]) {
+      console.warn(`[Router] Route key "${panelId}" is invalid. Falling back to default "dashboard".`);
+      panelId = 'dashboard';
+    }
+
+    panelMountManager.destroyPreviousPanel();
+    panelMountManager.renderPanel(panelId);
+    panelMountManager.mountPanel(panelId);
+  }
+
+  // Initialize navigation controller
+  initializeNavigation();
 
 });
