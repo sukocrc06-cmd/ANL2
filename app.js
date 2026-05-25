@@ -1801,100 +1801,17 @@ document.addEventListener('DOMContentLoaded', () => {
   let regressionDots = []; // Real estate background dots
 
   // HTML Element Selectors
+  // HTML Element Selectors
   const pageWelcome = document.getElementById('page-welcome');
   const pageDashboard = document.getElementById('page-dashboard');
-  const loginModal = document.getElementById('login-modal');
   
   // Forms & Modal controls
   const loginForm = document.getElementById('login-form');
-  const btnOpenLogin = document.getElementById('btn-open-login');
-  const btnWelcomeLogin = document.getElementById('btn-welcome-login');
-  const btnCloseModal = document.getElementById('btn-close-modal');
-  const btnCancelLogin = document.getElementById('btn-cancel-login');
   const loginErrorMsg = document.getElementById('login-error');
-
-
-  // ================= STATE 2: LOGIN MODAL STATE =================
-  
-  // Show / Hide login dialog
-  function showLoginModal() {
-    loginErrorMsg.style.display = 'none';
-    loginModal.classList.add('active');
-
-    // Force-replay loginCardEntrance spring animation every time modal opens
-    const card = loginModal.querySelector('.login-modal-card');
-    if (card) {
-      // Strip animation, force reflow, then restore so keyframe fires fresh
-      card.style.animation = 'none';
-      void card.offsetWidth; // reflow
-      card.style.animation = '';
-    }
-
-    // Auto-focus the login-username field after animation settles
-    setTimeout(() => {
-      const userField = document.getElementById('login-username');
-      if (userField) userField.focus();
-    }, 280);
-  }
-
-  function hideLoginModal() {
-    loginModal.classList.remove('active');
-    loginForm.reset();
-    
-    // Reset password input type and eye icon visibility
-    const passField = document.getElementById('login-password');
-    if (passField) passField.setAttribute('type', 'password');
-    
-    const toggleEye = document.getElementById('eye-icon');
-    if (toggleEye) {
-      toggleEye.innerHTML = `
-        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
-        <circle cx="12" cy="12" r="3"/>
-      `;
-    }
-  }
-
-  const handleCloseLogin = () => {
-    if (history.state && history.state.pageId === 'login') {
-      history.back();
-    } else {
-      switchPage('welcome');
-    }
-  };
-
-  btnOpenLogin.addEventListener('click', () => switchPage('login'));
-  if (btnWelcomeLogin) {
-    btnWelcomeLogin.addEventListener('click', () => switchPage('login'));
-  }
-  btnCloseModal.addEventListener('click', handleCloseLogin);
-  btnCancelLogin.addEventListener('click', handleCloseLogin);
-
-  // Password Visibility Toggle
-  const btnTogglePassword = document.getElementById('btn-toggle-password');
-  const loginPassword = document.getElementById('login-password');
-  const eyeIcon = document.getElementById('eye-icon');
-
-  if (btnTogglePassword && loginPassword && eyeIcon) {
-    btnTogglePassword.addEventListener('click', () => {
-      const type = loginPassword.getAttribute('type') === 'password' ? 'text' : 'password';
-      loginPassword.setAttribute('type', type);
-      
-      if (type === 'text') {
-        eyeIcon.innerHTML = `
-          <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/>
-          <line x1="1" y1="1" x2="23" y2="23"/>
-        `;
-      } else {
-        eyeIcon.innerHTML = `
-          <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
-          <circle cx="12" cy="12" r="3"/>
-        `;
-      }
-    });
-  }
 
   // Keyboard Submission: Enter Key Event Listener
   const loginUsername = document.getElementById('login-username');
+  const loginPassword = document.getElementById('login-password');
   if (loginUsername && loginPassword) {
     const handleEnterKey = (e) => {
       if (e.key === 'Enter') {
@@ -1920,9 +1837,6 @@ document.addEventListener('DOMContentLoaded', () => {
       loginErrorMsg.style.display = 'block';
     }
 
-    const rememberCheckbox = document.getElementById('login-remember');
-    const remember = rememberCheckbox ? rememberCheckbox.checked : false;
-
     // Direct server credential match check
     try {
       const res = await apiClient.request('/api/login', {
@@ -1947,7 +1861,7 @@ document.addEventListener('DOMContentLoaded', () => {
           userId: data.userId || user,
           sessionToken: data.sessionToken,
           expiresAt: Date.now() + 7 * 24 * 60 * 60 * 1000,
-          remember: remember
+          remember: false
         };
         localStorage.setItem('isLoggedIn', 'true');
         localStorage.setItem('userCardData', JSON.stringify(cardData));
@@ -1972,21 +1886,15 @@ document.addEventListener('DOMContentLoaded', () => {
       history.pushState({ pageId }, '', `#${pageId}`);
     }
 
-    if (pageId === 'welcome') {
+    if (pageId === 'welcome' || pageId === 'login') {
       if (localStorage.getItem('isLoggedIn') === 'true') {
         performLogout();
       }
       pageWelcome.style.display = 'block';
       pageDashboard.style.display = 'none';
-      hideLoginModal();
-    } else if (pageId === 'login') {
-      pageWelcome.style.display = 'block';
-      pageDashboard.style.display = 'none';
-      showLoginModal();
     } else if (pageId === 'dashboard') {
       pageWelcome.style.display = 'none';
       pageDashboard.style.display = 'flex';
-      hideLoginModal();
 
       // Set sector theme color dynamically on login transition
       updateThemeColor(currentSector);
@@ -9937,8 +9845,7 @@ document.addEventListener('DOMContentLoaded', () => {
       console.log("[App Lifecycle] Caching DOM elements...");
       this.DOM = {
         pageWelcome: document.getElementById('page-welcome'),
-        pageDashboard: document.getElementById('page-dashboard'),
-        loginModal: document.getElementById('login-modal')
+        pageDashboard: document.getElementById('page-dashboard')
       };
     },
 
@@ -10005,14 +9912,8 @@ document.addEventListener('DOMContentLoaded', () => {
       if (this.DOM.pageWelcome) this.DOM.pageWelcome.style.display = 'block';
       if (this.DOM.pageDashboard) this.DOM.pageDashboard.style.display = 'none';
 
-      const hash = window.location.hash;
-      if (hash === '#login') {
-        showLoginModal();
-      } else {
-        if (window.location.hash !== '#welcome') {
-          window.history.replaceState({ pageId: 'welcome' }, '', '#welcome');
-        }
-        hideLoginModal();
+      if (window.location.hash !== '#welcome' && window.location.hash !== '#login') {
+        window.history.replaceState({ pageId: 'welcome' }, '', '#welcome');
       }
     },
 
@@ -10034,7 +9935,6 @@ document.addEventListener('DOMContentLoaded', () => {
       
       if (this.DOM.pageWelcome) this.DOM.pageWelcome.style.display = 'none';
       if (this.DOM.pageDashboard) this.DOM.pageDashboard.style.display = 'flex';
-      hideLoginModal();
 
       this.handleRouting();
     },
