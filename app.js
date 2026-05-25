@@ -1,11 +1,25 @@
 // Expose currentLang to window for inline onclick attributes
 var currentLang = localStorage.getItem('vertex_lang') || 'tr';
 var currentAuraMode = 'dataset'; // 'dataset' | 'performance' | 'strategy'
+var currentVizView = 'default'; // 'default' | 'weights' | 'goal'
+
 
 const translations = {
   site_title: {
     tr: "ANL Vertex - Denetimli Makine Öğrenimi Portalı",
     en: "ANL Vertex - Supervised Machine Learning Portal"
+  },
+  btn_viz_default: {
+    tr: "Sektör Modeli",
+    en: "Sector Model"
+  },
+  btn_viz_weights: {
+    tr: "Ağırlık Dağılımı",
+    en: "Feature Weights"
+  },
+  btn_viz_goal: {
+    tr: "Tahmin Hedefi",
+    en: "Prediction Goal"
   },
   btn_login: {
     tr: "Giriş Yap",
@@ -1689,11 +1703,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (pageDashboard.style.display !== 'none') {
       updateDashboardLanguageSpecifics();
-      renderDatabaseTable();
-      evaluateMLModel();
-      renderXaiWeights();
-      updateWhatIfComparison();
-      initAuraChat();
+      setupSectorDashboard();
       if (typeof refreshAutoMLOutputs === 'function') {
         refreshAutoMLOutputs();
       }
@@ -2882,6 +2892,80 @@ document.addEventListener('DOMContentLoaded', () => {
         <th>${currentLang === 'tr' ? 'İndirim Etkisi' : 'Discount Effect'}</th>
         <th>${currentLang === 'tr' ? 'Müşteri Segmenti' : 'Customer Segment'}</th>
         <th>✉️</th>
+      `;
+    }
+
+    // Update active button classes on visual controller
+    const btnDefault = document.getElementById('btn-viz-default');
+    const btnWeights = document.getElementById('btn-viz-weights');
+    const btnGoal = document.getElementById('btn-viz-goal');
+    if (btnDefault) btnDefault.classList.toggle('active', currentVizView === 'default');
+    if (btnWeights) btnWeights.classList.toggle('active', currentVizView === 'weights');
+    if (btnGoal) btnGoal.classList.toggle('active', currentVizView === 'goal');
+
+    // Overwrite visualizer content if view is not default
+    if (currentVizView === 'weights') {
+      const activeSector = currentSector || 'vakif';
+      const weights = SectorManager.getFeatureWeighting(activeSector);
+      
+      const vizTitleEl = document.getElementById('viz-title');
+      const vizDescEl = document.getElementById('viz-desc');
+      if (vizTitleEl) {
+        vizTitleEl.textContent = currentLang === 'tr' ? "Model Öznitelik Ağırlıkları" : "Model Feature Weights";
+      }
+      if (vizDescEl) {
+        vizDescEl.textContent = currentLang === 'tr' 
+          ? "Aktif sektöre ait makine öğrenimi tahmin modelinde kullanılan değişken katsayılarının önem dereceleri." 
+          : "Importance levels of variable coefficients used in the active sector's machine learning prediction model.";
+      }
+
+      let weightsHtml = `<div style="display: flex; flex-direction: column; gap: 1.2rem; width: 100%; padding: 1.5rem; box-sizing: border-box; background: rgba(0,0,0,0.15); border-radius: 12px; border: 1px solid var(--border-color);">`;
+      for (let key in weights) {
+        const pct = Math.round(weights[key] * 100);
+        weightsHtml += `
+          <div>
+            <div style="display: flex; justify-content: space-between; font-size: 0.85rem; margin-bottom: 0.3rem;">
+              <strong style="text-transform: uppercase; color: var(--primary);">${key}</strong>
+              <span style="color: var(--text-secondary); font-weight: bold;">%${pct}</span>
+            </div>
+            <div style="height: 10px; background: rgba(255,255,255,0.05); border-radius: 5px; overflow: hidden; border:1px solid var(--border-color)">
+              <div style="height: 100%; width: ${pct}%; background: linear-gradient(90deg, var(--primary), var(--secondary)); border-radius: 5px; transition: var(--transition-smooth);"></div>
+            </div>
+          </div>
+        `;
+      }
+      weightsHtml += `</div>`;
+      vizContentBox.innerHTML = weightsHtml;
+
+    } else if (currentVizView === 'goal') {
+      const activeSector = currentSector || 'vakif';
+      const goalText = SectorManager.getPredictionGoal(activeSector, currentLang);
+      
+      const vizTitleEl = document.getElementById('viz-title');
+      const vizDescEl = document.getElementById('viz-desc');
+      if (vizTitleEl) {
+        vizTitleEl.textContent = currentLang === 'tr' ? "Sektörel Öngörü Hedefi" : "Sectoral Prediction Goal";
+      }
+      if (vizDescEl) {
+        vizDescEl.textContent = currentLang === 'tr' 
+          ? "Bu modelin gerçekleştirmek üzere tasarlandığı analitik tahmin ve iş zekası hedefi." 
+          : "The analytical prediction and business intelligence goal that this model is designed to achieve.";
+      }
+
+      vizContentBox.innerHTML = `
+        <div class="glass-card" style="padding: 2rem; width: 100%; text-align: center; border-radius: 14px; border: 1px dashed var(--border-color); background: rgba(255, 255, 255, 0.01); box-sizing: border-box; display: flex; flex-direction: column; justify-content: center; align-items: center; min-height: 200px;">
+          <h4 style="color: var(--secondary); margin-bottom: 0.8rem; font-size: 1.1rem; text-transform: uppercase; letter-spacing: 0.05em;">
+            ${currentLang === 'tr' ? 'Tahmin Hedefi' : 'Prediction Goal'}
+          </h4>
+          <div style="font-size: 1.1rem; font-weight: 700; color: var(--text-primary); margin: 1rem 0; padding: 0.8rem 1.2rem; background: rgba(0,0,0,0.25); border-radius: 8px; border: 1px solid var(--border-color); width: 100%; box-sizing: border-box;">
+            ${goalText}
+          </div>
+          <p style="font-size: 0.85rem; color: var(--text-muted); line-height: 1.6; margin-top: 0.5rem; max-width: 90%;">
+            ${currentLang === 'tr' 
+              ? 'Yapay zeka denetimli modelimiz, geçmiş etiketli verilerinizden en uygun ağırlıkları öğreterek bu hedefi gerçek zamanlı tahmin eder.'
+              : 'Our AI-supervised model predicts this goal in real-time by training optimal weights from your historical labeled data.'}
+          </p>
+        </div>
       `;
     }
 
@@ -11250,190 +11334,285 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // ANL Vertex Supervised Learning Engine Implementation
-  const SupervisedMLEngine = {
-    sectorConfigurations: {
+  // SectorManager holds configurations and goals/weightings for each sector
+  const SectorManager = {
+    configurations: {
       vakif: {
+        predictionGoal: {
+          tr: "Probability/Segment Classification (Gözetimli Sınıflandırma)",
+          en: "Probability/Segment Classification (Supervised Classification)"
+        },
+        featureWeighting: { credit: 0.7, income: 0.3 },
         requiredColumns: ['Name', 'Income', 'CreditScore'],
-        coefficients: { credit: 0.7, income: 0.3 },
         predict: function(income, creditScore) {
           let score = (parseFloat(creditScore) * 0.7) + (parseFloat(income) / 1000 * 0.3);
-          if (score > 600) return "Düşük Risk (Onaylandı)";
-          if (score > 400) return "Orta Risk (İnceleme)";
-          return "Yüksek Risk (Reddedildi)";
+          if (score > 600) return currentLang === 'tr' ? "Düşük Risk (Onaylandı)" : "Low Risk (Approved)";
+          if (score > 400) return currentLang === 'tr' ? "Orta Risk (İnceleme)" : "Medium Risk (Review)";
+          return currentLang === 'tr' ? "Yüksek Risk (Reddedildi)" : "High Risk (Rejected)";
         }
       },
       egitim: {
+        predictionGoal: {
+          tr: "Probability/Segment Classification (Gözetimli Sınıflandırma)",
+          en: "Probability/Segment Classification (Supervised Classification)"
+        },
+        featureWeighting: { attendance: 0.6, study: 0.4 },
         requiredColumns: ['Name', 'Income', 'CreditScore'],
-        coefficients: { attendance: 0.6, study: 0.4 },
         predict: function(income, creditScore) {
           let score = (parseFloat(creditScore) * 0.6) + (parseFloat(income) / 100 * 0.4);
-          if (score > 400) return "Başarılı (Düşük Risk)";
-          if (score > 250) return "Sınırda (Orta Risk)";
-          return "Destek Gerekli (Yüksek Risk)";
+          if (score > 400) return currentLang === 'tr' ? "Başarılı (Düşük Risk)" : "Successful (Low Risk)";
+          if (score > 250) return currentLang === 'tr' ? "Sınırda (Orta Risk)" : "Borderline (Medium Risk)";
+          return currentLang === 'tr' ? "Destek Gerekli (Yüksek Risk)" : "Support Required (High Risk)";
         }
       },
       gida: {
+        predictionGoal: {
+          tr: "Daily Demand Forecast (Regresyon)",
+          en: "Daily Demand Forecast (Regression)"
+        },
+        featureWeighting: { rating: 0.5, orderVolume: 0.5 },
         requiredColumns: ['Name', 'Income', 'CreditScore'],
-        coefficients: { rating: 0.5, orderVolume: 0.5 },
         predict: function(income, creditScore) {
           let score = (parseFloat(creditScore) * 0.5) + (parseFloat(income) / 10 * 0.5);
-          if (score > 500) return "Yüksek Talep (Onaylandı)";
-          if (score > 300) return "Normal Talep (İnceleme)";
-          return "Düşük Talep (Reddedildi)";
+          if (score > 500) return currentLang === 'tr' ? "Yüksek Talep (Onaylandı)" : "High Demand (Approved)";
+          if (score > 300) return currentLang === 'tr' ? "Normal Talep (İnceleme)" : "Normal Demand (Review)";
+          return currentLang === 'tr' ? "Düşük Talep (Reddedildi)" : "Low Demand (Rejected)";
         }
       },
       lojistik: {
+        predictionGoal: {
+          tr: "ETA/Delay Risk (Regresyon)",
+          en: "ETA/Delay Risk (Regression)"
+        },
+        featureWeighting: { delay: 0.8, distance: 0.2 },
         requiredColumns: ['Name', 'Income', 'CreditScore'],
-        coefficients: { delay: 0.8, distance: 0.2 },
         predict: function(income, creditScore) {
           let score = (parseFloat(creditScore) * 0.8) + (parseFloat(income) / 1000 * 0.2);
-          if (score > 500) return "Zamanında Teslimat (Düşük Risk)";
-          if (score > 350) return "Gecikme Olası (Orta Risk)";
-          return "Kritik Gecikme (Yüksek Risk)";
+          if (score > 500) return currentLang === 'tr' ? "Zamanında Teslimat (Düşük Risk)" : "On Time Delivery (Low Risk)";
+          if (score > 350) return currentLang === 'tr' ? "Gecikme Olası (Orta Risk)" : "Delay Likely (Medium Risk)";
+          return currentLang === 'tr' ? "Kritik Gecikme (Yüksek Risk)" : "Critical Delay (High Risk)";
         }
       },
       tekstil: {
+        predictionGoal: {
+          tr: "Probability/Segment Classification (Gözetimli Sınıflandırma)",
+          en: "Probability/Segment Classification (Supervised Classification)"
+        },
+        featureWeighting: { frequency: 0.6, basket: 0.4 },
         requiredColumns: ['Name', 'Income', 'CreditScore'],
-        coefficients: { frequency: 0.6, basket: 0.4 },
         predict: function(income, creditScore) {
           let score = (parseFloat(creditScore) * 0.6) + (parseFloat(income) / 100 * 0.4);
-          if (score > 600) return "Premium Segment (Düşük Risk)";
-          if (score > 300) return "Standart Segment (Orta Risk)";
-          return "Pasif Segment (Yüksek Risk)";
+          if (score > 600) return currentLang === 'tr' ? "Premium Segment (Düşük Risk)" : "Premium Segment (Low Risk)";
+          if (score > 300) return currentLang === 'tr' ? "Standart Segment (Orta Risk)" : "Standard Segment (Medium Risk)";
+          return currentLang === 'tr' ? "Pasif Segment (Yüksek Risk)" : "Passive Segment (High Risk)";
         }
       },
       default: {
+        predictionGoal: {
+          tr: "Probability/Segment Classification (Gözetimli Sınıflandırma)",
+          en: "Probability/Segment Classification (Supervised Classification)"
+        },
+        featureWeighting: { defaultCredit: 0.5, defaultIncome: 0.5 },
         requiredColumns: ['Name', 'Income', 'CreditScore'],
-        coefficients: { defaultCredit: 0.5, defaultIncome: 0.5 },
         predict: function(income, creditScore) {
           let score = (parseFloat(creditScore) * 0.5) + (parseFloat(income) / 1000 * 0.5);
-          if (score > 500) return "Düşük Risk (Onaylandı)";
-          if (score > 300) return "Orta Risk (İnceleme)";
-          return "Yüksek Risk (Reddedildi)";
+          if (score > 500) return currentLang === 'tr' ? "Düşük Risk (Onaylandı)" : "Low Risk (Approved)";
+          if (score > 300) return currentLang === 'tr' ? "Orta Risk (İnceleme)" : "Medium Risk (Review)";
+          return currentLang === 'tr' ? "Yüksek Risk (Reddedildi)" : "High Risk (Rejected)";
         }
       }
     },
 
-    validateDataset: function(data, sector) {
-        if (!data || data.length === 0) return false;
-        const config = this.sectorConfigurations[sector] || this.sectorConfigurations.default;
-        const required = config.requiredColumns || [];
-        
-        const firstRow = data[0];
-        const keys = Object.keys(firstRow).map(k => k.toLowerCase().trim());
-        
-        return required.every(col => keys.includes(col.toLowerCase().trim()));
+    getPredictionGoal: function(sector, lang) {
+      const config = this.configurations[sector] || this.configurations.default;
+      return config.predictionGoal[lang || 'tr'];
     },
 
-    predictRisk: function(income, creditScore, sector) {
-        const config = this.sectorConfigurations[sector] || this.sectorConfigurations.default;
-        return config.predict(income, creditScore);
+    getFeatureWeighting: function(sector) {
+      const config = this.configurations[sector] || this.configurations.default;
+      return config.featureWeighting;
+    }
+  };
+
+  // MultiSectorEngine dynamically switches logic based on dash-sector-badge content
+  const MultiSectorEngine = {
+    getSector: function() {
+      const badge = document.getElementById('dash-sector-badge');
+      if (!badge) return 'vakif';
+      
+      const dataSector = badge.getAttribute('data-sector');
+      if (dataSector && SectorManager.configurations[dataSector]) {
+        return dataSector;
+      }
+      
+      const content = badge.textContent.toLowerCase();
+      if (content.includes('vakif') || content.includes('dernek') || content.includes('charit') || content.includes('association') || content.includes('vakıf')) return 'vakif';
+      if (content.includes('egitim') || content.includes('öğrenci') || content.includes('educat') || content.includes('eğitim')) return 'egitim';
+      if (content.includes('gida') || content.includes('yemek') || content.includes('food') || content.includes('gıda')) return 'gida';
+      if (content.includes('lojistik') || content.includes('ulaşım') || content.includes('transport') || content.includes('logistics') || content.includes('ulașım')) return 'lojistik';
+      if (content.includes('tekstil') || content.includes('perakende') || content.includes('textile')) return 'tekstil';
+      
+      return 'vakif';
+    },
+
+    validateDataset: function(data) {
+      if (!data || data.length === 0) return false;
+      const sector = this.getSector();
+      const config = SectorManager.configurations[sector] || SectorManager.configurations.default;
+      const required = config.requiredColumns || [];
+      
+      const firstRow = data[0];
+      const keys = Object.keys(firstRow).map(k => k.toLowerCase().trim());
+      
+      return required.every(col => keys.includes(col.toLowerCase().trim()));
+    },
+
+    predictRisk: function(income, creditScore) {
+      const sector = this.getSector();
+      const config = SectorManager.configurations[sector] || SectorManager.configurations.default;
+      return config.predict(income, creditScore);
     },
 
     processDataset: function(data) {
-        const badge = document.getElementById('dash-sector-badge');
-        const activeSector = (badge ? badge.getAttribute('data-sector') : null) || 'default';
+      const activeSector = this.getSector();
 
-        // Validate dataset columns match selected sector requirements
-        if (!this.validateDataset(data, activeSector)) {
-            alert(currentLang === 'tr' 
-              ? `Hata: Yüklenen veri kümesi sütunları seçilen sektörün (${activeSector.toUpperCase()}) gereksinimleri ile eşleşmiyor!` 
-              : `Error: Uploaded dataset columns do not match the requirements of the selected sector (${activeSector.toUpperCase()})!`
-            );
-            return;
-        }
+      // Validate dataset columns match selected sector requirements
+      if (!this.validateDataset(data)) {
+          alert(currentLang === 'tr' 
+            ? `Hata: Yüklenen veri kümesi sütunları seçilen sektörün (${activeSector.toUpperCase()}) gereksinimleri ile eşleşmiyor!` 
+            : `Error: Uploaded dataset columns do not match the requirements of the selected sector (${activeSector.toUpperCase()})!`
+          );
+          return;
+      }
 
-        const tableBody = document.getElementById('table-body');
-        if (tableBody) {
-            tableBody.innerHTML = ''; // Temizle
-            data.forEach(row => {
-                const risk = this.predictRisk(row.Income, row.CreditScore, activeSector);
-                const tr = document.createElement('tr');
-                tr.innerHTML = `
-                    <td><strong>${row.Name || 'Client'}</strong></td>
-                    <td>${row.Income || 0}</td>
-                    <td>${row.CreditScore || 0}</td>
-                    <td><span class="badge badge-success">${risk}</span></td>
-                    <td><button class="btn-primary" style="padding: 0.3rem 0.6rem; font-size: 0.85rem;" onclick="openEmailModal('${(row.Name || 'Client').replace(/'/g, "\\'")}', '${row.email || ((row.Name || 'Client').toLowerCase().replace(/[^a-z0-9]/g, '') + '@example.com')}')">✉️</button></td>
-                `;
-                tableBody.appendChild(tr);
-            });
-        }
-        this.updateBusinessInsights(data, activeSector);
-        
-        // Push insights to #dash-output-result element
-        const outResult = document.getElementById('dash-output-result');
-        if (outResult && data.length > 0) {
-            let lowCount = 0, midCount = 0, highCount = 0;
-            data.forEach(row => {
-                const risk = this.predictRisk(row.Income, row.CreditScore, activeSector);
-                if (risk.includes("Düşük") || risk.includes("Başarılı") || risk.includes("Premium") || risk.includes("Zamanında") || risk.includes("Yüksek Talep")) lowCount++;
-                else if (risk.includes("Orta") || risk.includes("Sınırda") || risk.includes("Normal") || risk.includes("Gecikme Olası") || risk.includes("Standart")) midCount++;
-                else highCount++;
-            });
-            outResult.textContent = currentLang === 'tr'
-              ? `Analiz Sonucu: ${lowCount} Düşük, ${midCount} Orta, ${highCount} Yüksek Risk`
-              : `Analysis Result: ${lowCount} Low, ${midCount} Medium, ${highCount} High Risk`;
-        }
+      const tableBody = document.getElementById('table-body');
+      if (tableBody) {
+          tableBody.innerHTML = ''; // Temizle
+          data.forEach(row => {
+              const risk = this.predictRisk(row.Income, row.CreditScore);
+              const tr = document.createElement('tr');
+              tr.innerHTML = `
+                  <td><strong>${row.Name || 'Client'}</strong></td>
+                  <td>${row.Income || 0}</td>
+                  <td>${row.CreditScore || 0}</td>
+                  <td><span class="badge badge-success">${risk}</span></td>
+                  <td><button class="btn-primary" style="padding: 0.3rem 0.6rem; font-size: 0.85rem;" onclick="openEmailModal('${(row.Name || 'Client').replace(/'/g, "\\'")}', '${row.email || ((row.Name || 'Client').toLowerCase().replace(/[^a-z0-9]/g, '') + '@example.com')}')">✉️</button></td>
+              `;
+              tableBody.appendChild(tr);
+          });
+      }
+      this.updateBusinessInsights(data, activeSector);
+      
+      // Push insights to #dash-output-result element
+      const outResult = document.getElementById('dash-output-result');
+      if (outResult && data.length > 0) {
+          let lowCount = 0, midCount = 0, highCount = 0;
+          data.forEach(row => {
+              const risk = this.predictRisk(row.Income, row.CreditScore);
+              if (risk.includes("Düşük") || risk.includes("Başarılı") || risk.includes("Premium") || risk.includes("Zamanında") || risk.includes("Yüksek Talep") || risk.includes("Successful") || risk.includes("Low Risk") || risk.includes("On Time") || risk.includes("High Demand")) lowCount++;
+              else if (risk.includes("Orta") || risk.includes("Sınırda") || risk.includes("Normal") || risk.includes("Gecikme Olası") || risk.includes("Standart") || risk.includes("Medium Risk") || risk.includes("Review") || risk.includes("Standard")) midCount++;
+              else highCount++;
+          });
+          outResult.textContent = currentLang === 'tr'
+            ? `Analiz Sonucu: ${lowCount} Düşük, ${midCount} Orta, ${highCount} Yüksek Risk`
+            : `Analysis Result: ${lowCount} Low, ${midCount} Medium, ${highCount} High Risk`;
+      }
     },
 
     updateBusinessInsights: function(data, sector) {
-        const actionsBox = document.getElementById('recommended-actions-box');
-        if (actionsBox) {
-            if (sector === 'vakif') {
-                actionsBox.innerHTML = `
-                    <li>Yüksek riskli bağışçılar için doğrudan sadakat ve destek programları başlatın.</li>
-                    <li>Geliri 100.000 TL üzeri olan bağışçılara 'Platinum VIP' statüsü tanımlayın.</li>
-                    <li>Model tahminlerine göre gelecek dönem bağış hacim tahminlerini güncelleyin.</li>
-                `;
-            } else if (sector === 'egitim') {
-                actionsBox.innerHTML = `
-                    <li>Kritik risk düzeyindeki öğrenciler için ek etüt ve birebir rehberlik atayın.</li>
-                    <li>Sınav puanı 85 üzeri olan öğrencileri özel akademik mentörlük grubuna ekleyin.</li>
-                    <li>Ders devam oranı %75 altında kalan velilere bilgilendirme SMS'i gönderin.</li>
-                `;
-            } else if (sector === 'gida') {
-                actionsBox.innerHTML = `
-                    <li>Düşük talep riski taşıyan restoranlar için bölgesel promosyon planları yapın.</li>
-                    <li>Puanı 4.5 üzeri olan restoranları 'Vertex Premium Partner' olarak öne çıkarın.</li>
-                    <li>Tahmin modeline uygun olarak tedarik zinciri stok optimizasyonunu çalıştırın.</li>
-                `;
-            } else if (sector === 'lojistik') {
-                actionsBox.innerHTML = `
-                    <li>Gecikme olasılığı yüksek olan rotalar için alternatif kurye ataması yapın.</li>
-                    <li>Mesafe uzunluğu 100 km üzeri olan teslimatlara ek yakıt desteği planlayın.</li>
-                    <li>Kritik gecikme riski taşıyan müşterileri otomatik olarak bilgilendirin.</li>
-                `;
-            } else if (sector === 'tekstil') {
-                actionsBox.innerHTML = `
-                    <li>Pasif müşteri segmentine özel geri kazanım indirim kuponları tanımlayın.</li>
-                    <li>Aylık alışveriş sıklığı 15 üzeri olan müşterilere sadakat puanı yükleyin.</li>
-                    <li>Premium segment müşterileri için yeni sezon öncelikli satış kampanyası yapın.</li>
-                `;
-            } else {
-                actionsBox.innerHTML = `
-                    <li>Yüksek riskli müşteriler için kredi limitini %20 düşürün.</li>
-                    <li>Geliri 50.000 TL üzeri olan müşterilere 'Premium' segmenti tanımlayın.</li>
-                    <li>Tahminleme modeline göre gelecek ay stokları optimize edin.</li>
-                `;
-            }
-        }
+      const actionsBox = document.getElementById('recommended-actions-box');
+      if (actionsBox) {
+          if (sector === 'vakif') {
+              actionsBox.innerHTML = `
+                  <li>Yüksek riskli bağışçılar için doğrudan sadakat ve destek programları başlatın.</li>
+                  <li>Geliri 100.000 TL üzeri olan bağışçılara 'Platinum VIP' statüsü tanımlayın.</li>
+                  <li>Model tahminlerine göre gelecek dönem bağış hacim tahminlerini güncelleyin.</li>
+              `;
+          } else if (sector === 'egitim') {
+              actionsBox.innerHTML = `
+                  <li>Kritik risk düzeyindeki öğrenciler için ek etüt ve birebir rehberlik atayın.</li>
+                  <li>Sınav puanı 85 üzeri olan öğrencileri özel akademik mentörlük grubuna ekleyin.</li>
+                  <li>Ders devam oranı %75 altında kalan velilere bilgilendirme SMS'i gönderin.</li>
+              `;
+          } else if (sector === 'gida') {
+              actionsBox.innerHTML = `
+                  <li>Düşük talep riski taşıyan restoranlar için bölgesel promosyon planları yapın.</li>
+                  <li>Puanı 4.5 üzeri olan restoranları 'Vertex Premium Partner' olarak öne çıkarın.</li>
+                  <li>Tahmin modeline uygun olarak tedarik zinciri stok optimizasyonunu çalıştırın.</li>
+              `;
+          } else if (sector === 'lojistik') {
+              actionsBox.innerHTML = `
+                  <li>Gecikme olasılığı yüksek olan rotalar için alternatif kurye ataması yapın.</li>
+                  <li>Mesafe uzunluğu 100 km üzeri olan teslimatlara ek yakıt desteği planlayın.</li>
+                  <li>Kritik gecikme riski taşıyan müşterileri otomatik olarak bilgilendirin.</li>
+              `;
+          } else if (sector === 'tekstil') {
+              actionsBox.innerHTML = `
+                  <li>Pasif müşteri segmentine özel geri kazanım indirim kuponları tanımlayın.</li>
+                  <li>Aylık alışveriş sıklığı 15 üzeri olan müşterilere sadakat puanı yükleyin.</li>
+                  <li>Premium segment müşterileri için yeni sezon öncelikli satış kampanyası yapın.</li>
+              `;
+          } else {
+              actionsBox.innerHTML = `
+                  <li>Yüksek riskli müşteriler için kredi limitini %20 düşürün.</li>
+                  <li>Geliri 50.000 TL üzeri olan müşterilere 'Premium' segmenti tanımlayın.</li>
+                  <li>Tahminleme modeline göre gelecek ay stokları optimize edin.</li>
+              `;
+          }
+      }
     }
   };
+
+  // Bind visual controller buttons to handle views switching
+  function bindVisualControllerEvents() {
+    const btnDefault = document.getElementById('btn-viz-default');
+    const btnWeights = document.getElementById('btn-viz-weights');
+    const btnGoal = document.getElementById('btn-viz-goal');
+
+    const updateActiveButton = (activeBtn) => {
+      [btnDefault, btnWeights, btnGoal].forEach(btn => {
+        if (btn) btn.classList.remove('active');
+      });
+      if (activeBtn) activeBtn.classList.add('active');
+    };
+
+    if (btnDefault) {
+      btnDefault.addEventListener('click', () => {
+        currentVizView = 'default';
+        updateActiveButton(btnDefault);
+        setupSectorDashboard();
+      });
+    }
+    if (btnWeights) {
+      btnWeights.addEventListener('click', () => {
+        currentVizView = 'weights';
+        updateActiveButton(btnWeights);
+        setupSectorDashboard();
+      });
+    }
+    if (btnGoal) {
+      btnGoal.addEventListener('click', () => {
+        currentVizView = 'goal';
+        updateActiveButton(btnGoal);
+        setupSectorDashboard();
+      });
+    }
+  }
 
   // Event listener integration
   if (btnAnalyzeDataset) {
     btnAnalyzeDataset.addEventListener('click', () => {
-        // Örnek veri girişi (Veri yüklendiğinde burası dinamikleşecek)
         const mockData = [{ Name: "Ahmet Yilmaz", Income: 45000, CreditScore: 720 }, { Name: "Canan Oz", Income: 12000, CreditScore: 580 }];
         const dataToProcess = (typeof activeDashboardRawData !== 'undefined' && activeDashboardRawData && activeDashboardRawData.length > 0)
           ? activeDashboardRawData
           : mockData;
-        SupervisedMLEngine.processDataset(dataToProcess);
+        MultiSectorEngine.processDataset(dataToProcess);
         triggerPipelinePulse();
     });
   }
+
+  // Bind the controller events globally
+  bindVisualControllerEvents();
 
   // Initialize App Lifecycle
   App.init();
