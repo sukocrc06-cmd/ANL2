@@ -1838,17 +1838,17 @@ document.addEventListener('DOMContentLoaded', () => {
   const loginErrorMsg = document.getElementById('login-error');
 
   // Generated Access Card components
-  const tempCard = document.getElementById('temp-card');
-  const tempUsernameInput = document.getElementById('temp-username');
-  const tempPasswordInput = document.getElementById('temp-password');
-  const tempCardSector = document.getElementById('temp-card-sector');
-  const countdownTimer = document.getElementById('countdown-timer');
-  const timerProgress = document.getElementById('timer-progress');
-  const btnAutoLogin = document.getElementById('btn-auto-login');
+  const tempCard = document.getElementById('temp-card') || document.createElement('div');
+  const tempUsernameInput = document.getElementById('temp-username') || document.createElement('input');
+  const tempPasswordInput = document.getElementById('temp-password') || document.createElement('input');
+  const tempCardSector = document.getElementById('temp-card-sector') || document.createElement('span');
+  const countdownTimer = document.getElementById('countdown-timer') || document.createElement('div');
+  const timerProgress = document.getElementById('timer-progress') || document.createElement('div');
+  const btnAutoLogin = document.getElementById('btn-auto-login') || document.createElement('button');
 
   // Copy Buttons
-  const btnCopyUsername = document.getElementById('btn-copy-username');
-  const btnCopyPassword = document.getElementById('btn-copy-password');
+  const btnCopyUsername = document.getElementById('btn-copy-username') || document.createElement('button');
+  const btnCopyPassword = document.getElementById('btn-copy-password') || document.createElement('button');
 
   // ================= STATE 1: ACCESS CARD GENERATION & TIMER =================
 
@@ -1911,7 +1911,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const username = sanitizeUsername(company);
     const password = generatePassword(10);
     const duration = 10 * 60; // 10 minutes in seconds
-    let secondsLeft = duration;
 
     // Store globally
     tempCredentials = {
@@ -1922,7 +1921,7 @@ document.addEventListener('DOMContentLoaded', () => {
       expiresAt: Date.now() + (duration * 1000)
     };
 
-    // Register card on the server
+    // Register card on the server and auto-login
     apiClient.request('/api/create-card', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -1932,58 +1931,52 @@ document.addEventListener('DOMContentLoaded', () => {
         company,
         sector
       })
-    }).catch(err => console.error('Error creating card on server:', err));
+    })
+    .then(() => {
+      const cardData = {
+        username: username,
+        password: password,
+        company: company,
+        sector: sector,
+        userId: username,
+        sessionToken: 'token_' + username + '_' + Date.now(),
+        expiresAt: tempCredentials.expiresAt,
+        remember: true
+      };
+      localStorage.setItem('isLoggedIn', 'true');
+      localStorage.setItem('userCardData', JSON.stringify(cardData));
+      sessionStorage.setItem('sessionActive', 'true');
 
-    // Populate Access Card UI
-    tempUsernameInput.value = username;
-    tempPasswordInput.value = password;
-    
-    tempCardSector.textContent = sectorLabelsCard[currentLang][sector];
-    tempCardSector.className = `badge badge-success`; // consistent style
-
-    // Show Card
-    tempCard.style.display = 'block';
-
-    // Generate QR Code containing login link
-    const loginUrl = `${window.location.origin}${window.location.pathname}?qrLogin=true&u=${encodeURIComponent(username)}&p=${encodeURIComponent(password)}&s=${encodeURIComponent(sector)}&c=${encodeURIComponent(company)}`;
-    document.getElementById('qrcode-container').innerHTML = '';
-    new QRCode(document.getElementById('qrcode-container'), {
-      text: loginUrl,
-      width: 130,
-      height: 130,
-      colorDark: '#000000',
-      colorLight: '#ffffff',
-      correctLevel: QRCode.CorrectLevel.M
+      // Send activation to server
+      apiClient.request('/api/activate-card', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username: username })
+      })
+      .then(() => transitionToDashboard())
+      .catch(err => {
+        console.error('Error activating card on server:', err);
+        transitionToDashboard();
+      });
+    })
+    .catch(err => {
+      console.error('Error creating card on server:', err);
+      // Fallback local login if server call fails
+      const cardData = {
+        username: username,
+        password: password,
+        company: company,
+        sector: sector,
+        userId: username,
+        sessionToken: 'token_' + username + '_' + Date.now(),
+        expiresAt: tempCredentials.expiresAt,
+        remember: true
+      };
+      localStorage.setItem('isLoggedIn', 'true');
+      localStorage.setItem('userCardData', JSON.stringify(cardData));
+      sessionStorage.setItem('sessionActive', 'true');
+      transitionToDashboard();
     });
-    document.getElementById('btn-copy-login-url').setAttribute('data-url', loginUrl);
-
-    tempCard.scrollIntoView({ behavior: 'smooth' });
-
-    // Handle Countdown Timer
-    if (countdownInterval) clearInterval(countdownInterval);
-    
-    countdownTimer.textContent = '10:00';
-    timerProgress.style.width = '100%';
-    timerProgress.style.backgroundColor = 'hsl(120, 85%, 45%)'; // Reset to green
-
-    countdownInterval = setInterval(() => {
-      secondsLeft--;
-      
-      const mins = Math.floor(secondsLeft / 60);
-      const secs = secondsLeft % 60;
-      countdownTimer.textContent = `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-
-      // Update progress bar width and HSL color (120 to 0 hue)
-      const pct = (secondsLeft / duration) * 100;
-      timerProgress.style.width = `${pct}%`;
-      const hue = (secondsLeft / duration) * 120;
-      timerProgress.style.backgroundColor = `hsl(${hue}, 85%, 45%)`;
-
-      if (secondsLeft <= 0) {
-        clearInterval(countdownInterval);
-        expireCard();
-      }
-    }, 1000);
   });
 
   // Action: Expire Credentials Card
@@ -2018,7 +2011,7 @@ document.addEventListener('DOMContentLoaded', () => {
   setupCopyButton(btnCopyPassword, tempPasswordInput);
 
   // Copy Login Link button event listener
-  const btnCopyLoginUrl = document.getElementById('btn-copy-login-url');
+  const btnCopyLoginUrl = document.getElementById('btn-copy-login-url') || document.createElement('button');
   btnCopyLoginUrl.addEventListener('click', () => {
     const url = btnCopyLoginUrl.getAttribute('data-url');
     if (!url) return;
@@ -2041,7 +2034,7 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   // Download Temporary Card as PNG Image (Physical Key feel)
-  const btnDownloadCard = document.getElementById('btn-download-card');
+  const btnDownloadCard = document.getElementById('btn-download-card') || document.createElement('button');
   btnDownloadCard.addEventListener('click', () => {
     if (!tempCredentials) return;
     
