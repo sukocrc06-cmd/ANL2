@@ -12480,12 +12480,23 @@ document.addEventListener('DOMContentLoaded', () => {
     activeSector: 'vakif',
 
     init: function() {
+      // 1. Target the Right Element with a direct listener
       const startBtn = document.getElementById('btn-start-voice-simulation');
       if (startBtn) {
-        startBtn.addEventListener('click', () => {
+        startBtn.addEventListener('click', (e) => {
+          e.preventDefault();
           this.triggerLiveVoiceSimulation();
         });
       }
+
+      // Bulletproof event delegation fallback
+      document.addEventListener('click', (e) => {
+        const btn = e.target.closest('#btn-start-voice-simulation');
+        if (btn) {
+          e.preventDefault();
+          this.triggerLiveVoiceSimulation();
+        }
+      });
     },
 
     setActiveTab: function(sector) {
@@ -12522,11 +12533,16 @@ document.addEventListener('DOMContentLoaded', () => {
       sessionStorage.setItem('sessionActive', 'true');
       currentCompany = cardData.company;
 
-      // 1. Interactive Transition: Instantly toggle page visibilities (flex-container)
+      // 2. Execute Smooth UI State Transition
       const pageWelcomeEl = document.getElementById('page-welcome');
       const pageDashboardEl = document.getElementById('page-dashboard');
+      const emptyStateEl = document.getElementById('dashboard-empty-state');
+      const gridEl = document.querySelector('.dashboard-grid');
+
       if (pageWelcomeEl) pageWelcomeEl.style.display = 'none';
       if (pageDashboardEl) pageDashboardEl.style.display = 'flex';
+      if (emptyStateEl) emptyStateEl.style.display = 'none';
+      if (gridEl) gridEl.style.display = 'grid';
       hideLoginModal();
 
       // Update sector badge and company name in dashboard header
@@ -12558,7 +12574,7 @@ document.addEventListener('DOMContentLoaded', () => {
         sectorBadge.setAttribute('data-sector', sector);
       }
 
-      // Navigate to dashboard
+      // Navigate to dashboard hash
       window.location.hash = 'dashboard';
       if (typeof App !== 'undefined' && typeof App.initializeDashboardAfterLogin === 'function') {
         App.initializeDashboardAfterLogin();
@@ -12566,9 +12582,89 @@ document.addEventListener('DOMContentLoaded', () => {
         switchPage('dashboard', false);
       }
 
-      // 2. Inject Temporary Simulation Data: bypass dropzone and load mock rows (12 records)
-      const mockData = generateProceduralMockData(sector, 12);
-      processIngestedRows(mockData);
+      // 3. Populate Simulation Demo Data Streams
+      // Set active sector data list to prevent auto empty-state trigger
+      databases[sector] = generateProceduralMockData(sector, 12);
+
+      // Fill #table-body with 4-5 mock data rows matching standard columns
+      const tableBody = document.getElementById('table-body');
+      if (tableBody) {
+        tableBody.innerHTML = `
+          <tr>
+            <td><strong>Asya Global A.Ş.</strong></td>
+            <td>$450,000</td>
+            <td>%12</td>
+            <td><span class="badge badge-success">Düşük Risk / Düzenli Bağışçı</span></td>
+            <td><button class="btn-primary" style="padding: 0.3rem 0.6rem; font-size: 0.85rem;">✉️</button></td>
+          </tr>
+          <tr>
+            <td><strong>Batı Teknoloji Ltd.</strong></td>
+            <td>$180,000</td>
+            <td>%28</td>
+            <td><span class="badge badge-success">Düşük Risk / Düzenli Bağışçı</span></td>
+            <td><button class="btn-primary" style="padding: 0.3rem 0.6rem; font-size: 0.85rem;">✉️</button></td>
+          </tr>
+          <tr>
+            <td><strong>Zirve Gıda Pazarlama</strong></td>
+            <td>$95,000</td>
+            <td>%45</td>
+            <td><span class="badge badge-danger">Yüksek Risk</span></td>
+            <td><button class="btn-primary" style="padding: 0.3rem 0.6rem; font-size: 0.85rem;">✉️</button></td>
+          </tr>
+          <tr>
+            <td><strong>Yıldız Lojistik Grubu</strong></td>
+            <td>$320,000</td>
+            <td>%18</td>
+            <td><span class="badge badge-success">Düşük Risk / Düzenli Bağışçı</span></td>
+            <td><button class="btn-primary" style="padding: 0.3rem 0.6rem; font-size: 0.85rem;">✉️</button></td>
+          </tr>
+        `;
+      }
+
+      // Inject HTML into #xai-bar-chart-container to show mock feature importance bars
+      const xaiContainer = document.getElementById('xai-bar-chart-container');
+      if (xaiContainer) {
+        xaiContainer.innerHTML = `
+          <div class="xai-bar-item">
+            <div class="xai-bar-label" title="Aylık Katılım Sıklığı">Aylık Katılım Sıklığı</div>
+            <div class="xai-bar-track"><div class="xai-bar-fill" style="width: 85%;"></div></div>
+            <div class="xai-bar-value">85%</div>
+          </div>
+          <div class="xai-bar-item">
+            <div class="xai-bar-label" title="Geçmiş Bağış Tutarı">Geçmiş Bağış Tutarı</div>
+            <div class="xai-bar-track"><div class="xai-bar-fill" style="width: 65%;"></div></div>
+            <div class="xai-bar-value">65%</div>
+          </div>
+          <div class="xai-bar-item">
+            <div class="xai-bar-label" title="Üyelik Süresi">Üyelik Süresi</div>
+            <div class="xai-bar-track"><div class="xai-bar-fill" style="width: 45%;"></div></div>
+            <div class="xai-bar-value">45%</div>
+          </div>
+        `;
+      }
+
+      // Set the main prediction box text (#dash-output-result)
+      const dashOutputResult = document.getElementById('dash-output-result');
+      if (dashOutputResult) {
+        dashOutputResult.textContent = "Düşük Risk / Düzenli Bağışçı";
+        dashOutputResult.style.color = "var(--success)";
+      }
+
+      const outCard = document.getElementById('dash-output-card');
+      if (outCard) {
+        outCard.className = 'output-card approved';
+      }
+
+      const outSummary = document.getElementById('dash-output-summary');
+      if (outSummary) {
+        outSummary.textContent = "Canlı simülasyon aktif. Tahmin kalitesi ve kararlılık seviyesi yüksektir.";
+      }
+
+      // Set record count badge
+      const dbCount = document.getElementById('database-count');
+      if (dbCount) {
+        dbCount.textContent = `4 ${currentLang === 'tr' ? 'Kayıt' : 'Records'}`;
+      }
 
       // Start vocal tour after a short delay
       setTimeout(() => {
@@ -12586,25 +12682,50 @@ document.addEventListener('DOMContentLoaded', () => {
       window.speechSynthesis.cancel();
     }
     
-    // Remove all highlights
-    document.querySelectorAll('.tour-pulse').forEach(el => el.classList.remove('tour-pulse'));
+    // Remove all highlights and custom inline styles
+    document.querySelectorAll('.tour-pulse').forEach(el => {
+      el.classList.remove('tour-pulse');
+      el.style.boxShadow = '';
+      el.style.border = '';
+    });
     
     // Remove floating banner
     const banner = document.getElementById('tour-banner');
     if (banner) banner.remove();
     
-    // Wipe demo data
+    // 6. Post-Simulation Reset Logic: Flush out all mock rows, clear charts, empty prediction indicators
+    const tableBody = document.getElementById('table-body');
+    if (tableBody) tableBody.innerHTML = '';
+    
+    const xaiContainer = document.getElementById('xai-bar-chart-container');
+    if (xaiContainer) xaiContainer.innerHTML = '';
+    
+    const dashOutputResult = document.getElementById('dash-output-result');
+    if (dashOutputResult) {
+      dashOutputResult.textContent = '-';
+      dashOutputResult.style.color = '';
+    }
+
+    const outSummary = document.getElementById('dash-output-summary');
+    if (outSummary) outSummary.textContent = '';
+    
     const activeSector = currentSector || 'vakif';
     databases[activeSector] = [];
     
-    // Re-setup to empty state
-    setupSectorDashboard();
+    // Re-setup empty state dashboard
+    const emptyStateEl = document.getElementById('dashboard-empty-state');
+    const gridEl = document.querySelector('.dashboard-grid');
+    if (emptyStateEl) emptyStateEl.style.display = 'flex';
+    if (gridEl) gridEl.style.display = 'none';
+
+    // Update performance metrics
+    updatePerformanceMetrics(false, false);
     
     // Custom toast invitation
     showTourToast(
       currentLang === 'tr' 
-        ? "Aura AI Canlı Rehber Turu tamamlandı! Platformu tam kapasite test etmek için kendi .csv veya .xlsx veri setinizi yükleyebilirsiniz." 
-        : "Aura AI Live Guided Tour completed! You can now upload your own .csv or .xlsx dataset to test the platform.",
+        ? "Simülasyon tamamlandı. Kendi veri kümenizi (CSV/Excel) yükleyebilirsiniz!" 
+        : "Simulation completed. You can now upload your own dataset (CSV/Excel)!",
       "success"
     );
   }
@@ -12713,21 +12834,22 @@ document.addEventListener('DOMContentLoaded', () => {
     banner.appendChild(stopBtn);
     document.body.appendChild(banner);
     
+    // 4. Cinematic Turkish Narration Walkthrough Script (exact spoken text split sequentially)
     const steps = [
       {
         text: "ANL Vertex Canlı Analiz Simülasyonuna hoş geldiniz. Şu an sistemin ana analitik izleme panelindeyiz.",
         selector: '#page-dashboard'
       },
       {
-        text: "Hemen karşınızda duran Grafik ve Öznitelik Ağırlıkları alanı, denetimli makine öğrenimi modelimizin kararlarında hangi parametrelerin en kritik rol oynadığını şeffafça gösterir.",
+        text: "Karşınızda duran Grafik ve Öznitelik Ağırlıkları alanı, denetimli makine öğrenimi modelimizin kararlarında hangi parametrelerin en kritik rol oynadığını şeffafça gösterir.",
         selector: '#xai-bar-chart-container'
       },
       {
-        text: "Sol tarafta yer alan Performans Metrikleri paneli; modelimizin doğruluk, keskinlik ve duyarlılık skorlarını anlık hesaplayarak tahmin kalitesini doğrular.",
+        text: "Sol tarafta yer alan Performans Metrikleri paneli ise modelimizin doğruluk ve duyarlılık skorlarını anlık hesaplayarak tahmin kalitesini doğrular.",
         selector: '.performance-metrics-box'
       },
       {
-        text: "Alt kısımdaki Aksiyon Merkezi ise, Aura Yapay Zeka motorunun bu sektörel analiz sonuçlarına dayanarak firmanız için ürettiği stratejik ticari eylemleri ve feedbackleri listeler.",
+        text: "Alt kısımdaki Aksiyon Merkezi, Aura Yapay Zeka motorunun bu analize dayanarak firmanız için ürettiği stratejik ticari eylemleri listeler.",
         selector: '#recommended-actions-box'
       }
     ];
@@ -12744,18 +12866,23 @@ document.addEventListener('DOMContentLoaded', () => {
       
       const step = steps[currentStep];
       
-      // Remove pulse from all elements first
-      document.querySelectorAll('.tour-pulse').forEach(el => el.classList.remove('tour-pulse'));
+      // Clear glow styles from all elements
+      document.querySelectorAll('.tour-pulse').forEach(el => {
+        el.classList.remove('tour-pulse');
+        el.style.boxShadow = '';
+        el.style.border = '';
+      });
       
-      // Find element
+      // 5. Visual Highlight Tracking (Glow / Pulse Effect)
       const element = document.querySelector(step.selector);
       if (element) {
         element.classList.add('tour-pulse');
+        element.style.boxShadow = '0 0 20px #0ea5e9';
+        element.style.border = '2px solid #0ea5e9';
         element.scrollIntoView({ behavior: 'smooth', block: 'center' });
       }
       
       if ('speechSynthesis' in window) {
-        window.speechSynthesis.cancel(); // Cancel any ongoing speech
         const utterance = new SpeechSynthesisUtterance(step.text);
         utterance.lang = 'tr-TR';
         
@@ -12791,6 +12918,9 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     }
     
+    if ('speechSynthesis' in window) {
+      window.speechSynthesis.cancel(); // Cancel any ongoing speech synthesis requests first
+    }
     playNextStep();
   }
 
