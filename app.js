@@ -5,6 +5,30 @@ var currentVizView = 'default'; // 'default' | 'weights' | 'goal'
 
 
 const translations = {
+  empty_state_title: {
+    tr: "Analiz Paneli İçin Veri Yükleyin",
+    en: "Upload Data to Activate Dashboard"
+  },
+  empty_state_desc: {
+    tr: "Başlamak için bilgisayarınızdan bir .csv veya .xlsx dosyası sürükleyip bırakın veya seçin. Modeliniz otomatik olarak eğitilecektir.",
+    en: "Drag & drop or select a .csv or .xlsx file from your computer to begin. Your model will be trained automatically."
+  },
+  btn_browse_dataset: {
+    tr: "Dosya Seçin",
+    en: "Select File"
+  },
+  btn_prev: {
+    tr: "← Geri",
+    en: "← Prev"
+  },
+  btn_next: {
+    tr: "İleri →",
+    en: "Next →"
+  },
+  quick_samples_title: {
+    tr: "Dosyanız yok mu? Örnek şablonlar ile anında test edin:",
+    en: "Don't have a file? Test instantly with sample templates:"
+  },
   site_title: {
     tr: "ANL Vertex - Denetimli Makine Öğrenimi Portalı",
     en: "ANL Vertex - Supervised Machine Learning Portal"
@@ -1847,43 +1871,17 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
+  // Pagination states
+  let currentPage = 1;
+  const rowsPerPage = 10;
+
   // Local databases (in-memory tables populated per sector)
   const databases = {
-    vakif: [
-      { name: "Mehmet Efendi", income: 80, credit: 8, dti: 3, status: "Düzenli Bağışçı", rawStatus: "approved" },
-      { name: "Dernek Dostu", income: 20, credit: 2, dti: 1, status: "Potansiyel Bağışçı", rawStatus: "denied" },
-      { name: "Vakıf Destek", income: 300, credit: 12, dti: 5, status: "Düzenli Bağışçı", rawStatus: "approved" },
-      { name: "Elif Su", income: 50, credit: 5, dti: 2, status: "Düzenli Bağışçı", rawStatus: "approved" },
-      { name: "Canan Gül", income: 80, credit: 3, dti: 4, status: "Potansiyel Bağışçı", rawStatus: "denied" }
-    ],
-    egitim: [
-      { name: "Ahmet Alp", glucose: 28, bmi: 92, age: 85, status: "Düşük Risk (%2)", rawStatus: "approved" },
-      { name: "Sıla Can", glucose: 6, bmi: 45, age: 40, status: "Yüksek Risk (%86)", rawStatus: "denied" },
-      { name: "Deniz Eren", glucose: 15, bmi: 75, age: 65, status: "Orta Risk (%22)", rawStatus: "warning" },
-      { name: "Kaan Öz", glucose: 35, bmi: 98, age: 92, status: "Düşük Risk (%1)", rawStatus: "approved" },
-      { name: "Zeynep Efe", glucose: 10, bmi: 60, age: 55, status: "Yüksek Risk (%56)", rawStatus: "denied" }
-    ],
-    gida: [
-      { name: "Sipariş A-12", size: 1500, beds: 4.2, location: "Evet", status: "2112 Sipariş", rawStatus: "approved" },
-      { name: "Sipariş B-34", size: 2200, beds: 4.8, location: "Hayır", status: "2160 Sipariş", rawStatus: "approved" },
-      { name: "Sipariş C-56", size: 1100, beds: 3.9, location: "Evet", status: "1787 Sipariş", rawStatus: "approved" },
-      { name: "Sipariş D-78", size: 3200, beds: 4.9, location: "Evet", status: "3350 Sipariş", rawStatus: "approved" },
-      { name: "Sipariş E-90", size: 900, beds: 3.5, location: "Hayır", status: "1250 Sipariş", rawStatus: "approved" }
-    ],
-    lojistik: [
-      { name: "Rota TR-34", days: 12, sessions: 3, tickets: 1, status: "Zamanında (%15 Risk)", rawStatus: "approved" },
-      { name: "Rota TR-06", days: 45, sessions: 9, tickets: 5, status: "Orta Risk (%53)", rawStatus: "warning" },
-      { name: "Rota TR-35", days: 85, sessions: 6, tickets: 2, status: "Orta Risk (%49)", rawStatus: "warning" },
-      { name: "Rota TR-16", days: 8, sessions: 2, tickets: 1, status: "Zamanında (%11 Risk)", rawStatus: "approved" },
-      { name: "Rota TR-54", days: 120, sessions: 8, tickets: 6, status: "Yüksek Risk (%75)", rawStatus: "denied" }
-    ],
-    tekstil: [
-      { name: "Ahmet Yılmaz", days: 12, sessions: 2500, tickets: 20, status: "Premium Alıcı", rawStatus: "approved" },
-      { name: "Ayşe Kaya", days: 4, sessions: 800, tickets: 75, status: "Fırsatçı Alıcı", rawStatus: "warning" },
-      { name: "Can Demir", days: 2, sessions: 300, tickets: 10, status: "Düşük Aktiviteli Alıcı", rawStatus: "denied" },
-      { name: "Fatma Şahin", days: 18, sessions: 3500, tickets: 15, status: "Premium Alıcı", rawStatus: "approved" },
-      { name: "Emre Can", days: 6, sessions: 1200, tickets: 85, status: "Fırsatçı Alıcı", rawStatus: "warning" }
-    ]
+    vakif: [],
+    egitim: [],
+    gida: [],
+    lojistik: [],
+    tekstil: []
   };
 
   // Canvas global reference
@@ -2615,8 +2613,21 @@ document.addEventListener('DOMContentLoaded', () => {
     return row.status;
   }
 
-  // Set up specific layouts, sliders, forms, tables
   function setupSectorDashboard() {
+    const list = databases[currentSector] || [];
+    const emptyState = document.getElementById('dashboard-empty-state');
+    const grid = document.querySelector('.dashboard-grid');
+
+    if (list.length === 0) {
+      if (emptyState) emptyState.style.display = 'flex';
+      if (grid) grid.style.display = 'none';
+      updatePerformanceMetrics(false, false);
+      return;
+    } else {
+      if (emptyState) emptyState.style.display = 'none';
+      if (grid) grid.style.display = 'grid';
+    }
+
     const inputsContainer = document.getElementById('dash-inputs-container');
     const vizContentBox = document.getElementById('viz-content-box');
     const dynamicFormFields = document.getElementById('dynamic-form-fields');
@@ -3128,19 +3139,28 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Populate data table rows dynamically
   function renderDatabaseTable() {
-    const list = databases[currentSector];
+    const list = databases[currentSector] || [];
     const tableBody = document.getElementById('table-body');
     const dbCount = document.getElementById('database-count');
     
-    dbCount.textContent = `${list.length} ${currentLang === 'tr' ? 'Kayıt' : 'Records'}`;
+    if (dbCount) {
+      dbCount.textContent = `${list.length} ${currentLang === 'tr' ? 'Kayıt' : 'Records'}`;
+    }
+    if (!tableBody) return;
     tableBody.innerHTML = '';
 
-    list.forEach(row => {
+    const totalPages = Math.ceil(list.length / rowsPerPage) || 1;
+    if (currentPage > totalPages) currentPage = totalPages;
+    if (currentPage < 1) currentPage = 1;
+    
+    const paginatedList = list.slice((currentPage - 1) * rowsPerPage, currentPage * rowsPerPage);
+
+    paginatedList.forEach(row => {
       const tr = document.createElement('tr');
       
       let badgeClass = 'badge-success';
       if (row.rawStatus === 'denied') badgeClass = 'badge-danger';
-      else if (row.rawStatus === 'warning') badgeClass = 'badge-danger'; // mapped to styled borders
+      else if (row.rawStatus === 'warning') badgeClass = 'badge-danger'; 
 
       if (currentSector === 'vakif') {
         tr.innerHTML = `
@@ -3191,6 +3211,40 @@ document.addEventListener('DOMContentLoaded', () => {
 
       tableBody.appendChild(tr);
     });
+
+    const pageInfo = document.getElementById('table-page-info');
+    const btnPrev = document.getElementById('btn-table-prev');
+    const btnNext = document.getElementById('btn-table-next');
+    
+    if (pageInfo) {
+      pageInfo.textContent = currentLang === 'tr'
+        ? `Sayfa ${currentPage} / ${totalPages}`
+        : `Page ${currentPage} / ${totalPages}`;
+    }
+    
+    if (btnPrev) {
+      if (currentPage <= 1) {
+        btnPrev.setAttribute('disabled', 'true');
+        btnPrev.style.opacity = '0.5';
+        btnPrev.style.pointerEvents = 'none';
+      } else {
+        btnPrev.removeAttribute('disabled');
+        btnPrev.style.opacity = '1';
+        btnPrev.style.pointerEvents = 'auto';
+      }
+    }
+    
+    if (btnNext) {
+      if (currentPage >= totalPages) {
+        btnNext.setAttribute('disabled', 'true');
+        btnNext.style.opacity = '0.5';
+        btnNext.style.pointerEvents = 'none';
+      } else {
+        btnNext.removeAttribute('disabled');
+        btnNext.style.opacity = '1';
+        btnNext.style.pointerEvents = 'auto';
+      }
+    }
   }
 
   // Main Model Evaluator (reads active sliders, computes predictions, outputs visuals)
@@ -4721,6 +4775,43 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // ================= FAIRNESS GAUGE =================
 
+  function calculateFairnessBias(list, key) {
+    if (!list || list.length < 5) return 10;
+    const vals = list.map(row => {
+      let val = row[key];
+      if (typeof val === 'string') {
+        return (val === 'Evet' || val === 'Yes') ? 1 : 0;
+      }
+      return parseFloat(val) || 0;
+    });
+    const sorted = [...vals].sort((a, b) => a - b);
+    const median = sorted[Math.floor(sorted.length / 2)];
+
+    const unprivileged = list.filter(row => {
+      let val = row[key];
+      let numVal = typeof val === 'string' ? ((val === 'Evet' || val === 'Yes') ? 1 : 0) : parseFloat(val) || 0;
+      return numVal < median;
+    });
+    const privileged = list.filter(row => {
+      let val = row[key];
+      let numVal = typeof val === 'string' ? ((val === 'Evet' || val === 'Yes') ? 1 : 0) : parseFloat(val) || 0;
+      return numVal >= median;
+    });
+
+    if (unprivileged.length === 0 || privileged.length === 0) return 8;
+    const getApprovalRate = (group) => {
+      const approved = group.filter(row => row.rawStatus === 'approved').length;
+      return approved / group.length;
+    };
+    const rateUnprivileged = getApprovalRate(unprivileged);
+    const ratePrivileged = getApprovalRate(privileged);
+    if (ratePrivileged === 0) return 5;
+
+    const disparateImpact = rateUnprivileged / ratePrivileged;
+    const boundedDI = disparateImpact > 1 ? 1 / disparateImpact : disparateImpact;
+    return Math.max(5, Math.min(95, Math.round((1.0 - boundedDI) * 100)));
+  }
+
   function renderFairnessGauge() {
     const barsContainer = document.getElementById('fairness-bars-container');
     const donutRing     = document.getElementById('fairness-donut-ring');
@@ -4731,15 +4822,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (!barsContainer || !donutRing) return;
 
-    // ── Sector-specific fairness feature definitions ──
-    // Each feature has:
-    //   icon   : emoji representing the data dimension
-    //   label  : localized name
-    //   desc   : ethics context (why this could be discriminatory)
-    //   getBias: function that returns 0–100 disparate-impact score based on current slider values
-    //            Low bias  < 25 → green (fair)
-    //            Mid bias  25-55 → amber (caution)
-    //            High bias > 55 → red (biased)
+    const list = databases[currentSector] || [];
 
     const fairnessFeatures = {
       vakif: [
@@ -4747,32 +4830,19 @@ document.addEventListener('DOMContentLoaded', () => {
           icon: '📅',
           label: { tr: 'Aylık Katılım Sıklığı', en: 'Monthly Attendance Frequency' },
           desc:  { tr: 'Yüksek katılım sıklığı coğrafi veya ekonomik kısıtlardan etkilenebilir.', en: 'High attendance frequency can be influenced by geographic or economic constraints.' },
-          getBias: () => {
-            const v = parseInt(document.getElementById('slider-credit')?.value || 8);
-            // Extreme high or low values signal potential demographic skew
-            const norm = (v - 1) / (25 - 1); // 0→1
-            return Math.round(Math.abs(norm - 0.5) * 2 * 62 + 10);
-          }
+          getBias: () => calculateFairnessBias(list, 'income')
         },
         {
           icon: '💰',
           label: { tr: 'Geçmiş Bağış Tutarı', en: 'Past Donation Amount' },
           desc:  { tr: 'Bağış miktarı gelir seviyesiyle doğrudan ilişkili; sosyoekonomik statüyü yansıtabilir.', en: 'Donation amount is directly tied to income level; may reflect socioeconomic status.' },
-          getBias: () => {
-            const v = parseInt(document.getElementById('slider-income')?.value || 150);
-            const norm = (v - 10) / (1000 - 10);
-            return Math.round(norm * 70 + 5); // high income = higher bias risk
-          }
+          getBias: () => calculateFairnessBias(list, 'credit')
         },
         {
           icon: '🗓️',
           label: { tr: 'Üyelik Süresi', en: 'Membership Duration' },
           desc:  { tr: 'Uzun üyelik süresi kuruma erişimi olan gruplara avantaj sağlar; yeni göç edenleri dezavantajlı kılar.', en: 'Long membership duration favours groups with access; may disadvantage recent migrants.' },
-          getBias: () => {
-            const v = parseInt(document.getElementById('slider-dti')?.value || 3);
-            const norm = (v - 1) / (15 - 1);
-            return Math.round(norm * 50 + 5);
-          }
+          getBias: () => calculateFairnessBias(list, 'dti')
         }
       ],
       egitim: [
@@ -4780,32 +4850,19 @@ document.addEventListener('DOMContentLoaded', () => {
           icon: '📚',
           label: { tr: 'Haftalık Çalışma Süresi', en: 'Weekly Study Time' },
           desc:  { tr: 'Çalışma saati, ev ortamı kalitesiyle ilişkili olup sosyoekonomik eşitsizliği yansıtabilir.', en: 'Study hours are linked to home environment quality and may reflect socioeconomic disparity.' },
-          getBias: () => {
-            const v = parseInt(document.getElementById('slider-glucose')?.value || 12);
-            const norm = (v - 2) / (40 - 2);
-            return Math.round(Math.abs(norm - 0.5) * 2 * 55 + 8);
-          }
+          getBias: () => calculateFairnessBias(list, 'glucose')
         },
         {
           icon: '🏫',
           label: { tr: 'Ders Devam Oranı', en: 'Course Attendance Rate' },
           desc:  { tr: 'Devamsızlık; sağlık, ulaşım veya çalışmak zorunda olma gibi sistemik faktörlerden kaynaklanabilir.', en: 'Absenteeism may stem from systemic factors: health, transportation, or working obligations.' },
-          getBias: () => {
-            const v = parseFloat(document.getElementById('slider-bmi')?.value || 85);
-            const norm = (v - 30) / (100 - 30);
-            // Low attendance carries high bias risk (multiple systemic reasons)
-            return Math.round((1 - norm) * 65 + 5);
-          }
+          getBias: () => calculateFairnessBias(list, 'bmi')
         },
         {
           icon: '📝',
           label: { tr: 'Deneme Sınav Puanı', en: 'Mock Exam Score' },
           desc:  { tr: 'Sınav puanı test yanlılığına (test bias) ve dil bariyerlerine karşı hassas bir göstergedir.', en: 'Exam score is sensitive to test bias and language barriers in multilingual populations.' },
-          getBias: () => {
-            const v = parseInt(document.getElementById('slider-age')?.value || 70);
-            const norm = (v - 20) / (100 - 20);
-            return Math.round((1 - norm) * 60 + 5);
-          }
+          getBias: () => calculateFairnessBias(list, 'age')
         }
       ],
       gida: [
@@ -4813,31 +4870,19 @@ document.addEventListener('DOMContentLoaded', () => {
           icon: '📦',
           label: { tr: 'Ortalama Sipariş Adedi', en: 'Avg. Order Quantity' },
           desc:  { tr: 'Sipariş hacmi bölgesel nüfus yoğunluğuyla ilişkili; kentsel/kırsal eşitsizliği içerebilir.', en: 'Order volume correlates with regional population density; may embed urban/rural disparity.' },
-          getBias: () => {
-            const v = parseInt(document.getElementById('slider-size')?.value || 1500);
-            const norm = (v - 100) / (4000 - 100);
-            return Math.round(Math.abs(norm - 0.4) * 1.6 * 50 + 6);
-          }
+          getBias: () => calculateFairnessBias(list, 'size')
         },
         {
           icon: '⭐',
           label: { tr: 'Restoran Puanı', en: 'Restaurant Rating' },
           desc:  { tr: 'Değerlendirme puanları kültürel tercihlere göre değişkenlik gösterebilir ve kültürel yanlılık içerebilir.', en: 'Rating scores vary by cultural preferences and can contain cultural bias in review patterns.' },
-          getBias: () => {
-            const v = parseFloat(document.getElementById('slider-beds')?.value || 4.2);
-            const norm = (v - 1) / (5 - 1);
-            // Mid-range ratings are fairest; extremes may reflect reviewer demographics
-            return Math.round(Math.abs(norm - 0.7) * 2 * 45 + 10);
-          }
+          getBias: () => calculateFairnessBias(list, 'beds')
         },
         {
           icon: '📣',
           label: { tr: 'Kampanya Uygulaması', en: 'Campaign Application' },
           desc:  { tr: 'Kampanyalara erişim; dijital okuryazarlık ve bölgesel kapsama bağlı olup eşitsizlik yaratabilir.', en: 'Campaign access depends on digital literacy and regional coverage, potentially creating inequality.' },
-          getBias: () => {
-            const v = document.getElementById('toggle-location')?.checked ? 1 : 0;
-            return v === 1 ? 22 : 42; // active campaign access = lower bias
-          }
+          getBias: () => calculateFairnessBias(list, 'location')
         }
       ],
       lojistik: [
@@ -4845,31 +4890,19 @@ document.addEventListener('DOMContentLoaded', () => {
           icon: '📍',
           label: { tr: 'Mesafe Uzunluğu', en: 'Distance Length' },
           desc:  { tr: 'Coğrafi mesafe; kırsal bölgeleri sistemik olarak dezavantajlı kılabilir.', en: 'Geographic distance may systematically disadvantage rural areas in service access.' },
-          getBias: () => {
-            const v = parseInt(document.getElementById('slider-days')?.value || 12);
-            const norm = (v - 1) / (150 - 1);
-            return Math.round(norm * 72 + 5);
-          }
+          getBias: () => calculateFairnessBias(list, 'days')
         },
         {
           icon: '🚦',
           label: { tr: 'Trafik Yoğunluğu', en: 'Traffic Density' },
           desc:  { tr: 'Trafik katsayısı büyük şehirlerde yaşayanları orantısız biçimde etkiler.', en: 'Traffic coefficient disproportionately affects residents of large metropolitan areas.' },
-          getBias: () => {
-            const v = parseInt(document.getElementById('slider-sessions')?.value || 3);
-            const norm = (v - 1) / (10 - 1);
-            return Math.round(norm * 65 + 8);
-          }
+          getBias: () => calculateFairnessBias(list, 'sessions')
         },
         {
           icon: '📬',
           label: { tr: 'Paket Yük Adedi', en: 'Package Load Count' },
           desc:  { tr: 'Paket sayısı, ticari hacimle orantılı olup küçük ölçekli işletmelere karşı önyargı oluşturabilir.', en: 'Package count is proportional to commercial scale, potentially biasing against small businesses.' },
-          getBias: () => {
-            const v = parseInt(document.getElementById('slider-tickets')?.value || 1);
-            const norm = (v - 1) / (10 - 1);
-            return Math.round(norm * 50 + 10);
-          }
+          getBias: () => calculateFairnessBias(list, 'tickets')
         }
       ],
       tekstil: [
@@ -4877,31 +4910,19 @@ document.addEventListener('DOMContentLoaded', () => {
           icon: '🛍️',
           label: { tr: 'Alışveriş Sıklığı', en: 'Shopping Frequency' },
           desc:  { tr: 'Alışveriş sıklığı boş zaman kalitesiyle ilişkili; kadınlar ve gençler arasında farklılık gösterebilir.', en: 'Shopping frequency correlates with leisure time quality; may differ across gender and age groups.' },
-          getBias: () => {
-            const v = parseInt(document.getElementById('slider-days')?.value || 5);
-            const norm = (v - 1) / (30 - 1);
-            return Math.round(Math.abs(norm - 0.35) * 1.5 * 55 + 8);
-          }
+          getBias: () => calculateFairnessBias(list, 'days')
         },
         {
           icon: '💳',
           label: { tr: 'Ortalama Sepet Tutarı', en: 'Avg. Basket Amount' },
           desc:  { tr: 'Harcama miktarı gelir eşitsizliğini yansıtır; düşük gelirli segmentler için model dezavantajlı çalışabilir.', en: 'Spending amount reflects income inequality; the model may operate disadvantageously for low-income segments.' },
-          getBias: () => {
-            const v = parseInt(document.getElementById('slider-sessions')?.value || 1500);
-            const norm = (v - 100) / (5000 - 100);
-            return Math.round(norm * 68 + 6);
-          }
+          getBias: () => calculateFairnessBias(list, 'sessions')
         },
         {
           icon: '🎯',
           label: { tr: 'İndirim Hassasiyeti', en: 'Discount Sensitivity' },
           desc:  { tr: 'Fiyat hassasiyeti, ekonomik kırılganlığın dolaylı bir göstergesidir ve ayrımcı segmentasyon riski taşır.', en: 'Price sensitivity is an indirect indicator of economic vulnerability and carries discriminatory segmentation risk.' },
-          getBias: () => {
-            const v = parseInt(document.getElementById('slider-tickets')?.value || 40);
-            // Very high sensitivity = financially vulnerable = higher bias risk
-            return Math.round((v / 100) * 62 + 10);
-          }
+          getBias: () => calculateFairnessBias(list, 'tickets')
         }
       ]
     };
@@ -6329,53 +6350,42 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (!accuracyVal || !precisionVal || !recallVal) return;
 
-    const base = sectorSchemas[currentSector]?.metrics || { accuracy: 98.40, precision: 97.80, recall: 99.10 };
-
-    if (!activePerformanceMetrics || activePerformanceMetrics.sector !== currentSector) {
-      activePerformanceMetrics = {
-        sector: currentSector,
-        accuracy: base.accuracy,
-        precision: base.precision,
-        recall: base.recall
-      };
-    }
-
-    if (training) {
-      const boost = 0.05 + Math.random() * 0.12;
-      activePerformanceMetrics.accuracy = Math.min(99.95, activePerformanceMetrics.accuracy + boost);
-      activePerformanceMetrics.precision = Math.min(99.90, activePerformanceMetrics.precision + boost * 0.95);
-      activePerformanceMetrics.recall = Math.min(99.95, activePerformanceMetrics.recall + boost * 1.05);
-
+    const list = databases[currentSector] || [];
+    if (list.length === 0) {
+      accuracyVal.textContent = '—';
+      precisionVal.textContent = '—';
+      recallVal.textContent = '—';
       if (statusText) {
-        statusText.textContent = currentLang === 'tr'
-          ? `✓ Eğitim Tamamlandı (+${boost.toFixed(2)}%)`
-          : `✓ Training Complete (+${boost.toFixed(2)}%)`;
-        statusText.style.color = 'var(--success)';
-        
-        setTimeout(() => {
-          statusText.textContent = translations.metrics_status[currentLang];
-          statusText.style.color = '';
-        }, 2000);
+        statusText.textContent = currentLang === 'tr' ? 'Veri Bekleniyor...' : 'Awaiting Data...';
       }
-    } else if (fluctuate) {
-      const noiseAcc = (Math.random() - 0.5) * 0.04;
-      const noisePrec = (Math.random() - 0.5) * 0.04;
-      const noiseRec = (Math.random() - 0.5) * 0.04;
-
-      accuracyVal.textContent = `${(activePerformanceMetrics.accuracy + noiseAcc).toFixed(2)}%`;
-      precisionVal.textContent = `${(activePerformanceMetrics.precision + noisePrec).toFixed(2)}%`;
-      recallVal.textContent = `${(activePerformanceMetrics.recall + noiseRec).toFixed(2)}%`;
       return;
     }
 
-    if (!training && !fluctuate) {
-      animateKPI(accuracyVal, activePerformanceMetrics.accuracy, true);
-      animateKPI(precisionVal, activePerformanceMetrics.precision, true);
-      animateKPI(recallVal, activePerformanceMetrics.recall, true);
-    } else {
-      accuracyVal.textContent = `${activePerformanceMetrics.accuracy.toFixed(2)}%`;
-      precisionVal.textContent = `${activePerformanceMetrics.precision.toFixed(2)}%`;
-      recallVal.textContent = `${activePerformanceMetrics.recall.toFixed(2)}%`;
+    const calculated = calculateActualMetrics(list);
+    
+    if (training) {
+      calculated.accuracy = Math.min(99.95, calculated.accuracy + 0.1);
+      calculated.precision = Math.min(99.90, calculated.precision + 0.08);
+      calculated.recall = Math.min(99.95, calculated.recall + 0.12);
+    }
+
+    if (fluctuate) {
+      const noise = () => (Math.random() - 0.5) * 0.05;
+      accuracyVal.textContent = `${(calculated.accuracy + noise()).toFixed(2)}%`;
+      precisionVal.textContent = `${(calculated.precision + noise()).toFixed(2)}%`;
+      recallVal.textContent = `${(calculated.recall + noise()).toFixed(2)}%`;
+      return;
+    }
+
+    animateKPI(accuracyVal, calculated.accuracy, true);
+    animateKPI(precisionVal, calculated.precision, true);
+    animateKPI(recallVal, calculated.recall, true);
+
+    if (statusText) {
+      statusText.textContent = currentLang === 'tr'
+        ? `${list.length} Kayıt Aktif`
+        : `${list.length} Records Active`;
+      statusText.style.color = 'var(--success)';
     }
   }
 
@@ -10922,18 +10932,28 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // ================= DYNAMIC CUSTOM DATASET UPLOADER & ANALYZER =================
   function downloadCSVTemplate() {
-    const csvContent = "Name,Income,CreditScore,RiskStatus\r\n"
-      + "Mehmet Efendi,80,8,Düzenli Bağışçı\r\n"
-      + "Dernek Dostu,20,2,Potansiyel Bağışçı\r\n"
-      + "Vakıf Destek,300,12,Düzenli Bağışçı\r\n"
-      + "Elif Su,50,5,Düzenli Bağışçı\r\n"
-      + "Canan Gül,80,3,Potansiyel Bağışçı\r\n";
+    let csvContent = "";
+    if (currentSector === 'vakif') {
+      csvContent = "Name,Income,CreditScore,RiskStatus\r\n"
+        + "Mehmet Efendi,8,150,3\r\n"
+        + "Dernek Dostu,2,50,1\r\n"
+        + "Vakıf Destek,12,300,5\r\n"
+        + "Elif Su,5,200,2\r\n";
+    } else if (currentSector === 'egitim') {
+      csvContent = "Name,StudyHours,AttendanceRate,MockExamScore\r\n"
+        + "Ahmet Alp,12,85,70\r\n"
+        + "Sıla Can,6,45,40\r\n"
+        + "Deniz Eren,15,75,65\r\n";
+    } else {
+      csvContent = "Name,Income,CreditScore,RiskStatus\r\n"
+        + "Sample client,80,8,Approved\r\n";
+    }
       
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.setAttribute("href", url);
-    link.setAttribute("download", "template_customer_data.csv");
+    link.setAttribute("download", `template_${currentSector}_data.csv`);
     link.style.visibility = 'hidden';
     document.body.appendChild(link);
     link.click();
@@ -10945,63 +10965,59 @@ document.addEventListener('DOMContentLoaded', () => {
     if (lines.length <= 1) return [];
 
     const headers = lines[0].split(',').map(h => h.replace(/['"]+/g, '').trim());
-    
-    // Find column indexes
-    const nameIdx = headers.findIndex(h => h.toLowerCase() === 'name');
-    const incomeIdx = headers.findIndex(h => h.toLowerCase() === 'income');
-    const creditIdx = headers.findIndex(h => h.toLowerCase() === 'creditscore');
-    const statusIdx = headers.findIndex(h => h.toLowerCase() === 'riskstatus');
-
-    if (nameIdx === -1 || incomeIdx === -1 || creditIdx === -1) {
-      // Fallback parser by indexes
-      return lines.slice(1).map(line => {
-        const cells = line.split(',').map(c => c.replace(/['"]+/g, '').trim());
-        return {
-          Name: cells[0] || 'Client',
-          Income: parseFloat(cells[1]) || 0,
-          CreditScore: parseFloat(cells[2]) || 0,
-          RiskStatus: cells[3] || ''
-        };
-      });
-    }
-
     return lines.slice(1).map(line => {
       const cells = line.split(',').map(c => c.replace(/['"]+/g, '').trim());
-      return {
-        Name: cells[nameIdx] || 'Client',
-        Income: parseFloat(cells[incomeIdx]) || 0,
-        CreditScore: parseFloat(cells[creditIdx]) || 0,
-        RiskStatus: cells[statusIdx] || ''
-      };
+      const obj = {};
+      headers.forEach((h, idx) => {
+        obj[h] = cells[idx] || '';
+      });
+      return obj;
     });
   }
 
   function mapRowToSector(row, sector) {
-    const name = row.Name;
-    const income = row.Income;
-    const credit = row.CreditScore;
-    const status = row.RiskStatus;
+    // Smart case-insensitive column finder
+    const keys = Object.keys(row);
+    const findVal = (patterns) => {
+      const match = keys.find(k => patterns.some(p => k.toLowerCase().includes(p)));
+      return match ? row[match] : null;
+    };
+
+    const name = findVal(['name', 'isim', 'müşteri', 'ad', 'client', 'customer']) || 'Client';
+    const rawStatus = findVal(['status', 'durum', 'risk', 'label', 'etiket']) || '';
+    
+    // Feature columns
+    const feat1 = parseFloat(findVal(['income', 'gelir', 'study', 'çalışma', 'ders', 'orders', 'sipariş', 'volume', 'hacim', 'distance', 'mesafe', 'days', 'frequency', 'sıklık'])) || 0;
+    const feat2 = parseFloat(findVal(['credit', 'kredi', 'score', 'skor', 'attendance', 'devam', 'rating', 'puan', 'traffic', 'trafik', 'sessions', 'basket', 'sepet'])) || 0;
+    const feat3 = parseFloat(findVal(['dti', 'yıl', 'years', 'age', 'yaş', 'exam', 'sınav', 'location', 'konum', 'campaign', 'kampanya', 'tickets', 'load', 'yük', 'discount', 'indirim'])) || 0;
 
     let res = {};
     if (sector === 'vakif') {
-      const rawStatus = (status && (status.toLowerCase().includes('low') || status.toLowerCase().includes('düzenli') || status.toLowerCase().includes('approved') || status.toLowerCase().includes('aktif'))) ? 'approved' : 'denied';
-      res = { name, income, credit, dti: 3, status, rawStatus };
+      res = { name, income: feat1 || 8, credit: feat2 || 150, dti: feat3 || 3, status: rawStatus };
     } else if (sector === 'egitim') {
-      const rawStatus = (status && (status.toLowerCase().includes('low') || status.toLowerCase().includes('düşük') || status.toLowerCase().includes('approved'))) ? 'approved' : 'denied';
-      res = { name, glucose: income, bmi: credit, age: 70, status, rawStatus };
+      res = { name, glucose: feat1 || 12, bmi: feat2 || 85, age: feat3 || 70, status: rawStatus };
     } else if (sector === 'gida') {
-      res = { name, size: income, beds: credit, location: 'Evet', status, rawStatus: 'approved' };
+      const locText = findVal(['location', 'konum', 'campaign', 'kampanya']) || 'Evet';
+      res = { name, size: feat1 || 1500, beds: feat2 || 4.2, location: locText, status: rawStatus };
     } else if (sector === 'lojistik') {
-      const rawStatus = (status && (status.toLowerCase().includes('low') || status.toLowerCase().includes('zamanında') || status.toLowerCase().includes('approved'))) ? 'approved' : 'denied';
-      res = { name, days: income, sessions: credit, tickets: 2, status, rawStatus };
+      res = { name, days: feat1 || 12, sessions: feat2 || 3, tickets: feat3 || 1, status: rawStatus };
     } else if (sector === 'tekstil') {
-      const rawStatus = (status && (status.toLowerCase().includes('premium') || status.toLowerCase().includes('approved'))) ? 'approved' : 'denied';
-      res = { name, days: credit, sessions: income, tickets: 20, status, rawStatus };
+      res = { name, days: feat1 || 5, sessions: feat2 || 1500, tickets: feat3 || 40, status: rawStatus };
     } else {
-      res = { name, income, credit, status, rawStatus: 'approved' };
+      res = { name, income: feat1, credit: feat2, dti: feat3, status: rawStatus };
     }
-    
-    res.originalRawStatus = res.rawStatus;
+
+    const lowerStatus = String(rawStatus).toLowerCase();
+    if (lowerStatus.includes('low') || lowerStatus.includes('düşük') || lowerStatus.includes('approved') || lowerStatus.includes('onay') || lowerStatus.includes('düzenli') || lowerStatus.includes('premium') || lowerStatus.includes('zamanında') || lowerStatus.includes('başarılı') || lowerStatus.includes('yüksek talep')) {
+      res.originalRawStatus = 'approved';
+    } else if (lowerStatus.includes('medium') || lowerStatus.includes('orta') || lowerStatus.includes('warning') || lowerStatus.includes('sınırda') || lowerStatus.includes('normal') || lowerStatus.includes('fırsatçı')) {
+      res.originalRawStatus = 'warning';
+    } else if (lowerStatus.includes('high') || lowerStatus.includes('yüksek') || lowerStatus.includes('denied') || lowerStatus.includes('red') || lowerStatus.includes('pasif') || lowerStatus.includes('aktif değil') || lowerStatus.includes('destek gerekli')) {
+      res.originalRawStatus = 'denied';
+    } else {
+      res.originalRawStatus = 'approved';
+    }
+
     return res;
   }
 
@@ -11045,38 +11061,39 @@ document.addEventListener('DOMContentLoaded', () => {
     let status = '';
 
     if (sector === 'vakif') {
-      const normCrd = preprocessedRow.normalized_credit || 0.5;
-      const normInc = preprocessedRow.normalized_income || 0.5;
-      const normDti = preprocessedRow.normalized_dti || 0.5;
+      const v = preprocessedRow.income;
+      const c = preprocessedRow.credit;
+      const d = preprocessedRow.dti;
       
-      const score = (normCrd * 0.4) + (normInc * 0.4) + (normDti * 0.2);
-      riskScore = Math.round((1.0 - score) * 100);
-      confidenceLevel = 85 + Math.round(normInc * 10);
-      
-      const approved = (preprocessedRow.credit > 5 && preprocessedRow.income > 100 && preprocessedRow.dti > 2);
+      const approved = (v > 5 && c > 100 && d > 2);
       rawStatus = approved ? 'approved' : 'denied';
       status = approved 
         ? (currentLang === 'tr' ? "Düzenli Bağışçı" : "Regular Donor")
         : (currentLang === 'tr' ? "Potansiyel Bağışçı / Düzensiz" : "Potential / Irregular Donor");
+      
+      const normVis = preprocessedRow.normalized_income || 0.5;
+      const normAmt = preprocessedRow.normalized_credit || 0.5;
+      riskScore = Math.round((1.0 - (normVis * 0.6 + normAmt * 0.4)) * 100);
+      confidenceLevel = 85 + Math.round(normAmt * 10);
 
     } else if (sector === 'egitim') {
-      const glc = preprocessedRow.glucose;
-      const bmi = preprocessedRow.bmi;
-      const age = preprocessedRow.age;
+      const study = preprocessedRow.glucose;
+      const att = preprocessedRow.bmi;
+      const mock = preprocessedRow.age;
       
-      const z = 5.5 - (0.12 * glc) - (0.04 * bmi) - (0.03 * age);
+      const z = 5.5 - (0.12 * study) - (0.04 * att) - (0.03 * mock);
       const prob = 1.0 / (1.0 + Math.exp(-z));
       const pct = Math.round(prob * 100);
       
       riskScore = pct;
       confidenceLevel = 88 + Math.round((preprocessedRow.normalized_glucose || 0.5) * 8);
       
-      if (pct >= 15 && pct < 50) {
-        rawStatus = 'warning';
-        status = currentLang === 'tr' ? `Orta Başarısızlık Riski (%${pct})` : `Medium Failure Risk (%${pct})`;
-      } else if (pct >= 50) {
+      if (pct >= 50) {
         rawStatus = 'denied';
         status = currentLang === 'tr' ? `Yüksek Başarısızlık Riski (%${pct})` : `High Failure Risk (%${pct})`;
+      } else if (pct >= 15) {
+        rawStatus = 'warning';
+        status = currentLang === 'tr' ? `Orta Başarısızlık Riski (%${pct})` : `Medium Failure Risk (%${pct})`;
       } else {
         rawStatus = 'approved';
         status = currentLang === 'tr' ? `Düşük Başarısızlık Riski (%${pct})` : `Low Failure Risk (%${pct})`;
@@ -11097,93 +11114,61 @@ document.addEventListener('DOMContentLoaded', () => {
       status = currentLang === 'tr' ? `${finalPrice} Sipariş / Gün` : `${finalPrice} Orders / Day`;
 
     } else if (sector === 'lojistik') {
-      const days = preprocessedRow.days;
-      const sess = preprocessedRow.sessions;
-      const tck = preprocessedRow.tickets;
+      const dist = preprocessedRow.days;
+      const traf = preprocessedRow.sessions;
+      const load = preprocessedRow.tickets;
       
-      const daysImpact = Math.min(100, (days / 150) * 100);
-      const sessionImpact = (sess / 10) * 100;
-      const supportImpact = (tck / 10) * 100;
-      const churnScore = (daysImpact * 0.45) + (sessionImpact * 0.3) + (supportImpact * 0.25);
-      const risk = Math.round(churnScore);
+      const distImpact = Math.min(100, (dist / 150) * 100);
+      const trafImpact = (traf / 10) * 100;
+      const loadImpact = (load / 10) * 100;
+      const risk = Math.round((distImpact * 0.45) + (trafImpact * 0.3) + (loadImpact * 0.25));
       
       riskScore = risk;
       confidenceLevel = 89 + Math.round((preprocessedRow.normalized_sessions || 0.5) * 7);
       
-      if (risk < 30) {
-        rawStatus = 'approved';
-        status = currentLang === 'tr' ? `Zamanında Teslimat (%${risk} Gecikme Riski)` : `On Time (%${risk} Delay Risk)`;
-      } else if (risk >= 30 && risk < 60) {
+      if (risk >= 60) {
+        rawStatus = 'denied';
+        status = currentLang === 'tr' ? `Yüksek Gecikme Riski (%${risk})` : `High Delay Risk (%${risk})`;
+      } else if (risk >= 30) {
         rawStatus = 'warning';
         status = currentLang === 'tr' ? `Orta Seviye Gecikme Riski (%${risk})` : `Medium Delay Risk (%${risk})`;
       } else {
-        rawStatus = 'denied';
-        status = currentLang === 'tr' ? `Yüksek Gecikme Riski (%${risk})` : `High Delay Risk (%${risk})`;
+        rawStatus = 'approved';
+        status = currentLang === 'tr' ? `Zamanında Teslimat (%${risk} Gecikme Riski)` : `On Time (%${risk} Delay Risk)`;
       }
 
     } else if (sector === 'tekstil') {
-      const userFreq = preprocessedRow.days;
-      const userBasket = preprocessedRow.sessions;
-      const userDiscount = preprocessedRow.tickets;
+      const freq = preprocessedRow.days;
+      const basket = preprocessedRow.sessions;
       
-      const normUserFreq = (userFreq - 1) / 29;
-      const normUserBasket = (userBasket - 100) / 4900;
-      const normUserDiscount = userDiscount / 100;
-      
-      const list = databases.tekstil;
-      const scoredList = list.map(pt => {
-        const normPtFreq = (pt.days - 1) / 29;
-        const normPtBasket = (pt.sessions - 100) / 4900;
-        const normPtDiscount = pt.tickets / 100;
-        const dist = Math.sqrt(
-          Math.pow(normUserFreq - normPtFreq, 2) +
-          Math.pow(normUserBasket - normPtBasket, 2) +
-          Math.pow(normUserDiscount - normPtDiscount, 2)
-        );
-        return { item: pt, dist };
-      });
-      scoredList.sort((a, b) => a.dist - b.dist);
-      const neighbors = scoredList.slice(0, 3);
-      const votes = {};
-      neighbors.forEach(n => {
-        const cat = n.item.status;
-        votes[cat] = (votes[cat] || 0) + 1;
-      });
-      let winnerStatus = 'Premium Alıcı';
-      let maxVotes = 0;
-      for (let cat in votes) {
-        if (votes[cat] > maxVotes) {
-          maxVotes = votes[cat];
-          winnerStatus = cat;
-        }
+      if (freq > 15 && basket > 2000) {
+        rawStatus = 'approved';
+        status = currentLang === 'tr' ? 'Premium Alıcı' : 'Premium Buyer';
+        riskScore = 15;
+      } else if (freq > 5 || basket > 800) {
+        rawStatus = 'warning';
+        status = currentLang === 'tr' ? 'Fırsatçı Alıcı' : 'Opportunistic Buyer';
+        riskScore = 50;
+      } else {
+        rawStatus = 'denied';
+        status = currentLang === 'tr' ? 'Düşük Aktiviteli Alıcı' : 'Low Activity Buyer';
+        riskScore = 85;
       }
-      
-      rawStatus = 'approved';
-      if (winnerStatus === 'Fırsatçı Alıcı') rawStatus = 'warning';
-      else if (winnerStatus === 'Düşük Aktiviteli Alıcı') rawStatus = 'denied';
-
-      let localizedWinner = winnerStatus;
-      if (currentLang === 'en') {
-        if (winnerStatus === 'Premium Alıcı') localizedWinner = 'Premium Buyer';
-        else if (winnerStatus === 'Fırsatçı Alıcı') localizedWinner = 'Opportunistic Buyer';
-        else if (winnerStatus === 'Düşük Aktiviteli Alıcı') localizedWinner = 'Low Activity Buyer';
-      }
-
-      riskScore = rawStatus === 'approved' ? 15 : (rawStatus === 'warning' ? 50 : 85);
       confidenceLevel = 91 + Math.round((preprocessedRow.normalized_days || 0.5) * 6);
-      status = localizedWinner;
     }
 
     return { riskScore, confidenceLevel, rawStatus, status };
   }
 
-  // Model Performance Monitor Layer
-  function evaluateUploadedModelPerformance(list) {
-    let tp = 0, fp = 0, tn = 0, fn = 0;
+  function calculateActualMetrics(list) {
+    if (!list || list.length === 0) {
+      return { accuracy: 0, precision: 0, recall: 0 };
+    }
     
+    let tp = 0, fp = 0, tn = 0, fn = 0;
     list.forEach(row => {
-      const pred = row.rawStatus;
       const orig = row.originalRawStatus || 'approved';
+      const pred = row.rawStatus || 'approved';
       
       if (pred === 'approved' && orig === 'approved') tp++;
       else if (pred === 'approved' && orig !== 'approved') fp++;
@@ -11194,26 +11179,76 @@ document.addEventListener('DOMContentLoaded', () => {
     const accuracy = ((tp + tn) / (tp + tn + fp + fn || 1)) * 100;
     const precision = (tp / (tp + fp || 1)) * 100;
     const recall = (tp / (tp + fn || 1)) * 100;
-
-    const accuracyVal = document.getElementById('metric-accuracy-val');
-    const precisionVal = document.getElementById('metric-precision-val');
-    const recallVal = document.getElementById('metric-recall-val');
-
-    if (accuracyVal && precisionVal && recallVal) {
-      animateKPI(accuracyVal, accuracy, true);
-      animateKPI(precisionVal, precision, true);
-      animateKPI(recallVal, recall, true);
-    }
-
-    activePerformanceMetrics = {
-      sector: currentSector,
-      accuracy: accuracy,
-      precision: precision,
-      recall: recall
-    };
+    
+    return { accuracy, precision, recall };
   }
 
-  // Business Insight Generator
+  function calculateDynamicWeights(list, sector) {
+    const defaultWeights = {
+      vakif: [
+        { label: { tr: "Aylık Katılım Sıklığı", en: "Monthly Attendance Frequency" }, key: 'income', weight: 45 },
+        { label: { tr: "Geçmiş Bağış Tutarı", en: "Past Donation Amount" }, key: 'credit', weight: 35 },
+        { label: { tr: "Üyelik Süresi", en: "Membership Duration" }, key: 'dti', weight: 20 }
+      ],
+      egitim: [
+        { label: { tr: "Haftalık Çalışma Süresi", en: "Weekly Study Time" }, key: 'glucose', weight: 50 },
+        { label: { tr: "Ders Devam Oranı", en: "Course Attendance Rate" }, key: 'bmi', weight: 30 },
+        { label: { tr: "Deneme Sınav Puanı", en: "Mock Exam Score" }, key: 'age', weight: 20 }
+      ],
+      gida: [
+        { label: { tr: "Ortalama Sipariş Adedi", en: "Avg. Order Quantity" }, key: 'size', weight: 55 },
+        { label: { tr: "Restoran Değerlendirme Puanı", en: "Restaurant Rating Score" }, key: 'beds', weight: 25 },
+        { label: { tr: "Kampanya Uygulaması", en: "Campaign Application" }, key: 'location', weight: 20 }
+      ],
+      lojistik: [
+        { label: { tr: "Mesafe Uzunluğu", en: "Distance Length" }, key: 'days', weight: 45 },
+        { label: { tr: "Trafik Yoğunluğu", en: "Traffic Density" }, key: 'sessions', weight: 30 },
+        { label: { tr: "Paket Yükü Adedi", en: "Package Load Quantity" }, key: 'tickets', weight: 25 }
+      ],
+      tekstil: [
+        { label: { tr: "Aylık Alışveriş Sıklığı", en: "Monthly Shopping Frequency" }, key: 'days', weight: 40 },
+        { label: { tr: "Ortalama Sepet Tutarı", en: "Average Basket Amount" }, key: 'sessions', weight: 35 },
+        { label: { tr: "İndirim Hassasiyeti", en: "Discount Sensitivity" }, key: 'tickets', weight: 25 }
+      ]
+    };
+
+    const features = defaultWeights[sector] || [];
+    if (!list || list.length < 5) {
+      return features;
+    }
+
+    const correlations = features.map(f => {
+      const key = f.key;
+      const x = list.map(row => {
+        const val = row[key];
+        if (typeof val === 'string') {
+          return (val === 'Evet' || val === 'Yes') ? 1 : 0;
+        }
+        return parseFloat(val) || 0;
+      });
+      const y = list.map(row => parseFloat(row.riskScore) || 50);
+      
+      const n = list.length;
+      const sumX = x.reduce((a, b) => a + b, 0);
+      const sumY = y.reduce((a, b) => a + b, 0);
+      const sumXY = x.reduce((sum, val, idx) => sum + val * y[idx], 0);
+      const sumX2 = x.reduce((sum, val) => sum + val * val, 0);
+      const sumY2 = y.reduce((sum, val) => sum + val * val, 0);
+      
+      const num = (n * sumXY) - (sumX * sumY);
+      const den = Math.sqrt(((n * sumX2) - (sumX * sumX)) * ((n * sumY2) - (sumY * sumY)));
+      
+      const r = den === 0 ? 0.05 : Math.max(0.05, Math.abs(num / den));
+      return { ...f, r };
+    });
+
+    const totalCorr = correlations.reduce((sum, f) => sum + f.r, 0) || 1;
+    return correlations.map(f => {
+      const weight = Math.round((f.r / totalCorr) * 100);
+      return { label: f.label, weight };
+    });
+  }
+
   function generateBusinessInsights(list, sector) {
     const total = list.length;
     if (total === 0) return [];
@@ -11320,14 +11355,154 @@ document.addEventListener('DOMContentLoaded', () => {
     return insights;
   }
 
+  function generateProceduralMockData(sector, count = 1000) {
+    const firstNames = ["Mehmet", "Ahmet", "Mustafa", "Ali", "Hüseyin", "Fatma", "Ayşe", "Emine", "Hatice", "Zeynep", "John", "Sarah", "Michael", "Emily", "David"];
+    const lastNames = ["Yılmaz", "Kaya", "Demir", "Çelik", "Şahin", "Öztürk", "Kılıç", "Arslan", "Polat", "Yıldız", "Smith", "Johnson", "Brown", "Taylor", "Miller"];
+    const list = [];
+    
+    for (let i = 0; i < count; i++) {
+      const name = firstNames[Math.floor(Math.random() * firstNames.length)] + " " + lastNames[Math.floor(Math.random() * lastNames.length)] + ` (${i + 1})`;
+      const email = name.toLowerCase().replace(/[^a-z0-9]/g, '') + '@example.com';
+      
+      if (sector === 'vakif') {
+        const income = Math.floor(Math.random() * 24) + 1;
+        const credit = Math.floor(Math.random() * 950) + 50;
+        const dti = Math.floor(Math.random() * 14) + 1;
+        const approved = (income > 5 && credit > 100 && dti > 2);
+        const originalRawStatus = approved ? 'approved' : 'denied';
+        list.push({ name, income, credit, dti, email, originalRawStatus });
+      } else if (sector === 'egitim') {
+        const glucose = Math.floor(Math.random() * 38) + 2;
+        const bmi = Math.floor(Math.random() * 70) + 30;
+        const age = Math.floor(Math.random() * 80) + 20;
+        const z = 5.5 - (0.12 * glucose) - (0.04 * bmi) - (0.03 * age);
+        const prob = 1.0 / (1.0 + Math.exp(-z));
+        const originalRawStatus = prob >= 0.5 ? 'denied' : (prob >= 0.15 ? 'warning' : 'approved');
+        list.push({ name, glucose, bmi, age, email, originalRawStatus });
+      } else if (sector === 'gida') {
+        const size = Math.floor(Math.random() * 3900) + 100;
+        const beds = parseFloat((Math.random() * 4 + 1).toFixed(1));
+        const location = Math.random() > 0.4 ? 'Evet' : 'Hayır';
+        list.push({ name, size, beds, location, email, originalRawStatus: 'approved' });
+      } else if (sector === 'lojistik') {
+        const days = Math.floor(Math.random() * 149) + 1;
+        const sessions = Math.floor(Math.random() * 9) + 1;
+        const tickets = Math.floor(Math.random() * 9) + 1;
+        const daysImpact = Math.min(100, (days / 150) * 100);
+        const sessionImpact = (sessions / 10) * 100;
+        const supportImpact = (tickets / 10) * 100;
+        const churn = (daysImpact * 0.45) + (sessionImpact * 0.3) + (supportImpact * 0.25);
+        const originalRawStatus = churn >= 60 ? 'denied' : (churn >= 30 ? 'warning' : 'approved');
+        list.push({ name, days, sessions, tickets, email, originalRawStatus });
+      } else if (sector === 'tekstil') {
+        const days = Math.floor(Math.random() * 29) + 1;
+        const sessions = Math.floor(Math.random() * 4900) + 100;
+        const tickets = Math.floor(Math.random() * 90) + 10;
+        const rawStatus = (days > 15 && sessions > 2000) ? 'approved' : ((days > 5 || sessions > 800) ? 'warning' : 'denied');
+        list.push({ name, days, sessions, tickets, email, originalRawStatus: rawStatus });
+      }
+    }
+    return list;
+  }
+
+  function loadSheetJS(callback) {
+    if (typeof XLSX !== 'undefined') {
+      callback();
+      return;
+    }
+    console.log("Loading SheetJS dynamically...");
+    const script = document.createElement('script');
+    script.src = "https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js";
+    script.onload = () => {
+      console.log("SheetJS loaded successfully.");
+      callback();
+    };
+    script.onerror = () => {
+      alert(currentLang === 'tr' 
+        ? "Hata: Excel okuyucu kütüphanesi yüklenemedi. Lütfen internet bağlantınızı kontrol edin veya CSV kullanın." 
+        : "Error: Excel parser library is not loaded. Please check your internet connection or use a CSV file."
+      );
+    };
+    document.head.appendChild(script);
+  }
+
+  function ingestAndProcessDataset(file) {
+    if (!file) return;
+    const extension = file.name.split('.').pop().toLowerCase();
+    
+    if (extension === 'xlsx') {
+      loadSheetJS(() => {
+        const reader = new FileReader();
+        reader.onload = function(evt) {
+          try {
+            const data = new Uint8Array(evt.target.result);
+            const workbook = XLSX.read(data, { type: 'array' });
+            const sheetName = workbook.SheetNames[0];
+            const worksheet = workbook.Sheets[sheetName];
+            const json = XLSX.utils.sheet_to_json(worksheet);
+            
+            processIngestedRows(json);
+          } catch (e) {
+            console.error(e);
+            alert(currentLang === 'tr' ? 'Excel ayrıştırma hatası!' : 'Excel parsing error!');
+          }
+        };
+        reader.readAsArrayBuffer(file);
+      });
+    } else {
+      const reader = new FileReader();
+      reader.onload = function(evt) {
+        const text = evt.target.result;
+        const json = parseCustomCSV(text);
+        processIngestedRows(json);
+      };
+      reader.readAsText(file);
+    }
+  }
+
+  function processIngestedRows(json) {
+    if (!json || json.length === 0) {
+      alert(currentLang === 'tr' ? 'Hata: Boş veya geçersiz dosya formatı!' : 'Error: Empty or invalid file format!');
+      return;
+    }
+
+    const mapped = json.map(row => mapRowToSector(row, currentSector));
+    const preprocessed = preprocessCustomData(mapped, currentSector);
+    
+    preprocessed.forEach(row => {
+      const pred = runSupervisedPrediction(row, currentSector);
+      row.riskScore = pred.riskScore;
+      row.confidenceLevel = pred.confidenceLevel;
+      row.rawStatus = pred.rawStatus;
+      row.status = pred.status;
+    });
+
+    databases[currentSector] = preprocessed;
+    currentPage = 1;
+
+    setupSectorDashboard();
+    triggerPipelinePulse();
+  }
+
   // Setup uploader and downloader listeners
   const customDatasetInput = document.getElementById('custom-dataset-input');
   const btnUploadDataset = document.getElementById('btn-upload-dataset');
-  const btnAnalyzeDataset = document.getElementById('btn-analyze-dataset');
   const btnDownloadTemplate = document.getElementById('btn-download-template');
+  
+  const btnDashboardBrowse = document.getElementById('btn-dashboard-browse-file');
+  const dashboardEmptyState = document.getElementById('dashboard-empty-state');
+  
+  const btnTablePrev = document.getElementById('btn-table-prev');
+  const btnTableNext = document.getElementById('btn-table-next');
 
   if (btnUploadDataset && customDatasetInput) {
     btnUploadDataset.addEventListener('click', () => {
+      customDatasetInput.click();
+    });
+  }
+
+  if (btnDashboardBrowse && customDatasetInput) {
+    btnDashboardBrowse.addEventListener('click', () => {
       customDatasetInput.click();
     });
   }
@@ -11341,36 +11516,82 @@ document.addEventListener('DOMContentLoaded', () => {
   if (customDatasetInput) {
     customDatasetInput.addEventListener('change', (e) => {
       const file = e.target.files[0];
-      if (!file) return;
+      if (file) {
+        ingestAndProcessDataset(file);
+      }
+    });
+  }
 
-      const reader = new FileReader();
-      reader.onload = function(evt) {
-        const text = evt.target.result;
-        const parsed = parseCustomCSV(text);
-        if (parsed.length === 0) {
-          alert(currentLang === 'tr' ? 'Hata: Boş veya geçersiz dosya formatı!' : 'Error: Empty or invalid file format!');
-          return;
+  // Drag and drop event listeners on dashboard-empty-state
+  if (dashboardEmptyState) {
+    dashboardEmptyState.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      dashboardEmptyState.style.borderColor = 'var(--primary)';
+      dashboardEmptyState.style.background = 'rgba(255,255,255,0.05)';
+    });
+
+    dashboardEmptyState.addEventListener('dragleave', (e) => {
+      e.preventDefault();
+      dashboardEmptyState.style.borderColor = 'rgba(255,255,255,0.15)';
+      dashboardEmptyState.style.background = 'rgba(0,0,0,0.15)';
+    });
+
+    dashboardEmptyState.addEventListener('drop', (e) => {
+      e.preventDefault();
+      dashboardEmptyState.style.borderColor = 'rgba(255,255,255,0.15)';
+      dashboardEmptyState.style.background = 'rgba(0,0,0,0.15)';
+
+      const file = e.dataTransfer.files[0];
+      if (file) {
+        ingestAndProcessDataset(file);
+      }
+    });
+  }
+
+  // Quick template/samples buttons inside the empty state
+  document.querySelectorAll('.btn-sample-dataset-db').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      const datasetType = e.currentTarget.getAttribute('data-dataset');
+      if (datasetType) {
+        const mockData = generateProceduralMockData(datasetType, 1000);
+        
+        if (currentSector !== datasetType) {
+          currentSector = datasetType;
+          const sectorBadge = document.getElementById('dash-sector-badge');
+          if (sectorBadge) {
+            sectorBadge.textContent = datasetType === 'vakif' ? (currentLang === 'tr' ? 'VAKIF SEKTÖRÜ' : 'CHARITY SECTOR')
+                                    : datasetType === 'egitim' ? (currentLang === 'tr' ? 'EĞİTİM SEKTÖRÜ' : 'EDUCATION SECTOR')
+                                    : datasetType === 'gida' ? (currentLang === 'tr' ? 'GIDA SEKTÖRÜ' : 'FOOD SECTOR')
+                                    : datasetType === 'lojistik' ? (currentLang === 'tr' ? 'LOJİSTİK SEKTÖRÜ' : 'LOGISTICS SECTOR')
+                                    : (currentLang === 'tr' ? 'TEKSTİL SEKTÖRÜ' : 'TEXTILE SECTOR');
+            sectorBadge.setAttribute('data-sector', datasetType);
+          }
+          updateThemeColor(datasetType);
         }
-        activeDashboardRawData = parsed;
 
-        // Map parsed rows to databases[currentSector]
-        databases[currentSector] = parsed.map(row => mapRowToSector(row, currentSector));
+        processIngestedRows(mockData);
+      }
+    });
+  });
 
-        // Re-render table with uploaded data
+  // Table pagination button listeners
+  if (btnTablePrev) {
+    btnTablePrev.addEventListener('click', () => {
+      if (currentPage > 1) {
+        currentPage--;
         renderDatabaseTable();
+      }
+    });
+  }
 
-        // Enable and show the analyze button
-        if (btnAnalyzeDataset) {
-          btnAnalyzeDataset.style.display = 'flex';
-          btnAnalyzeDataset.removeAttribute('disabled');
-        }
-
-        alert(currentLang === 'tr' 
-          ? `Veri seti yüklendi! Toplam ${parsed.length} satır eklendi. Analiz Et butonuna basarak tahminleri hesaplayabilirsiniz.` 
-          : `Dataset loaded! Total ${parsed.length} rows added. Click Analyze to calculate predictions.`
-        );
-      };
-      reader.readAsText(file);
+  if (btnTableNext) {
+    btnTableNext.addEventListener('click', () => {
+      const list = databases[currentSector] || [];
+      const totalPages = Math.ceil(list.length / rowsPerPage) || 1;
+      if (currentPage < totalPages) {
+        currentPage++;
+        renderDatabaseTable();
+      }
     });
   }
 

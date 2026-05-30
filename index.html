@@ -596,6 +596,30 @@
           </div>
         </header>
 
+        <!-- Dynamic Ingestion Empty State drop-zone -->
+        <div id="dashboard-empty-state" class="glass-card" style="display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 4rem 2rem; text-align: center; margin-top: 2rem; border: 2px dashed rgba(255,255,255,0.15); border-radius: 16px; background: rgba(0,0,0,0.15); transition: border-color 0.3s ease, background-color 0.3s ease;">
+          <div style="font-size: 3.5rem; margin-bottom: 1.5rem; filter: drop-shadow(0 0 15px rgba(255,255,255,0.1));">📥</div>
+          <h2 data-i18n="empty_state_title" style="font-size: 1.8rem; margin-bottom: 0.8rem; font-family: var(--font-display); font-weight: 700; color: var(--text-primary);">Veri Seti Yükleyin</h2>
+          <p data-i18n="empty_state_desc" style="color: var(--text-secondary); font-size: 0.95rem; max-width: 500px; margin-bottom: 2rem; line-height: 1.6;">
+            Analiz paneline erişmek için .csv veya .xlsx formatında bir veri kümesi yükleyin. Sektörünüz için optimize edilmiş tahmin modeli otomatik olarak çalıştırılacaktır.
+          </p>
+          <button type="button" class="btn-primary" id="btn-dashboard-browse-file" style="padding: 0.8rem 2.5rem; font-size: 0.9rem; font-weight: 600; display: flex; align-items: center; gap: 0.5rem; box-shadow: 0 4px 14px var(--primary-glow);">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+            <span data-i18n="btn_browse_dataset">Dosya Seçin</span>
+          </button>
+          
+          <div style="margin-top: 2.5rem; border-top: 1px dashed var(--border-color); padding-top: 1.5rem; width: 100%; max-width: 550px;">
+            <p style="font-size: 0.82rem; color: var(--text-muted); margin-bottom: 1rem;" data-i18n="quick_samples_title">Dosyanız yok mu? Örnek şablonlar ile anında test edin:</p>
+            <div style="display: flex; justify-content: center; gap: 0.8rem; flex-wrap: wrap;">
+              <button class="btn-secondary btn-sample-dataset-db" data-dataset="vakif" style="padding: 0.5rem 1rem; font-size: 0.78rem; display: flex; align-items: center; gap: 0.4rem;">📊 vakif_donors.csv</button>
+              <button class="btn-secondary btn-sample-dataset-db" data-dataset="egitim" style="padding: 0.5rem 1rem; font-size: 0.78rem; display: flex; align-items: center; gap: 0.4rem;">🎓 egitim_students.csv</button>
+              <button class="btn-secondary btn-sample-dataset-db" data-dataset="gida" style="padding: 0.5rem 1rem; font-size: 0.78rem; display: flex; align-items: center; gap: 0.4rem;">🍕 gida_orders.xlsx</button>
+              <button class="btn-secondary btn-sample-dataset-db" data-dataset="lojistik" style="padding: 0.5rem 1rem; font-size: 0.78rem; display: flex; align-items: center; gap: 0.4rem;">🚚 lojistik_delays.csv</button>
+              <button class="btn-secondary btn-sample-dataset-db" data-dataset="tekstil" style="padding: 0.5rem 1rem; font-size: 0.78rem; display: flex; align-items: center; gap: 0.4rem;">🛍️ tekstil_buyers.xlsx</button>
+            </div>
+          </div>
+        </div>
+
       <div class="dashboard-grid">
         
         <!-- ML Visualizer Container -->
@@ -871,6 +895,12 @@
                 <!-- Dynamically populated rows -->
               </tbody>
             </table>
+          </div>
+          <!-- Table Pagination Controls -->
+          <div id="table-pagination-controls" style="display: flex; justify-content: space-between; align-items: center; margin-top: 1rem; font-size: 0.8rem; color: var(--text-secondary);">
+            <button type="button" id="btn-table-prev" class="btn-secondary" style="padding: 0.35rem 0.8rem; font-size: 0.75rem; border-radius: 6px; cursor: pointer;" data-i18n="btn_prev">← Geri</button>
+            <span id="table-page-info">Sayfa 1 / 1</span>
+            <button type="button" id="btn-table-next" class="btn-secondary" style="padding: 0.35rem 0.8rem; font-size: 0.75rem; border-radius: 6px; cursor: pointer;" data-i18n="btn_next">İleri →</button>
           </div>
         </div>
 
@@ -2162,6 +2192,7 @@
   <!-- ================= PRINT-ONLY STRATEGIC REPORT CONTAINER ================= -->
   <div id="pdf-report-print-container" class="print-only-report"></div>
 
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <script src="qrcode.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="app.js"></script>
