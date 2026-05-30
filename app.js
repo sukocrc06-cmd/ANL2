@@ -1967,7 +1967,7 @@ document.addEventListener('DOMContentLoaded', () => {
     validateCardForm();
   }
 
-  // Form Submit: Create Access Card
+  // Form Submit: Create Access Card and Login/Transition Immediately
   accessCardForm.addEventListener('submit', (e) => {
     e.preventDefault();
     loginFailedAttempts = 0; // Reset failed counter
@@ -2026,6 +2026,31 @@ document.addEventListener('DOMContentLoaded', () => {
     .catch(err => {
       console.error('Error creating card on server:', err);
     });
+
+    // Auto-login and transition to State 3
+    const cardData = {
+      username,
+      password,
+      company,
+      sector,
+      userId: username,
+      sessionToken: 'token_' + username + '_' + Date.now(),
+      expiresAt: Date.now() + 7 * 24 * 60 * 60 * 1000,
+      remember: true
+    };
+    localStorage.setItem('isLoggedIn', 'true');
+    localStorage.setItem('userCardData', JSON.stringify(cardData));
+    sessionStorage.setItem('sessionActive', 'true');
+
+    // Register card activation on server
+    apiClient.request('/api/activate-card', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username })
+    }).catch(err => console.error('Error activating card on server:', err));
+
+    // Trigger navigation transition to dashboard
+    transitionToDashboard();
   });
 
   // Action: Expire Credentials Card
@@ -11133,6 +11158,7 @@ document.addEventListener('DOMContentLoaded', () => {
               currentCompany = cardData.company;
               currentSector = cardData.sector;
               tempCredentials = cardData;
+              localStorage.setItem('isLoggedIn', 'true');
               console.log(`[App Lifecycle] Restored session for ${cardData.username} of ${cardData.company}`);
               
               // Populate the welcome page card UI with these restored credentials
