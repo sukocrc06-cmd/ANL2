@@ -9,6 +9,42 @@ const translations = {
     tr: "ANL Vertex - Denetimli Makine Öğrenimi Portalı",
     en: "ANL Vertex - Supervised Machine Learning Portal"
   },
+  badge_sandbox: {
+    tr: "İnteraktif Laboratuvar",
+    en: "Interactive Sandbox"
+  },
+  sandbox_title: {
+    tr: "İnteraktif Analitik Laboratuvarı",
+    en: "Interactive Analytics Sandbox"
+  },
+  sandbox_desc: {
+    tr: "Sisteme giriş yapmadan önce yapay zeka modellerimizin çalışma prensibini canlı simülasyonla test edin.",
+    en: "Simulate a live machine learning model. Adjust inputs below to see predictions update in real-time before accessing the portal."
+  },
+  tab_egitim_short: {
+    tr: "Eğitim (Olasılık)",
+    en: "Education (Prob)"
+  },
+  tab_gida_short: {
+    tr: "Gıda (Regresyon)",
+    en: "Food (Regression)"
+  },
+  tab_vakif_short: {
+    tr: "Vakıf (Sınıflandırma)",
+    en: "Charity (Classify)"
+  },
+  sandbox_prediction_title: {
+    tr: "Simülasyon Çıktısı",
+    en: "Simulation Prediction"
+  },
+  btn_sandbox_guide_start: {
+    tr: "Aura AI Sesli Rehberi Başlat",
+    en: "Start Aura AI Voice Guide"
+  },
+  sandbox_guide_placeholder: {
+    tr: "Yapay zeka sesli/görsel rehberini başlatmak için yukarıdaki butona tıklayın. Modelin karar sürecini detaylıca açıklayacaktır.",
+    en: "Click the button above to start the AI voice/visual guide. It will explain the model decision-making process in detail."
+  },
   btn_viz_default: {
     tr: "Sektör Modeli",
     en: "Sector Model"
@@ -1681,6 +1717,10 @@ document.addEventListener('DOMContentLoaded', () => {
       });
       // Theme accent + deep background
       updateThemeColor(selectedSector);
+      // Sync with Welcome Page Onboarding Sandbox tab selection
+      if (typeof WelcomeSandbox !== 'undefined' && WelcomeSandbox.setActiveTab) {
+        WelcomeSandbox.setActiveTab(selectedSector);
+      }
       // Stamp sector onto login modal so CSS orb palette selectors fire
       const lm = document.getElementById('login-modal');
       if (lm) lm.setAttribute('data-sector', selectedSector);
@@ -11613,6 +11653,452 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Bind the controller events globally
   bindVisualControllerEvents();
+
+  // Play procedural synthesized blip sounds on typewriter keys using Web Audio API
+  function playTypewriterSound() {
+    try {
+      const AudioContext = window.AudioContext || window.webkitAudioContext;
+      if (!AudioContext) return;
+      const ctx = new AudioContext();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(550 + Math.random() * 250, ctx.currentTime);
+      
+      gain.gain.setValueAtTime(0.012, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.00001, ctx.currentTime + 0.04);
+      
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      
+      osc.start();
+      osc.stop(ctx.currentTime + 0.04);
+    } catch (e) {
+      // Audio blocked or unsupported
+    }
+  }
+
+  // WelcomeSandbox handles the landing page onboarding guided interactive simulation
+  const WelcomeSandbox = {
+    activeSector: 'vakif',
+    isAudioPlaying: false,
+    typewriterInterval: null,
+    inputs: {
+      vakif: { freq: 8, amount: 150 },
+      egitim: { study: 12, attendance: 85 },
+      gida: { rating: 4.2, orders: 1500 }
+    },
+
+    init: function() {
+      // Bind tabs
+      const tabs = document.querySelectorAll('.btn-sandbox-tab');
+      tabs.forEach(tab => {
+        tab.addEventListener('click', (e) => {
+          const targetSector = e.currentTarget.getAttribute('data-sandbox-sector');
+          this.setActiveTab(targetSector);
+        });
+      });
+
+      // Bind guide button
+      const guideBtn = document.getElementById('btn-sandbox-guide');
+      if (guideBtn) {
+        guideBtn.addEventListener('click', () => {
+          this.triggerAIExplanation();
+        });
+      }
+
+      // Initialize default
+      this.setActiveTab('vakif');
+    },
+
+    setActiveTab: function(sector) {
+      if (!sector || !this.inputs[sector]) return;
+      this.activeSector = sector;
+
+      // Update Tab UI active class
+      const tabs = document.querySelectorAll('.btn-sandbox-tab');
+      tabs.forEach(tab => {
+        if (tab.getAttribute('data-sandbox-sector') === sector) {
+          tab.classList.add('active');
+        } else {
+          tab.classList.remove('active');
+        }
+      });
+
+      // Change background accent dynamically during welcome sandbox switch
+      updateThemeColor(sector);
+
+      this.renderSliders();
+      this.updatePrediction();
+      this.stopSpeaking();
+    },
+
+    renderSliders: function() {
+      const container = document.getElementById('sandbox-inputs-container');
+      if (!container) return;
+
+      const currentVals = this.inputs[this.activeSector];
+      let html = '';
+
+      if (this.activeSector === 'vakif') {
+        html = `
+          <div class="control-group">
+            <div class="control-label" style="display:flex; justify-content:space-between; margin-bottom: 0.4rem;">
+              <span>${currentLang === 'tr' ? 'Aylık Katılım Sıklığı (Ziyaret):' : 'Monthly Attendance Frequency (Visits):'}</span>
+              <span id="sandbox-val-freq" style="color:var(--primary); font-weight:bold;">${currentVals.freq}</span>
+            </div>
+            <input type="range" class="slider-input" id="sandbox-slider-freq" min="1" max="25" step="1" value="${currentVals.freq}">
+          </div>
+          <div class="control-group" style="margin-top: 1rem;">
+            <div class="control-label" style="display:flex; justify-content:space-between; margin-bottom: 0.4rem;">
+              <span>${currentLang === 'tr' ? 'Geçmiş Bağış Tutarı ($):' : 'Past Donation Amount ($):'}</span>
+              <span id="sandbox-val-amount" style="color:var(--primary); font-weight:bold;">$${currentVals.amount}</span>
+            </div>
+            <input type="range" class="slider-input" id="sandbox-slider-amount" min="10" max="1000" step="10" value="${currentVals.amount}">
+          </div>
+        `;
+      } else if (this.activeSector === 'egitim') {
+        html = `
+          <div class="control-group">
+            <div class="control-label" style="display:flex; justify-content:space-between; margin-bottom: 0.4rem;">
+              <span>${currentLang === 'tr' ? 'Haftalık Çalışma Süresi (Saat):' : 'Weekly Study Time (Hours):'}</span>
+              <span id="sandbox-val-study" style="color:var(--secondary); font-weight:bold;">${currentVals.study}</span>
+            </div>
+            <input type="range" class="slider-input" id="sandbox-slider-study" min="2" max="40" step="1" value="${currentVals.study}">
+          </div>
+          <div class="control-group" style="margin-top: 1rem;">
+            <div class="control-label" style="display:flex; justify-content:space-between; margin-bottom: 0.4rem;">
+              <span>${currentLang === 'tr' ? 'Ders Devam Oranı (%):' : 'Course Attendance Rate (%):'}</span>
+              <span id="sandbox-val-attendance" style="color:var(--secondary); font-weight:bold;">${currentVals.attendance}%</span>
+            </div>
+            <input type="range" class="slider-input" id="sandbox-slider-attendance" min="30" max="100" step="1" value="${currentVals.attendance}">
+          </div>
+        `;
+      } else if (this.activeSector === 'gida') {
+        html = `
+          <div class="control-group">
+            <div class="control-label" style="display:flex; justify-content:space-between; margin-bottom: 0.4rem;">
+              <span>${currentLang === 'tr' ? 'Ortalama Sipariş Hacmi:' : 'Average Order Volume:'}</span>
+              <span id="sandbox-val-orders" style="color:var(--success); font-weight:bold;">${currentVals.orders}</span>
+            </div>
+            <input type="range" class="slider-input" id="sandbox-slider-orders" min="100" max="4000" step="50" value="${currentVals.orders}">
+          </div>
+          <div class="control-group" style="margin-top: 1rem;">
+            <div class="control-label" style="display:flex; justify-content:space-between; margin-bottom: 0.4rem;">
+              <span>${currentLang === 'tr' ? 'Restoran Değerlendirme Puanı:' : 'Restaurant Rating Score:'}</span>
+              <span id="sandbox-val-rating" style="color:var(--success); font-weight:bold;">${currentVals.rating}</span>
+            </div>
+            <input type="range" class="slider-input" id="sandbox-slider-rating" min="1" max="5" step="0.1" value="${currentVals.rating}">
+          </div>
+        `;
+      }
+
+      container.innerHTML = html;
+
+      // Bind input events
+      if (this.activeSector === 'vakif') {
+        const sliderFreq = document.getElementById('sandbox-slider-freq');
+        const sliderAmount = document.getElementById('sandbox-slider-amount');
+        [sliderFreq, sliderAmount].forEach(slider => {
+          if (slider) {
+            slider.addEventListener('input', () => {
+              this.inputs.vakif.freq = parseInt(sliderFreq.value);
+              this.inputs.vakif.amount = parseInt(sliderAmount.value);
+              document.getElementById('sandbox-val-freq').textContent = this.inputs.vakif.freq;
+              document.getElementById('sandbox-val-amount').textContent = `$${this.inputs.vakif.amount}`;
+              this.updatePrediction();
+              this.stopSpeaking();
+            });
+          }
+        });
+      } else if (this.activeSector === 'egitim') {
+        const sliderStudy = document.getElementById('sandbox-slider-study');
+        const sliderAttendance = document.getElementById('sandbox-slider-attendance');
+        [sliderStudy, sliderAttendance].forEach(slider => {
+          if (slider) {
+            slider.addEventListener('input', () => {
+              this.inputs.egitim.study = parseInt(sliderStudy.value);
+              this.inputs.egitim.attendance = parseInt(sliderAttendance.value);
+              document.getElementById('sandbox-val-study').textContent = this.inputs.egitim.study;
+              document.getElementById('sandbox-val-attendance').textContent = `${this.inputs.egitim.attendance}%`;
+              this.updatePrediction();
+              this.stopSpeaking();
+            });
+          }
+        });
+      } else if (this.activeSector === 'gida') {
+        const sliderOrders = document.getElementById('sandbox-slider-orders');
+        const sliderRating = document.getElementById('sandbox-slider-rating');
+        [sliderOrders, sliderRating].forEach(slider => {
+          if (slider) {
+            slider.addEventListener('input', () => {
+              this.inputs.gida.orders = parseInt(sliderOrders.value);
+              this.inputs.gida.rating = parseFloat(sliderRating.value).toFixed(1);
+              document.getElementById('sandbox-val-orders').textContent = this.inputs.gida.orders;
+              document.getElementById('sandbox-val-rating').textContent = this.inputs.gida.rating;
+              this.updatePrediction();
+              this.stopSpeaking();
+            });
+          }
+        });
+      }
+    },
+
+    updatePrediction: function() {
+      const card = document.getElementById('sandbox-output-card');
+      const val = document.getElementById('sandbox-prediction-value');
+      const desc = document.getElementById('sandbox-prediction-desc');
+      if (!card || !val || !desc) return;
+
+      // Reset style animations on prediction card
+      val.style.transform = 'scale(1.05)';
+      setTimeout(() => { val.style.transform = 'scale(1)'; }, 100);
+
+      if (this.activeSector === 'vakif') {
+        const inputs = this.inputs.vakif;
+        const approved = (inputs.freq > 5 && inputs.amount > 100);
+        card.style.borderLeftColor = approved ? 'var(--success)' : 'var(--danger)';
+        card.style.background = approved ? 'hsla(145, 45%, 45%, 0.05)' : 'hsla(350, 62%, 55%, 0.05)';
+        val.textContent = approved 
+          ? (currentLang === 'tr' ? "Düzenli Bağışçı" : "Regular Donor")
+          : (currentLang === 'tr' ? "Potansiyel / Düzensiz Bağışçı" : "Potential / Irregular Donor");
+        desc.textContent = approved
+          ? (currentLang === 'tr' ? "Yüksek katılım ve bağış düzeyi ile düzenli donör segmentindedir." : "Classified as regular donor due to high participation and donation levels.")
+          : (currentLang === 'tr' ? "Katılım sıklığı veya bağış düzeyi yetersizdir." : "Attendance frequency or donation levels are below regular thresholds.");
+      } else if (this.activeSector === 'egitim') {
+        const inputs = this.inputs.egitim;
+        const z = 4.5 - (0.12 * inputs.study) - (0.04 * inputs.attendance);
+        const prob = 1.0 / (1.0 + Math.exp(-z));
+        const pct = Math.round(prob * 100);
+
+        if (pct >= 50) {
+          card.style.borderLeftColor = 'var(--danger)';
+          card.style.background = 'hsla(350, 62%, 55%, 0.05)';
+          val.textContent = currentLang === 'tr' ? `Yüksek Başarısızlık Riski (%${pct})` : `High Failure Risk (${pct}%)`;
+          desc.textContent = currentLang === 'tr' ? "Kritik devamsızlık veya yetersiz ders çalışma süresi tespit edilmiştir." : "Critical absenteeism or insufficient study hours detected.";
+        } else if (pct >= 15) {
+          card.style.borderLeftColor = 'var(--warning)';
+          card.style.background = 'hsla(32, 65%, 50%, 0.05)';
+          val.textContent = currentLang === 'tr' ? `Orta Başarısızlık Riski (%${pct})` : `Medium Failure Risk (${pct}%)`;
+          desc.textContent = currentLang === 'tr' ? "Akademik performans orta seviyededir. Bireysel takip önerilir." : "Academic performance is moderate. Individual monitoring recommended.";
+        } else {
+          card.style.borderLeftColor = 'var(--success)';
+          card.style.background = 'hsla(145, 45%, 45%, 0.05)';
+          val.textContent = currentLang === 'tr' ? `Düşük Başarısızlık Riski (%${pct})` : `Low Failure Risk (${pct}%)`;
+          desc.textContent = currentLang === 'tr' ? "Ders çalışma süresi ve devam oranı son derece yüksek ve sağlıklıdır." : "Study time and attendance rate are excellent and highly satisfactory.";
+        }
+      } else if (this.activeSector === 'gida') {
+        const inputs = this.inputs.gida;
+        const demand = Math.round(100 + (0.5 * inputs.orders) + (200 * inputs.rating));
+
+        if (demand > 2000) {
+          card.style.borderLeftColor = 'var(--success)';
+          card.style.background = 'hsla(145, 45%, 45%, 0.05)';
+          val.textContent = currentLang === 'tr' ? `${demand} Sipariş / Gün (Yüksek)` : `${demand} Orders / Day (High)`;
+          desc.textContent = currentLang === 'tr' ? "Restoran puanı ve sipariş yoğunluğuna bağlı olarak çok yoğun talep öngörülmektedir." : "Extremely high demand forecast based on restaurant rating and order history.";
+        } else if (demand > 1000) {
+          card.style.borderLeftColor = 'var(--primary)';
+          card.style.background = 'hsla(215, 68%, 53%, 0.05)';
+          val.textContent = currentLang === 'tr' ? `${demand} Sipariş / Gün (Normal)` : `${demand} Orders / Day (Normal)`;
+          desc.textContent = currentLang === 'tr' ? "Talep seviyeleri stabil ve normal sınırlar içerisindedir." : "Demand levels are stable and within normal operational boundaries.";
+        } else {
+          card.style.borderLeftColor = 'var(--danger)';
+          card.style.background = 'hsla(350, 62%, 55%, 0.05)';
+          val.textContent = currentLang === 'tr' ? `${demand} Sipariş / Gün (Düşük)` : `${demand} Orders / Day (Low)`;
+          desc.textContent = currentLang === 'tr' ? "Tedarik israfını önlemek için envanter planlaması revize edilmelidir." : "Inventory planning must be revised to prevent operational food waste.";
+        }
+      }
+    },
+
+    getNarrationScript: function() {
+      let script = '';
+      if (this.activeSector === 'vakif') {
+        const inputs = this.inputs.vakif;
+        const approved = (inputs.freq > 5 && inputs.amount > 100);
+        const pred = approved 
+          ? (currentLang === 'tr' ? "Düzenli Bağışçı" : "Regular Donor")
+          : (currentLang === 'tr' ? "Potansiyel veya Düzensiz Bağışçı" : "Potential or Irregular Donor");
+        const action = approved
+          ? (currentLang === 'tr' ? "Bu bağışçı için sadakat programı başlatılmalı, teşekkür mektubu gönderilmeli ve şeffaflık raporu paylaşılmalıdır." : "Initiate a loyalty program for this donor, send a thank-you letter, and share transparency reports.")
+          : (currentLang === 'tr' ? "Bağışçıyı aylık bülten listesine ekleyin ve düzenli bağışa teşvik edici özel davetiyeler gönderin." : "Add the donor to the monthly newsletter list and send invitations to events designed to encourage regular support.");
+        
+        if (currentLang === 'tr') {
+          script = `Gözetimli karar ağacı modelimiz aktif girdileri analiz ediyor. Aylık katılım sıklığı ${inputs.freq} kez ve geçmiş bağış tutarı ${inputs.amount} dolar olarak belirlendi. Modelimiz bu verilere dayanarak donörü '${pred}' olarak sınıflandırıyor. Bu durum için önerilen stratejik adım: ${action}`;
+        } else {
+          script = `Our supervised decision tree model is analyzing the inputs. Monthly attendance is ${inputs.freq} times and past donation amount is ${inputs.amount} dollars. Based on these parameters, the model classifies the donor as a '${pred}'. The recommended strategic action is: ${action}`;
+        }
+      } else if (this.activeSector === 'egitim') {
+        const inputs = this.inputs.egitim;
+        const z = 4.5 - (0.12 * inputs.study) - (0.04 * inputs.attendance);
+        const prob = 1.0 / (1.0 + Math.exp(-z));
+        const pct = Math.round(prob * 100);
+
+        let pred = '';
+        let action = '';
+        if (pct >= 50) {
+          pred = currentLang === 'tr' ? "Yüksek Başarısızlık Riski" : "High Failure Risk";
+          action = currentLang === 'tr' ? "Rehberlik servisi bilgilendirilmeli, veli görüşmesi düzenlenmeli ve zorunlu ek etüt programları başlatılmalıdır." : "Notify the guidance service, arrange a parent meeting, and start mandatory extra study programs.";
+        } else if (pct >= 15) {
+          pred = currentLang === 'tr' ? "Orta Başarısızlık Riski" : "Medium Failure Risk";
+          action = currentLang === 'tr' ? "Öğrenciye bireysel çalışma planı hazırlanmalı ve haftalık gelişim takibi yapılmalıdır." : "Prepare an individual study plan for the student and follow up on their weekly progress.";
+        } else {
+          pred = currentLang === 'tr' ? "Düşük Başarısızlık Riski" : "Low Failure Risk";
+          action = currentLang === 'tr' ? "Mevcut yüksek akademik başarıyı sürdürmek için öğrenciye mentörlük ve ileri düzey projeler sunulmalıdır." : "Provide mentoring opportunities and advanced projects to sustain the high academic success.";
+        }
+
+        if (currentLang === 'tr') {
+          script = `Gözetimli lojistik regresyon modelimiz verileri hesaplıyor. Öğrencinin haftalık çalışma süresi ${inputs.study} saat ve devam oranı yüzde ${inputs.attendance}. Model, başarısızlık risk oranını yüzde ${pct} yani '${pred}' olarak hesaplıyor. Önerilen stratejik adım: ${action}`;
+        } else {
+          script = `Our supervised logistic regression model is processing the data. The weekly study hours are ${inputs.study} and course attendance is ${inputs.attendance} percent. The model calculates the failure risk as ${pct} percent, translating to '${pred}'. The recommended strategic action is: ${action}`;
+        }
+      } else if (this.activeSector === 'gida') {
+        const inputs = this.inputs.gida;
+        const demand = Math.round(100 + (0.5 * inputs.orders) + (200 * inputs.rating));
+
+        let pred = '';
+        let action = '';
+        if (demand > 2000) {
+          pred = currentLang === 'tr' ? "Yüksek Talep" : "High Demand";
+          action = currentLang === 'tr' ? "Tedarik zinciri hızlandırılmalı, personel sayısı artırılmalı ve kurye atama kapasitesi hazır tutulmalıdır." : "Speed up the supply chain, increase staff presence, and ensure courier dispatch capacity is fully optimized.";
+        } else if (demand > 1000) {
+          pred = currentLang === 'tr' ? "Normal Talep" : "Normal Demand";
+          action = currentLang === 'tr' ? "Mevcut envanteri koruyun ve hafta sonuna özel hafif indirim kampanyalarıyla siparişleri destekleyin." : "Maintain current inventory and support orders with light weekend promotional campaigns.";
+        } else {
+          pred = currentLang === 'tr' ? "Düşük Talep" : "Low Demand";
+          action = currentLang === 'tr' ? "Gıda israfını önlemek için stokları düşürün ve bölgeye özel promosyon/indirim paketleri sunun." : "Reduce stock levels to prevent food waste and run hyper-local promotions or discounts.";
+        }
+
+        if (currentLang === 'tr') {
+          script = `Gözetimli çoklu doğrusal regresyon analizimiz çalışıyor. Restoran değerlendirme puanı ${inputs.rating} ve ortalama sipariş hacmi ${inputs.orders} adet. Bu verilere göre modelimiz, günlük yemek talebini '${demand} sipariş' yani '${pred}' olarak öngörüyor. Önerilen iş eylemi: ${action}`;
+        } else {
+          script = `Our supervised multiple linear regression analysis is running. The restaurant rating is ${inputs.rating} and average order volume is ${inputs.orders} units. Based on these parameters, our model forecasts the daily demand as '${demand} orders', implying '${pred}'. The recommended action is: ${action}`;
+        }
+      }
+
+      return script;
+    },
+
+    triggerAIExplanation: function() {
+      if (this.isAudioPlaying) {
+        this.stopSpeaking();
+        return;
+      }
+
+      const script = this.getNarrationScript();
+      this.isAudioPlaying = true;
+
+      // Update button UI & waveform
+      const guideBtnText = document.getElementById('btn-sandbox-guide-text');
+      const wave = document.getElementById('sandbox-voice-wave');
+      if (guideBtnText) {
+        guideBtnText.textContent = currentLang === 'tr' ? "Aura AI Rehberi Durdur" : "Stop Aura AI Guide";
+      }
+      if (wave) {
+        wave.style.display = 'flex';
+        wave.classList.add('active');
+      }
+
+      // Visual Typewriter Effect with Audio click sounds
+      const textEl = document.getElementById('sandbox-guide-text');
+      if (textEl) {
+        textEl.textContent = '';
+        textEl.style.fontStyle = 'normal';
+        textEl.style.color = 'var(--text-primary)';
+        
+        let i = 0;
+        if (this.typewriterInterval) clearInterval(this.typewriterInterval);
+        
+        this.typewriterInterval = setInterval(() => {
+          if (i < script.length) {
+            textEl.textContent += script.charAt(i);
+            i++;
+            if (i % 3 === 0) {
+              playTypewriterSound();
+            }
+          } else {
+            clearInterval(this.typewriterInterval);
+            this.typewriterInterval = null;
+            if (!window.speechSynthesis || !window.speechSynthesis.speaking) {
+              this.stopSpeaking();
+            }
+          }
+        }, 30);
+      }
+
+      // Play Speech Synthesis
+      if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+        const utterance = new SpeechSynthesisUtterance(script);
+        utterance.lang = currentLang === 'tr' ? 'tr-TR' : 'en-US';
+        
+        // Find language voices
+        const voices = window.speechSynthesis.getVoices();
+        let targetVoice = null;
+        if (currentLang === 'tr') {
+          targetVoice = voices.find(v => v.lang.includes('TR')) || null;
+        } else {
+          targetVoice = voices.find(v => v.lang.includes('US') || v.lang.includes('GB')) || null;
+        }
+        if (targetVoice) utterance.voice = targetVoice;
+
+        utterance.onend = () => {
+          this.stopSpeaking();
+        };
+
+        window.speechSynthesis.speak(utterance);
+      }
+    },
+
+    stopSpeaking: function() {
+      this.isAudioPlaying = false;
+      if (this.typewriterInterval) {
+        clearInterval(this.typewriterInterval);
+        this.typewriterInterval = null;
+      }
+      if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+      }
+
+      const guideBtnText = document.getElementById('btn-sandbox-guide-text');
+      const wave = document.getElementById('sandbox-voice-wave');
+      if (guideBtnText) {
+        guideBtnText.textContent = currentLang === 'tr' ? "Aura AI Sesli Rehberi Başlat" : "Start Aura AI Voice Guide";
+      }
+      if (wave) {
+        wave.style.display = 'none';
+        wave.classList.remove('active');
+      }
+
+      const textEl = document.getElementById('sandbox-guide-text');
+      if (textEl && textEl.textContent === '') {
+        textEl.style.fontStyle = 'italic';
+        textEl.style.color = 'var(--text-secondary)';
+        textEl.textContent = currentLang === 'tr'
+          ? "Yapay zeka sesli/görsel rehberini başlatmak için yukarıdaki butona tıklayın. Modelin karar sürecini detaylıca açıklayacaktır."
+          : "Click the button above to start the AI voice/visual guide. It will explain the model decision-making process in detail.";
+      }
+    }
+  };
+
+  // Sync access card form onboarding highlight
+  if (accessCardForm) {
+    accessCardForm.addEventListener('submit', () => {
+      setTimeout(() => {
+        const guideText = document.getElementById('sandbox-guide-text');
+        if (guideText) {
+          guideText.style.fontStyle = 'normal';
+          guideText.style.color = 'var(--primary)';
+          guideText.innerHTML = currentLang === 'tr'
+            ? `🔑 <strong>Giriş Kartınız Hazır!</strong> Sektörünüze özel modeli simüle etmek için sağdaki sürgülerle oynayabilir veya <strong>Aura AI Sesli Rehberi</strong>'ni başlatabilirsiniz.`
+            : `🔑 <strong>Your Entry Card is Ready!</strong> You can play with the sliders to simulate your model or start the <strong>Aura AI Voice Guide</strong>.`;
+        }
+      }, 100);
+    });
+  }
+
+  // Initialize Welcome Sandbox
+  WelcomeSandbox.init();
 
   // Initialize App Lifecycle
   App.init();

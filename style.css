@@ -2789,4 +2789,48 @@ canvas {
   z-index: 10;
 }
 
+/* ━━━ Welcome Onboarding Sandbox Styles ━━━ */
+.welcome-sandbox-card {
+  transition: border-color 0.4s ease, box-shadow 0.4s ease;
+}
+.btn-sandbox-tab {
+  background: transparent;
+  color: var(--text-secondary);
+  border: none;
+  cursor: pointer;
+  font-family: var(--font-display);
+  font-weight: 600;
+  transition: var(--transition-smooth);
+}
+.btn-sandbox-tab:hover {
+  background: rgba(255, 255, 255, 0.05) !important;
+  color: var(--text-primary) !important;
+}
+.btn-sandbox-tab.active {
+  background: var(--primary) !important;
+  color: #ffffff !important;
+  box-shadow: 0 2px 8px var(--primary-glow);
+}
+@keyframes bounceWave {
+  0% { transform: scaleY(0.7); }
+  100% { transform: scaleY(2.2); }
+}
+.voice-wave {
+  display: flex;
+}
+.voice-wave.active .wave-bar {
+  animation-play-state: running;
+}
+.voice-wave:not(.active) .wave-bar {
+  animation-play-state: paused;
+}
+.pulse-dot {
+  animation: pulseGlow 1.5s infinite alternate;
+}
+@keyframes pulseGlow {
+  0% { box-shadow: 0 0 2px var(--success); opacity: 0.6; }
+  100% { box-shadow: 0 0 10px var(--success); opacity: 1; }
+}
+
+
 

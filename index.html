@@ -104,43 +104,65 @@
           </div>
         </div>
 
-        <!-- Introduction Details Column -->
-        <div class="welcome-promo glass-card fade-in">
-          <div class="badge badge-success" style="margin-bottom: 0.8rem;" data-i18n="badge_intro">ANL Vertex Tanıtım</div>
-          <h2 data-i18n="intro_title">Yapay Zeka Destekli Sektörel Analiz</h2>
-          <p style="color: var(--text-secondary); margin-bottom: 1.5rem; line-height: 1.6;" data-i18n="intro_desc">
-            <strong>ANL Vertex</strong>, işletmelerin sahip olduğu karmaşık verileri denetimli makine öğrenimi modelleri kullanarak analiz eden ve karar mekanizmalarını otomatikleştiren bir iş zekası portalıdır.
-          </p>
-
-          <div class="feature-list" style="display: flex; flex-direction: column; gap: 1.2rem;">
-            <div class="feature-item">
-              <div class="feature-icon" style="color: var(--primary);">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.21 15.89A10 10 0 1 1 8 2.83M22 12A10 10 0 0 0 12 2v10z"/></svg>
+        <!-- Interactive Analytics Sandbox Column -->
+        <div class="welcome-sandbox-card glass-card fade-in" style="display: flex; flex-direction: column; justify-content: space-between;">
+          <div>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.8rem;">
+              <div class="badge badge-success" data-i18n="badge_sandbox">İnteraktif Laboratuvar</div>
+              <div style="display: flex; align-items: center; gap: 0.4rem; font-size: 0.8rem; color: var(--text-muted);">
+                <span class="pulse-dot" style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--success); box-shadow: 0 0 8px var(--success);"></span>
+                <span>SANDBOX LIVE</span>
               </div>
-              <div class="feature-text">
-                <strong data-i18n="feat_1_title">Gözetimli ML Altyapısı (Supervised Learning)</strong>
-                <p style="font-size: 0.85rem; color: var(--text-muted);" data-i18n="feat_1_desc">Sistemlerinizdeki etiketli geçmiş verilerden örüntüler öğrenir, yeni veri girdilerinde yüksek doğruluklu tahminler üretir.</p>
+            </div>
+            <h2 data-i18n="sandbox_title" style="font-size: 1.5rem; margin-bottom: 0.5rem;">İnteraktif Analitik Laboratuvarı</h2>
+            <p style="color: var(--text-secondary); margin-bottom: 1.5rem; font-size: 0.85rem;" data-i18n="sandbox_desc">
+              Sisteme giriş yapmadan önce yapay zeka modellerimizin çalışma prensibini canlı simülasyonla test edin.
+            </p>
+
+            <!-- Sector Tabs -->
+            <div class="sandbox-tabs" style="display: flex; gap: 0.5rem; margin-bottom: 1.5rem; background: rgba(0,0,0,0.2); padding: 0.3rem; border-radius: 8px; border: 1px solid var(--border-color);">
+              <button type="button" class="btn-sandbox-tab active" data-sandbox-sector="vakif" style="flex: 1; padding: 0.4rem; font-size: 0.8rem; border-radius: 6px; border: none; cursor: pointer; transition: var(--transition-smooth);" data-i18n="tab_vakif_short">Vakıf (Sınıflandırma)</button>
+              <button type="button" class="btn-sandbox-tab" data-sandbox-sector="egitim" style="flex: 1; padding: 0.4rem; font-size: 0.8rem; border-radius: 6px; border: none; cursor: pointer; transition: var(--transition-smooth);" data-i18n="tab_egitim_short">Eğitim (Olasılık)</button>
+              <button type="button" class="btn-sandbox-tab" data-sandbox-sector="gida" style="flex: 1; padding: 0.4rem; font-size: 0.8rem; border-radius: 6px; border: none; cursor: pointer; transition: var(--transition-smooth);" data-i18n="tab_gida_short">Gıda (Regresyon)</button>
+            </div>
+
+            <!-- Dynamic Slider Inputs -->
+            <div id="sandbox-inputs-container" style="margin-bottom: 1.5rem;">
+              <!-- Will be injected by JS -->
+            </div>
+
+            <!-- Simulation Output Prediction Card -->
+            <div class="output-card approved" id="sandbox-output-card" style="padding: 1rem; border-radius: 12px; border-left: 4px solid var(--success); background: hsla(142, 45%, 45%, 0.05); margin-bottom: 1.5rem; display: flex; flex-direction: column; gap: 0.3rem; transition: var(--transition-smooth);">
+              <div style="font-size: 0.75rem; color: var(--text-secondary); text-transform: uppercase; font-weight: bold; letter-spacing: 0.05em;" data-i18n="sandbox_prediction_title">Simülasyon Çıktısı</div>
+              <div id="sandbox-prediction-value" style="font-size: 1.25rem; font-weight: 800; color: var(--text-primary); transition: transform 0.1s ease;">Düzenli Bağışçı</div>
+              <div id="sandbox-prediction-desc" style="font-size: 0.8rem; color: var(--text-secondary);">Katılım sıklığı ve geçmiş destek düzeyi düzenli bağışçı olma olasılığını doğrulamaktadır.</div>
+            </div>
+          </div>
+
+          <!-- Aura AI Voice & Narrative Guide -->
+          <div style="border-top: 1px dashed var(--border-color); padding-top: 1.2rem; display: flex; flex-direction: column; gap: 1rem;">
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
+              <button type="button" class="btn-primary" id="btn-sandbox-guide" style="padding: 0.5rem 1rem; font-size: 0.8rem; display: flex; align-items: center; gap: 0.5rem; background: var(--secondary); box-shadow: 0 4px 12px var(--secondary-glow); border: none; border-radius: 8px; color: white; cursor: pointer; font-weight: 600; transition: var(--transition-smooth);">
+                <!-- Soundwave/Volume Icon -->
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                  <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+                  <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+                </svg>
+                <span id="btn-sandbox-guide-text" data-i18n="btn_sandbox_guide_start">Aura AI Sesli Rehberi Başlat</span>
+              </button>
+
+              <!-- Equalizer Waveform Animation -->
+              <div class="voice-wave" id="sandbox-voice-wave" style="display: none; align-items: center; gap: 3px; height: 18px;">
+                <span class="wave-bar" style="display: inline-block; width: 3px; height: 8px; background: var(--secondary); border-radius: 10px; animation: bounceWave 0.8s ease-in-out infinite alternate;"></span>
+                <span class="wave-bar" style="display: inline-block; width: 3px; height: 15px; background: var(--secondary); border-radius: 10px; animation: bounceWave 0.5s ease-in-out infinite alternate; animation-delay: 0.1s;"></span>
+                <span class="wave-bar" style="display: inline-block; width: 3px; height: 12px; background: var(--secondary); border-radius: 10px; animation: bounceWave 0.7s ease-in-out infinite alternate; animation-delay: 0.2s;"></span>
+                <span class="wave-bar" style="display: inline-block; width: 3px; height: 6px; background: var(--secondary); border-radius: 10px; animation: bounceWave 0.6s ease-in-out infinite alternate; animation-delay: 0.3s;"></span>
               </div>
             </div>
 
-            <div class="feature-item">
-              <div class="feature-icon" style="color: var(--secondary);">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-              </div>
-              <div class="feature-text">
-                <strong data-i18n="feat_2_title">PDF Raporlama & Dokümantasyon</strong>
-                <p style="font-size: 0.85rem; color: var(--text-muted);" data-i18n="feat_2_desc">Tek tıkla, şirketinizin verilerini, model analiz sonuçlarını ve aksiyon önerilerini içeren resmi A4 PDF raporu indirin.</p>
-              </div>
-            </div>
-
-            <div class="feature-item">
-              <div class="feature-icon" style="color: var(--success);">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
-              </div>
-              <div class="feature-text">
-                <strong data-i18n="feat_3_title">Aksiyon Önerileri Modülü</strong>
-                <p style="font-size: 0.85rem; color: var(--text-muted);" data-i18n="feat_3_desc">Sadece tahmin üretmekle kalmaz, model çıktısına göre firmanızın alabileceği stratejik iş kararlarını belirler.</p>
-              </div>
+            <!-- AI Typewriter Explanation Panel -->
+            <div id="sandbox-guide-panel" style="background: rgba(0,0,0,0.25); border: 1px solid var(--border-color); border-radius: 10px; padding: 0.8rem 1rem; min-height: 70px; font-size: 0.82rem; color: var(--text-secondary); line-height: 1.5; display: flex; flex-direction: column; justify-content: center;">
+              <span id="sandbox-guide-text" style="font-style: italic;" data-i18n="sandbox_guide_placeholder">Yapay zeka sesli/görsel rehberini başlatmak için yukarıdaki butona tıklayın. Modelin karar sürecini detaylıca açıklayacaktır.</span>
             </div>
           </div>
         </div>
