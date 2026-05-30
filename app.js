@@ -12725,59 +12725,273 @@ document.addEventListener('DOMContentLoaded', () => {
     },
 
     triggerAIExplanation: function() {
-      if (this.isAudioPlaying) {
-        this.stopSpeaking();
+      if (typeof isTourRunning !== 'undefined' && isTourRunning) {
+        stopTour();
         return;
       }
-
-      const script = this.getNarrationScript();
-      this.isAudioPlaying = true;
-
-      // Update button UI & waveform
-      const guideBtnText = document.getElementById('btn-sandbox-guide-text');
-      const wave = document.getElementById('sandbox-voice-wave');
-      if (guideBtnText) {
-        guideBtnText.textContent = currentLang === 'tr' ? "Aura AI Rehberi Durdur" : "Stop Aura AI Guide";
+      
+      const sector = this.activeSector || 'vakif';
+      currentSector = sector;
+      
+      // Update theme color matching sector
+      updateThemeColor(sector);
+      
+      // Update sector badge in dashboard header
+      const sectorBadge = document.getElementById('dash-sector-badge');
+      if (sectorBadge) {
+        sectorBadge.textContent = sector === 'vakif' ? (currentLang === 'tr' ? 'VAKIF SEKTÖRÜ' : 'CHARITY SECTOR')
+                                : sector === 'egitim' ? (currentLang === 'tr' ? 'EĞİTİM SEKTÖRÜ' : 'EDUCATION SECTOR')
+                                : sector === 'gida' ? (currentLang === 'tr' ? 'GIDA SEKTÖRÜ' : 'FOOD SECTOR')
+                                : sector === 'lojistik' ? (currentLang === 'tr' ? 'LOJİSTİK SEKTÖRÜ' : 'LOGISTICS SECTOR')
+                                : (currentLang === 'tr' ? 'TEKSTİL SEKTÖRÜ' : 'TEXTILE SECTOR');
+        sectorBadge.setAttribute('data-sector', sector);
       }
-      if (wave) {
-        wave.style.display = 'flex';
-        wave.classList.add('active');
+
+      // Setup login session
+      const cardData = {
+        username: 'AuraAI_Guest',
+        password: 'demo_password',
+        company: 'Vertex Simulation Corp',
+        sector: sector,
+        userId: 'AuraAI_Guest',
+        sessionToken: 'token_guest_' + Date.now(),
+        expiresAt: Date.now() + 60 * 60 * 1000,
+        remember: false
+      };
+      localStorage.setItem('isLoggedIn', 'true');
+      localStorage.setItem('userCardData', JSON.stringify(cardData));
+      sessionStorage.setItem('sessionActive', 'true');
+      currentCompany = cardData.company;
+
+      // Navigate to dashboard
+      window.location.hash = 'dashboard';
+      if (typeof App !== 'undefined' && typeof App.initializeDashboardAfterLogin === 'function') {
+        App.initializeDashboardAfterLogin();
+      } else {
+        switchPage('dashboard', false);
       }
 
-      // Visual Typewriter Effect with Audio click sounds
-      const textEl = document.getElementById('sandbox-guide-text');
-      if (textEl) {
-        textEl.textContent = '';
-        textEl.style.fontStyle = 'normal';
-        textEl.style.color = 'var(--text-primary)';
+      // Generate and load procedural mock data matching the active sector
+      const mockData = generateProceduralMockData(sector, 12);
+      processIngestedRows(mockData);
+
+      // Start vocal tour after a short delay
+      setTimeout(() => {
+        startVocalTour();
+      }, 1000);
+    },
+
+    stopSpeaking: function() {
+      if (typeof stopTour === 'function') {
+        stopTour();
+      }
+    }
+  };
+
+  // --- LIVE GUIDED INTERACTIVE TOUR CORE ORCHESTRATION ---
+  let isTourRunning = false;
+
+  function stopTour() {
+    isTourRunning = false;
+    if ('speechSynthesis' in window) {
+      window.speechSynthesis.cancel();
+    }
+    
+    // Remove all highlights
+    document.querySelectorAll('.tour-pulse').forEach(el => el.classList.remove('tour-pulse'));
+    
+    // Remove floating banner
+    const banner = document.getElementById('tour-banner');
+    if (banner) banner.remove();
+    
+    // Wipe demo data
+    const activeSector = currentSector || 'vakif';
+    databases[activeSector] = [];
+    
+    // Re-setup to empty state
+    setupSectorDashboard();
+    
+    // Custom toast invitation
+    showTourToast(
+      currentLang === 'tr' 
+        ? "Rehber turu sonlandırıldı. Kendi veri kümenizi (CSV/Excel) yükleyebilirsiniz!" 
+        : "Guided tour completed. You can now upload your own dataset (CSV/Excel)!",
+      "info"
+    );
+  }
+
+  function showTourToast(message, type = 'info') {
+    let container = document.getElementById('toast-container');
+    if (!container) {
+      container = document.createElement('div');
+      container.id = 'toast-container';
+      container.style.cssText = 'position: fixed; bottom: 20px; right: 20px; display: flex; flex-direction: column; gap: 10px; z-index: 10000; pointer-events: none;';
+      document.body.appendChild(container);
+    }
+    
+    const toast = document.createElement('div');
+    toast.style.cssText = `
+      background: rgba(13, 20, 38, 0.95);
+      border: 1px solid ${type === 'success' ? 'var(--success)' : 'var(--secondary)'};
+      box-shadow: 0 4px 15px ${type === 'success' ? 'var(--success-glow)' : 'var(--secondary-glow)'};
+      color: var(--text-primary);
+      padding: 0.8rem 1.5rem;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      font-weight: 500;
+      pointer-events: auto;
+      transition: all 0.3s ease;
+      backdrop-filter: blur(10px);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    `;
+    
+    const icon = type === 'success' ? '✅' : 'ℹ️';
+    toast.innerHTML = `<span>${icon}</span><span>${message}</span>`;
+    container.appendChild(toast);
+    
+    setTimeout(() => {
+      toast.style.opacity = '0';
+      toast.style.transform = 'translateY(10px)';
+      setTimeout(() => toast.remove(), 300);
+    }, 4500);
+  }
+
+  function startVocalTour() {
+    isTourRunning = true;
+    
+    // Create/Show floating tour controller banner
+    let banner = document.getElementById('tour-banner');
+    if (banner) banner.remove();
+    
+    banner = document.createElement('div');
+    banner.id = 'tour-banner';
+    banner.style.cssText = `
+      position: fixed;
+      top: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(13, 20, 38, 0.95);
+      border: 1.5px solid var(--secondary);
+      box-shadow: 0 0 25px var(--secondary-glow);
+      padding: 0.8rem 1.5rem;
+      border-radius: 50px;
+      display: flex;
+      align-items: center;
+      gap: 1.2rem;
+      z-index: 9999;
+      backdrop-filter: blur(10px);
+      transition: all 0.3s ease;
+    `;
+    
+    const indicator = document.createElement('span');
+    indicator.style.cssText = `
+      width: 10px;
+      height: 10px;
+      background: var(--secondary);
+      border-radius: 50%;
+      box-shadow: 0 0 10px var(--secondary-glow);
+      animation: pulseGlow 1s infinite alternate;
+    `;
+    
+    const text = document.createElement('span');
+    text.style.cssText = `
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--text-primary);
+    `;
+    text.textContent = currentLang === 'tr' ? 'Aura AI Canlı Rehber Turu Aktif' : 'Aura AI Live Guided Tour Active';
+    
+    const stopBtn = document.createElement('button');
+    stopBtn.style.cssText = `
+      padding: 0.4rem 1rem;
+      font-size: 0.75rem;
+      font-weight: 600;
+      border-radius: 20px;
+      background: var(--danger);
+      border: none;
+      color: white;
+      cursor: pointer;
+      transition: var(--transition-smooth);
+      box-shadow: 0 2px 8px var(--danger-glow);
+    `;
+    stopBtn.textContent = currentLang === 'tr' ? 'Turu Durdur' : 'Stop Tour';
+    stopBtn.addEventListener('click', stopTour);
+    
+    banner.appendChild(indicator);
+    banner.appendChild(text);
+    banner.appendChild(stopBtn);
+    document.body.appendChild(banner);
+    
+    const steps = [
+      {
+        text: currentLang === 'tr' 
+          ? "Canlı Demoya hoş geldiniz. Bu Grafik alanına bakın: gözetimli modelinizin öznitelikleri nasıl görselleştirdiğini buradan görebilirsiniz."
+          : "Welcome to the Live Demo. Look at this Chart area: here is how your supervised model visualizes features.",
+        selector: '.visualizer-card'
+      },
+      {
+        text: currentLang === 'tr'
+          ? "Metrikleri gözlemleyin: Doğruluk ve Duyarlılık değerleri, verilerinizin tahmin gücünü göstermektedir."
+          : "Observe the Metrics: Accuracy and Recall show you the predictive strength of your data.",
+        selector: '.performance-metrics-box'
+      },
+      {
+        text: currentLang === 'tr'
+          ? "Yapay Zeka Eylem Merkezine bakın: Aura AI, almanız gereken acil stratejik eylemleri ve önerileri burada sunar."
+          : "Look at the AI Action Center: This is where Aura AI presents immediate strategic business actions you should take.",
+        selector: '.dashboard-actions-card'
+      }
+    ];
+
+    let currentStep = 0;
+    
+    function playNextStep() {
+      if (!isTourRunning) return;
+      
+      if (currentStep >= steps.length) {
+        // Tour completed successfully!
+        isTourRunning = false;
         
-        let i = 0;
-        if (this.typewriterInterval) clearInterval(this.typewriterInterval);
+        // Remove floating banner
+        const b = document.getElementById('tour-banner');
+        if (b) b.remove();
         
-        this.typewriterInterval = setInterval(() => {
-          if (i < script.length) {
-            textEl.textContent += script.charAt(i);
-            i++;
-            if (i % 3 === 0) {
-              playTypewriterSound();
-            }
-          } else {
-            clearInterval(this.typewriterInterval);
-            this.typewriterInterval = null;
-            if (!window.speechSynthesis || !window.speechSynthesis.speaking) {
-              this.stopSpeaking();
-            }
-          }
-        }, 30);
+        // Wipe demo data
+        const activeSector = currentSector || 'vakif';
+        databases[activeSector] = [];
+        
+        // Re-setup to empty state
+        setupSectorDashboard();
+        
+        // Invite user to upload custom file
+        if (currentLang === 'tr') {
+          alert("Aura AI Canlı Rehber Turu tamamlandı! Şimdi kendi .csv veya .xlsx veri kümenizi yükleyebilir ve platformu test edebilirsiniz.");
+        } else {
+          alert("Aura AI Live Guided Tour completed! You can now upload your own .csv or .xlsx dataset to test the platform.");
+        }
+        return;
       }
-
-      // Play Speech Synthesis
+      
+      const step = steps[currentStep];
+      
+      // Remove pulse from all elements first
+      document.querySelectorAll('.tour-pulse').forEach(el => el.classList.remove('tour-pulse'));
+      
+      // Find element
+      const element = document.querySelector(step.selector);
+      if (element) {
+        element.classList.add('tour-pulse');
+        element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+      
       if ('speechSynthesis' in window) {
-        window.speechSynthesis.cancel();
-        const utterance = new SpeechSynthesisUtterance(script);
+        window.speechSynthesis.cancel(); // Cancel any ongoing speech
+        const utterance = new SpeechSynthesisUtterance(step.text);
         utterance.lang = currentLang === 'tr' ? 'tr-TR' : 'en-US';
         
-        // Find language voices
+        // Get correct voice matching language
         const voices = window.speechSynthesis.getVoices();
         let targetVoice = null;
         if (currentLang === 'tr') {
@@ -12786,45 +13000,36 @@ document.addEventListener('DOMContentLoaded', () => {
           targetVoice = voices.find(v => v.lang.includes('US') || v.lang.includes('GB')) || null;
         }
         if (targetVoice) utterance.voice = targetVoice;
-
+        
         utterance.onend = () => {
-          this.stopSpeaking();
+          if (isTourRunning) {
+            currentStep++;
+            setTimeout(playNextStep, 1000);
+          }
         };
-
+        
+        utterance.onerror = (e) => {
+          console.error("SpeechSynthesis error:", e);
+          if (isTourRunning) {
+            currentStep++;
+            setTimeout(playNextStep, 1000);
+          }
+        };
+        
         window.speechSynthesis.speak(utterance);
-      }
-    },
-
-    stopSpeaking: function() {
-      this.isAudioPlaying = false;
-      if (this.typewriterInterval) {
-        clearInterval(this.typewriterInterval);
-        this.typewriterInterval = null;
-      }
-      if ('speechSynthesis' in window) {
-        window.speechSynthesis.cancel();
-      }
-
-      const guideBtnText = document.getElementById('btn-sandbox-guide-text');
-      const wave = document.getElementById('sandbox-voice-wave');
-      if (guideBtnText) {
-        guideBtnText.textContent = currentLang === 'tr' ? "Aura AI Sesli Rehberi Başlat" : "Start Aura AI Voice Guide";
-      }
-      if (wave) {
-        wave.style.display = 'none';
-        wave.classList.remove('active');
-      }
-
-      const textEl = document.getElementById('sandbox-guide-text');
-      if (textEl && textEl.textContent === '') {
-        textEl.style.fontStyle = 'italic';
-        textEl.style.color = 'var(--text-secondary)';
-        textEl.textContent = currentLang === 'tr'
-          ? "Yapay zeka sesli/görsel rehberini başlatmak için yukarıdaki butona tıklayın. Modelin karar sürecini detaylıca açıklayacaktır."
-          : "Click the button above to start the AI voice/visual guide. It will explain the model decision-making process in detail.";
+      } else {
+        // Fallback for no speech synthesis
+        setTimeout(() => {
+          if (isTourRunning) {
+            currentStep++;
+            playNextStep();
+          }
+        }, 6000);
       }
     }
-  };
+    
+    playNextStep();
+  }
 
   // Sync access card form onboarding highlight
   if (accessCardForm) {
