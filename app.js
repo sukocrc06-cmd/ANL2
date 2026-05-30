@@ -12475,231 +12475,48 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  // WelcomeSandbox handles the landing page onboarding guided interactive simulation
-  const WelcomeSandbox = {
-    activeSector: 'vakif',
-
-    init: function() {
-      // 1. Target the Right Element with a direct listener
-      const startBtn = document.getElementById('btn-start-voice-simulation');
-      if (startBtn) {
-        startBtn.addEventListener('click', (e) => {
-          e.preventDefault();
-          this.triggerLiveVoiceSimulation();
-        });
-      }
-
-      // Bulletproof event delegation fallback
-      document.addEventListener('click', (e) => {
-        const btn = e.target.closest('#btn-start-voice-simulation');
-        if (btn) {
-          e.preventDefault();
-          this.triggerLiveVoiceSimulation();
-        }
-      });
-    },
-
-    setActiveTab: function(sector) {
-      if (sector) {
-        this.activeSector = sector;
-      }
-    },
-
-    triggerLiveVoiceSimulation: function() {
-      if (typeof isTourRunning !== 'undefined' && isTourRunning) {
-        stopTour();
-        return;
-      }
-
-      const sector = this.activeSector || 'vakif';
-      currentSector = sector;
-
-      // Update theme color matching sector
-      updateThemeColor(sector);
-
-      // Setup login session
-      const cardData = {
-        username: 'AuraAI_Guest',
-        password: 'demo_password',
-        company: 'Vertex Simulation Corp',
-        sector: sector,
-        userId: 'AuraAI_Guest',
-        sessionToken: 'token_guest_' + Date.now(),
-        expiresAt: Date.now() + 60 * 60 * 1000,
-        remember: false
-      };
-      localStorage.setItem('isLoggedIn', 'true');
-      localStorage.setItem('userCardData', JSON.stringify(cardData));
-      sessionStorage.setItem('sessionActive', 'true');
-      currentCompany = cardData.company;
-
-      // 2. Execute Smooth UI State Transition
-      const pageWelcomeEl = document.getElementById('page-welcome');
-      const pageDashboardEl = document.getElementById('page-dashboard');
-      const emptyStateEl = document.getElementById('dashboard-empty-state');
-      const gridEl = document.querySelector('.dashboard-grid');
-
-      if (pageWelcomeEl) pageWelcomeEl.style.display = 'none';
-      if (pageDashboardEl) pageDashboardEl.style.display = 'flex';
-      if (emptyStateEl) emptyStateEl.style.display = 'none';
-      if (gridEl) gridEl.style.display = 'grid';
-      hideLoginModal();
-
-      // Update sector badge and company name in dashboard header
-      const dashCompName = document.getElementById('dash-company-name');
-      if (dashCompName) {
-        dashCompName.textContent = cardData.company.toUpperCase();
-      }
-
-      const sectorBadge = document.getElementById('dash-sector-badge');
-      if (sectorBadge) {
-        const sectorLabels = {
-          tr: {
-            vakif: 'DERNEKLER VE VAKIFLAR',
-            egitim: 'EĞİTİM SEKTÖRÜ',
-            gida: 'GIDA SEKTÖRÜ',
-            lojistik: 'ULAŞIM VE LOJİSTİK',
-            tekstil: 'TEKSTİL PERAKENDE'
-          },
-          en: {
-            vakif: 'ASSOCIATIONS AND CHARITIES',
-            egitim: 'EDUCATION SECTOR',
-            gida: 'FOOD SECTOR',
-            lojistik: 'TRANSPORT AND LOGISTICS',
-            tekstil: 'TEXTILE RETAIL'
-          }
-        };
-        const safeLang = (currentLang === 'en' || currentLang === 'tr') ? currentLang : 'tr';
-        sectorBadge.textContent = sectorLabels[safeLang][sector] || sector.toUpperCase();
-        sectorBadge.setAttribute('data-sector', sector);
-      }
-
-      // Navigate to dashboard hash
-      window.location.hash = 'dashboard';
-      if (typeof App !== 'undefined' && typeof App.initializeDashboardAfterLogin === 'function') {
-        App.initializeDashboardAfterLogin();
-      } else {
-        switchPage('dashboard', false);
-      }
-
-      // 3. Populate Simulation Demo Data Streams
-      // Set active sector data list to prevent auto empty-state trigger
-      databases[sector] = generateProceduralMockData(sector, 12);
-
-      // Fill #table-body with 4-5 mock data rows matching standard columns
-      const tableBody = document.getElementById('table-body');
-      if (tableBody) {
-        tableBody.innerHTML = `
-          <tr>
-            <td><strong>Asya Global A.Ş.</strong></td>
-            <td>$450,000</td>
-            <td>%12</td>
-            <td><span class="badge badge-success">Düşük Risk / Düzenli Bağışçı</span></td>
-            <td><button class="btn-primary" style="padding: 0.3rem 0.6rem; font-size: 0.85rem;">✉️</button></td>
-          </tr>
-          <tr>
-            <td><strong>Batı Teknoloji Ltd.</strong></td>
-            <td>$180,000</td>
-            <td>%28</td>
-            <td><span class="badge badge-success">Düşük Risk / Düzenli Bağışçı</span></td>
-            <td><button class="btn-primary" style="padding: 0.3rem 0.6rem; font-size: 0.85rem;">✉️</button></td>
-          </tr>
-          <tr>
-            <td><strong>Zirve Gıda Pazarlama</strong></td>
-            <td>$95,000</td>
-            <td>%45</td>
-            <td><span class="badge badge-danger">Yüksek Risk</span></td>
-            <td><button class="btn-primary" style="padding: 0.3rem 0.6rem; font-size: 0.85rem;">✉️</button></td>
-          </tr>
-          <tr>
-            <td><strong>Yıldız Lojistik Grubu</strong></td>
-            <td>$320,000</td>
-            <td>%18</td>
-            <td><span class="badge badge-success">Düşük Risk / Düzenli Bağışçı</span></td>
-            <td><button class="btn-primary" style="padding: 0.3rem 0.6rem; font-size: 0.85rem;">✉️</button></td>
-          </tr>
-        `;
-      }
-
-      // Inject HTML into #xai-bar-chart-container to show mock feature importance bars
-      const xaiContainer = document.getElementById('xai-bar-chart-container');
-      if (xaiContainer) {
-        xaiContainer.innerHTML = `
-          <div class="xai-bar-item">
-            <div class="xai-bar-label" title="Aylık Katılım Sıklığı">Aylık Katılım Sıklığı</div>
-            <div class="xai-bar-track"><div class="xai-bar-fill" style="width: 85%;"></div></div>
-            <div class="xai-bar-value">85%</div>
-          </div>
-          <div class="xai-bar-item">
-            <div class="xai-bar-label" title="Geçmiş Bağış Tutarı">Geçmiş Bağış Tutarı</div>
-            <div class="xai-bar-track"><div class="xai-bar-fill" style="width: 65%;"></div></div>
-            <div class="xai-bar-value">65%</div>
-          </div>
-          <div class="xai-bar-item">
-            <div class="xai-bar-label" title="Üyelik Süresi">Üyelik Süresi</div>
-            <div class="xai-bar-track"><div class="xai-bar-fill" style="width: 45%;"></div></div>
-            <div class="xai-bar-value">45%</div>
-          </div>
-        `;
-      }
-
-      // Set the main prediction box text (#dash-output-result)
-      const dashOutputResult = document.getElementById('dash-output-result');
-      if (dashOutputResult) {
-        dashOutputResult.textContent = "Düşük Risk / Düzenli Bağışçı";
-        dashOutputResult.style.color = "var(--success)";
-      }
-
-      const outCard = document.getElementById('dash-output-card');
-      if (outCard) {
-        outCard.className = 'output-card approved';
-      }
-
-      const outSummary = document.getElementById('dash-output-summary');
-      if (outSummary) {
-        outSummary.textContent = "Canlı simülasyon aktif. Tahmin kalitesi ve kararlılık seviyesi yüksektir.";
-      }
-
-      // Set record count badge
-      const dbCount = document.getElementById('database-count');
-      if (dbCount) {
-        dbCount.textContent = `4 ${currentLang === 'tr' ? 'Kayıt' : 'Records'}`;
-      }
-
-      // Start vocal tour after a short delay
-      setTimeout(() => {
-        startVoiceSimulationTour();
-      }, 1000);
-    }
-  };
-
-  // --- LIVE GUIDED INTERACTIVE TOUR CORE ORCHESTRATION ---
+  // --- ATOMIC AI VOICE SIMULATION CONTROLLER ---
   let isTourRunning = false;
+  let tourTimelineTimers = [];
 
   function stopTour() {
     isTourRunning = false;
+    
+    // Clear all scheduled timeline highlights
+    tourTimelineTimers.forEach(timer => clearTimeout(timer));
+    tourTimelineTimers = [];
+
     if ('speechSynthesis' in window) {
       window.speechSynthesis.cancel();
     }
     
-    // Remove all highlights and custom inline styles
-    document.querySelectorAll('.tour-pulse').forEach(el => {
-      el.classList.remove('tour-pulse');
-      el.style.boxShadow = '';
-      el.style.border = '';
+    // Reset highlights and custom inline styles on elements
+    const elementsToReset = ['#xai-bar-chart-container', '.performance-metrics-box', '#recommended-actions-box', '#page-dashboard'];
+    elementsToReset.forEach(selector => {
+      document.querySelectorAll(selector).forEach(el => {
+        el.style.boxShadow = '';
+        el.style.border = '';
+        el.classList.remove('tour-pulse');
+      });
     });
-    
-    // Remove floating banner
+
+    // Remove floating banner if any
     const banner = document.getElementById('tour-banner');
     if (banner) banner.remove();
     
-    // 6. Post-Simulation Reset Logic: Flush out all mock rows, clear charts, empty prediction indicators
+    // Clean database arrays
+    const activeSector = currentSector || 'vakif';
+    databases[activeSector] = [];
+
+    // Flush tables
     const tableBody = document.getElementById('table-body');
     if (tableBody) tableBody.innerHTML = '';
-    
+
+    // Clear charts
     const xaiContainer = document.getElementById('xai-bar-chart-container');
     if (xaiContainer) xaiContainer.innerHTML = '';
-    
+
+    // Reset prediction results
     const dashOutputResult = document.getElementById('dash-output-result');
     if (dashOutputResult) {
       dashOutputResult.textContent = '-';
@@ -12708,11 +12525,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const outSummary = document.getElementById('dash-output-summary');
     if (outSummary) outSummary.textContent = '';
-    
-    const activeSector = currentSector || 'vakif';
-    databases[activeSector] = [];
-    
-    // Re-setup empty state dashboard
+
+    // Restore empty state
     const emptyStateEl = document.getElementById('dashboard-empty-state');
     const gridEl = document.querySelector('.dashboard-grid');
     if (emptyStateEl) emptyStateEl.style.display = 'flex';
@@ -12720,8 +12534,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Update performance metrics
     updatePerformanceMetrics(false, false);
-    
-    // Custom toast invitation
+
+    // Show toast message
     showTourToast(
       currentLang === 'tr' 
         ? "Simülasyon tamamlandı. Kendi veri kümenizi (CSV/Excel) yükleyebilirsiniz!" 
@@ -12770,7 +12584,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function startVoiceSimulationTour() {
     isTourRunning = true;
-    
+    tourTimelineTimers = [];
+
     // Create/Show floating tour controller banner
     let banner = document.getElementById('tour-banner');
     if (banner) banner.remove();
@@ -12833,96 +12648,311 @@ document.addEventListener('DOMContentLoaded', () => {
     banner.appendChild(text);
     banner.appendChild(stopBtn);
     document.body.appendChild(banner);
-    
-    // 4. Cinematic Turkish Narration Walkthrough Script (exact spoken text split sequentially)
-    const steps = [
-      {
-        text: "ANL Vertex Canlı Analiz Simülasyonuna hoş geldiniz. Şu an sistemin ana analitik izleme panelindeyiz.",
-        selector: '#page-dashboard'
-      },
-      {
-        text: "Karşınızda duran Grafik ve Öznitelik Ağırlıkları alanı, denetimli makine öğrenimi modelimizin kararlarında hangi parametrelerin en kritik rol oynadığını şeffafça gösterir.",
-        selector: '#xai-bar-chart-container'
-      },
-      {
-        text: "Sol tarafta yer alan Performans Metrikleri paneli ise modelimizin doğruluk ve duyarlılık skorlarını anlık hesaplayarak tahmin kalitesini doğrular.",
-        selector: '.performance-metrics-box'
-      },
-      {
-        text: "Alt kısımdaki Aksiyon Merkezi, Aura Yapay Zeka motorunun bu analize dayanarak firmanız için ürettiği stratejik ticari eylemleri listeler.",
-        selector: '#recommended-actions-box'
-      }
-    ];
 
-    let currentStep = 0;
-    
-    function playNextStep() {
-      if (!isTourRunning) return;
-      
-      if (currentStep >= steps.length) {
-        stopTour();
-        return;
-      }
-      
-      const step = steps[currentStep];
-      
-      // Clear glow styles from all elements
-      document.querySelectorAll('.tour-pulse').forEach(el => {
-        el.classList.remove('tour-pulse');
-        el.style.boxShadow = '';
-        el.style.border = '';
-      });
-      
-      // 5. Visual Highlight Tracking (Glow / Pulse Effect)
-      const element = document.querySelector(step.selector);
-      if (element) {
-        element.classList.add('tour-pulse');
-        element.style.boxShadow = '0 0 20px #0ea5e9';
-        element.style.border = '2px solid #0ea5e9';
-        element.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      }
-      
-      if ('speechSynthesis' in window) {
-        const utterance = new SpeechSynthesisUtterance(step.text);
-        utterance.lang = 'tr-TR';
-        
-        // Get correct voice matching language
-        const voices = window.speechSynthesis.getVoices();
-        let targetVoice = voices.find(v => v.lang.includes('TR') || v.lang.includes('tr')) || null;
-        if (targetVoice) utterance.voice = targetVoice;
-        
-        utterance.onend = () => {
-          if (isTourRunning) {
-            currentStep++;
-            setTimeout(playNextStep, 1000);
-          }
-        };
-        
-        utterance.onerror = (e) => {
-          console.error("SpeechSynthesis error:", e);
-          if (isTourRunning) {
-            currentStep++;
-            setTimeout(playNextStep, 1000);
-          }
-        };
-        
-        window.speechSynthesis.speak(utterance);
-      } else {
-        // Fallback for no speech synthesis
-        setTimeout(() => {
-          if (isTourRunning) {
-            currentStep++;
-            playNextStep();
-          }
-        }, 8000);
-      }
-    }
-    
+    // Cancel any ongoing speech synthesis requests first
     if ('speechSynthesis' in window) {
-      window.speechSynthesis.cancel(); // Cancel any ongoing speech synthesis requests first
+      window.speechSynthesis.cancel();
     }
-    playNextStep();
+
+    const narrationText = "ANL Vertex Canlı Analiz Simülasyonuna hoş geldiniz. Şu an sistemin ana analitik izleme panelindeyiz. Karşınızda duran Grafik ve Öznitelik Ağırlıkları alanı, denetimli makine öğrenimi modelimizin kararlarında hangi parametrelerin en kritik rol oynadığını şeffafça gösterir. Sol tarafta yer alan Performans Metrikleri paneli ise modelimizin doğruluk ve duyarlılık skorlarını anlık hesaplayarak tahmin kalitesini doğrular. Alt kısımdaki Aksiyon Merkezi, Aura Yapay Zeka motorunun bu analize dayanarak firmanız için ürettiği stratejik eylemleri listeler.";
+
+    if ('speechSynthesis' in window) {
+      const utterance = new SpeechSynthesisUtterance(narrationText);
+      utterance.lang = 'tr-TR';
+
+      // Select Turkish voice if available
+      const voices = window.speechSynthesis.getVoices();
+      const trVoice = voices.find(v => v.lang.includes('TR') || v.lang.includes('tr'));
+      if (trVoice) {
+        utterance.voice = trVoice;
+      }
+
+      utterance.onstart = () => {
+        // Setup sequential timeline highlights matching spoken sections
+        
+        const highlightElement = (selector) => {
+          // Clear all highlights first
+          ['#xai-bar-chart-container', '.performance-metrics-box', '#recommended-actions-box'].forEach(sel => {
+            document.querySelectorAll(sel).forEach(el => {
+              el.style.boxShadow = '';
+              el.style.border = '';
+              el.classList.remove('tour-pulse');
+            });
+          });
+
+          // Highlight target element
+          if (selector) {
+            document.querySelectorAll(selector).forEach(el => {
+              el.classList.add('tour-pulse');
+              el.style.boxShadow = '0 0 25px #0ea5e9';
+              el.style.border = '2px solid #0ea5e9';
+              el.style.transition = 'all 0.3s ease-in-out';
+              el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            });
+          }
+        };
+
+        // Timeline Marker 1: Welcome / General Panel (0s - 7s)
+        highlightElement(null); // Just show the dashboard view
+        
+        // Timeline Marker 2: Charts & Feature Weights (7s - 15s)
+        tourTimelineTimers.push(setTimeout(() => {
+          if (isTourRunning) highlightElement('#xai-bar-chart-container');
+        }, 7000));
+
+        // Timeline Marker 3: Performance Metrics Box (15s - 23s)
+        tourTimelineTimers.push(setTimeout(() => {
+          if (isTourRunning) highlightElement('.performance-metrics-box');
+        }, 15000));
+
+        // Timeline Marker 4: Actions Center (23s onwards)
+        tourTimelineTimers.push(setTimeout(() => {
+          if (isTourRunning) highlightElement('#recommended-actions-box');
+        }, 23000));
+      };
+
+      utterance.onend = () => {
+        if (isTourRunning) {
+          stopTour();
+        }
+      };
+
+      utterance.onerror = (e) => {
+        console.error("SpeechSynthesis error in tour:", e);
+        if (isTourRunning) {
+          stopTour();
+        }
+      };
+
+      window.speechSynthesis.speak(utterance);
+    } else {
+      // Fallback timeline sequence if SpeechSynthesis is unsupported
+      console.warn("SpeechSynthesis not supported. Running visual-only fallback timeline.");
+      let timelineIndex = 0;
+      const fallbackSelectors = [null, '#xai-bar-chart-container', '.performance-metrics-box', '#recommended-actions-box'];
+      const runFallback = () => {
+        if (!isTourRunning) return;
+        if (timelineIndex >= fallbackSelectors.length) {
+          stopTour();
+          return;
+        }
+
+        const sel = fallbackSelectors[timelineIndex];
+        ['#xai-bar-chart-container', '.performance-metrics-box', '#recommended-actions-box'].forEach(s => {
+          document.querySelectorAll(s).forEach(el => {
+            el.style.boxShadow = '';
+            el.style.border = '';
+            el.classList.remove('tour-pulse');
+          });
+        });
+
+        if (sel) {
+          document.querySelectorAll(sel).forEach(el => {
+            el.classList.add('tour-pulse');
+            el.style.boxShadow = '0 0 25px #0ea5e9';
+            el.style.border = '2px solid #0ea5e9';
+            el.style.transition = 'all 0.3s ease-in-out';
+            el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          });
+        }
+
+        timelineIndex++;
+        tourTimelineTimers.push(setTimeout(runFallback, 7500));
+      };
+      runFallback();
+    }
   }
+
+  const WelcomeSandbox = {
+    activeSector: 'vakif',
+
+    init: function() {
+      // Bind click handlers directly
+      const startBtn = document.getElementById('btn-start-voice-simulation');
+      if (startBtn) {
+        startBtn.addEventListener('click', (e) => {
+          e.preventDefault();
+          this.triggerLiveVoiceSimulation();
+        });
+      }
+
+      // Event delegation fallback to capture late-binds
+      document.addEventListener('click', (e) => {
+        const btn = e.target.closest('#btn-start-voice-simulation');
+        if (btn) {
+          e.preventDefault();
+          this.triggerLiveVoiceSimulation();
+        }
+      });
+    },
+
+    setActiveTab: function(sector) {
+      if (sector) {
+        this.activeSector = sector;
+      }
+    },
+
+    triggerLiveVoiceSimulation: function() {
+      const sector = this.activeSector || 'vakif';
+      currentSector = sector;
+
+      // Update theme accent color
+      updateThemeColor(sector);
+
+      // Force login session state
+      const cardData = {
+        username: 'AuraAI_Guest',
+        password: 'demo_password',
+        company: 'Vertex Simulation Corp',
+        sector: sector,
+        userId: 'AuraAI_Guest',
+        sessionToken: 'token_guest_' + Date.now(),
+        expiresAt: Date.now() + 60 * 60 * 1000,
+        remember: false
+      };
+      localStorage.setItem('isLoggedIn', 'true');
+      localStorage.setItem('userCardData', JSON.stringify(cardData));
+      sessionStorage.setItem('sessionActive', 'true');
+      currentCompany = cardData.company;
+
+      // 2. Execute Seamless Layout State Switching
+      const pageWelcomeEl = document.getElementById('page-welcome');
+      const pageDashboardEl = document.getElementById('page-dashboard');
+      const emptyStateEl = document.getElementById('dashboard-empty-state');
+      const gridEl = document.querySelector('.dashboard-grid');
+
+      if (pageWelcomeEl) pageWelcomeEl.style.display = 'none';
+      if (pageDashboardEl) pageDashboardEl.style.display = 'flex';
+      if (emptyStateEl) emptyStateEl.style.display = 'none';
+      if (gridEl) gridEl.style.display = 'grid';
+      hideLoginModal();
+
+      // Sync header tags
+      const dashCompName = document.getElementById('dash-company-name');
+      if (dashCompName) {
+        dashCompName.textContent = cardData.company.toUpperCase();
+      }
+
+      const sectorBadge = document.getElementById('dash-sector-badge');
+      if (sectorBadge) {
+        const sectorLabels = {
+          tr: {
+            vakif: 'DERNEKLER VE VAKIFLAR',
+            egitim: 'EĞİTİM SEKTÖRÜ',
+            gida: 'GIDA SEKTÖRÜ',
+            lojistik: 'ULAŞIM VE LOJİSTİK',
+            tekstil: 'TEKSTİL PERAKENDE'
+          },
+          en: {
+            vakif: 'ASSOCIATIONS AND CHARITIES',
+            egitim: 'EDUCATION SECTOR',
+            gida: 'FOOD SECTOR',
+            lojistik: 'TRANSPORT AND LOGISTICS',
+            tekstil: 'TEXTILE RETAIL'
+          }
+        };
+        const safeLang = (currentLang === 'en' || currentLang === 'tr') ? currentLang : 'tr';
+        sectorBadge.textContent = sectorLabels[safeLang][sector] || sector.toUpperCase();
+        sectorBadge.setAttribute('data-sector', sector);
+      }
+
+      // Sync route registry
+      window.location.hash = 'dashboard';
+      if (typeof App !== 'undefined' && typeof App.initializeDashboardAfterLogin === 'function') {
+        App.initializeDashboardAfterLogin();
+      } else {
+        switchPage('dashboard', false);
+      }
+
+      // 3. Inject Rich Analytical Simulation Data
+      databases[sector] = generateProceduralMockData(sector, 12);
+
+      // Fill #table-body with 4-5 mock corporate analysis rows
+      const tableBody = document.getElementById('table-body');
+      if (tableBody) {
+        tableBody.innerHTML = `
+          <tr>
+            <td><strong>Asya Global A.Ş.</strong></td>
+            <td>$450,000</td>
+            <td>%12</td>
+            <td><span class="badge badge-success">Düşük Risk / Düzenli Bağışçı</span></td>
+            <td><button class="btn-primary" style="padding: 0.3rem 0.6rem; font-size: 0.85rem;">✉️</button></td>
+          </tr>
+          <tr>
+            <td><strong>Batı Teknoloji Ltd.</strong></td>
+            <td>$180,000</td>
+            <td>%28</td>
+            <td><span class="badge badge-success">Düşük Risk / Düzenli Bağışçı</span></td>
+            <td><button class="btn-primary" style="padding: 0.3rem 0.6rem; font-size: 0.85rem;">✉️</button></td>
+          </tr>
+          <tr>
+            <td><strong>Zirve Gıda Pazarlama</strong></td>
+            <td>$95,000</td>
+            <td>%45</td>
+            <td><span class="badge badge-danger">Yüksek Risk</span></td>
+            <td><button class="btn-primary" style="padding: 0.3rem 0.6rem; font-size: 0.85rem;">✉️</button></td>
+          </tr>
+          <tr>
+            <td><strong>Yıldız Lojistik Grubu</strong></td>
+            <td>$320,000</td>
+            <td>%18</td>
+            <td><span class="badge badge-success">Düşük Risk / Düzenli Bağışçı</span></td>
+            <td><button class="btn-primary" style="padding: 0.3rem 0.6rem; font-size: 0.85rem;">✉️</button></td>
+          </tr>
+        `;
+      }
+
+      // Fill #xai-bar-chart-container with mock feature importance rows
+      const xaiContainer = document.getElementById('xai-bar-chart-container');
+      if (xaiContainer) {
+        xaiContainer.innerHTML = `
+          <div class="xai-bar-item">
+            <div class="xai-bar-label" title="Aylık Katılım Sıklığı">Aylık Katılım Sıklığı</div>
+            <div class="xai-bar-track"><div class="xai-bar-fill" style="width: 85%;"></div></div>
+            <div class="xai-bar-value">85%</div>
+          </div>
+          <div class="xai-bar-item">
+            <div class="xai-bar-label" title="Geçmiş Bağış Tutarı">Geçmiş Bağış Tutarı</div>
+            <div class="xai-bar-track"><div class="xai-bar-fill" style="width: 65%;"></div></div>
+            <div class="xai-bar-value">65%</div>
+          </div>
+          <div class="xai-bar-item">
+            <div class="xai-bar-label" title="Üyelik Süresi">Üyelik Süresi</div>
+            <div class="xai-bar-track"><div class="xai-bar-fill" style="width: 45%;"></div></div>
+            <div class="xai-bar-value">45%</div>
+          </div>
+        `;
+      }
+
+      // Set main prediction target text (#dash-output-result)
+      const dashOutputResult = document.getElementById('dash-output-result');
+      if (dashOutputResult) {
+        dashOutputResult.textContent = "Düşük Risk / Düzenli Bağışçı";
+        dashOutputResult.style.color = "var(--success)";
+      }
+
+      const outCard = document.getElementById('dash-output-card');
+      if (outCard) {
+        outCard.className = 'output-card approved';
+      }
+
+      const outSummary = document.getElementById('dash-output-summary');
+      if (outSummary) {
+        outSummary.textContent = "Canlı simülasyon aktif. Tahmin kalitesi ve kararlılık seviyesi yüksektir.";
+      }
+
+      // Set record count badge
+      const dbCount = document.getElementById('database-count');
+      if (dbCount) {
+        dbCount.textContent = `4 ${currentLang === 'tr' ? 'Kayıt' : 'Records'}`;
+      }
+
+      // Trigger tour
+      setTimeout(() => {
+        startVoiceSimulationTour();
+      }, 800);
+    }
+  };
 
   // Initialize Welcome Sandbox
   WelcomeSandbox.init();
