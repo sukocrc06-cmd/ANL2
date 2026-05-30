@@ -12436,14 +12436,19 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // Event listener integration
+  const btnAnalyzeDataset = document.getElementById('btn-analyze-dataset');
   if (btnAnalyzeDataset) {
     btnAnalyzeDataset.addEventListener('click', () => {
         const mockData = [{ Name: "Ahmet Yilmaz", Income: 45000, CreditScore: 720 }, { Name: "Canan Oz", Income: 12000, CreditScore: 580 }];
         const dataToProcess = (typeof activeDashboardRawData !== 'undefined' && activeDashboardRawData && activeDashboardRawData.length > 0)
           ? activeDashboardRawData
           : mockData;
-        MultiSectorEngine.processDataset(dataToProcess);
-        triggerPipelinePulse();
+        if (typeof MultiSectorEngine !== 'undefined' && typeof MultiSectorEngine.processDataset === 'function') {
+          MultiSectorEngine.processDataset(dataToProcess);
+        }
+        if (typeof triggerPipelinePulse === 'function') {
+          triggerPipelinePulse();
+        }
     });
   }
 
@@ -12539,7 +12544,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  function startLiveSimulationEngine() {
+  function executeLiveVoiceSimulation() {
     isTourRunning = true;
     tourTimelineTimers.forEach(timer => clearTimeout(timer));
     tourTimelineTimers = [];
@@ -12928,12 +12933,12 @@ document.addEventListener('DOMContentLoaded', () => {
     showTourToast("Simülasyon tamamlandı. Kendi veri kümenizi (CSV/Excel) yükleyebilirsiniz!", "success");
   }
 
-  // Dynamic Event Binding (i18n Safe)
-  document.body.addEventListener('click', function(e) {
-    const btn = e.target.closest('#btn-start-voice-simulation');
-    if (btn) {
-      e.preventDefault();
-      startLiveSimulationEngine();
+  // Direct i18n-Safe Global Event Delegation for the Simulation Button
+  document.body.addEventListener('click', function(event) {
+    const simulationButton = event.target.closest('#btn-start-voice-simulation');
+    if (simulationButton) {
+      event.preventDefault();
+      executeLiveVoiceSimulation();
     }
   });
 
