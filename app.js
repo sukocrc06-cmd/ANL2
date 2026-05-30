@@ -12814,6 +12814,13 @@ document.addEventListener('DOMContentLoaded', () => {
       sessionStorage.setItem('sessionActive', 'true');
       currentCompany = cardData.company;
 
+      // 1. Interactive Transition: Instantly toggle page visibilities (flex-container)
+      const pageWelcomeEl = document.getElementById('page-welcome');
+      const pageDashboardEl = document.getElementById('page-dashboard');
+      if (pageWelcomeEl) pageWelcomeEl.style.display = 'none';
+      if (pageDashboardEl) pageDashboardEl.style.display = 'flex';
+      hideLoginModal();
+
       // Navigate to dashboard
       window.location.hash = 'dashboard';
       if (typeof App !== 'undefined' && typeof App.initializeDashboardAfterLogin === 'function') {
@@ -12822,7 +12829,7 @@ document.addEventListener('DOMContentLoaded', () => {
         switchPage('dashboard', false);
       }
 
-      // Generate and load procedural mock data matching the active sector
+      // 2. Inject Temporary Simulation Data: bypass dropzone and load mock rows
       const mockData = generateProceduralMockData(sector, 12);
       processIngestedRows(mockData);
 
@@ -12978,20 +12985,20 @@ document.addEventListener('DOMContentLoaded', () => {
     const steps = [
       {
         text: currentLang === 'tr' 
-          ? "Canlı Demoya hoş geldiniz. Bu Grafik alanına bakın: gözetimli modelinizin öznitelikleri nasıl görselleştirdiğini buradan görebilirsiniz."
-          : "Welcome to the Live Demo. Look at this Chart area: here is how your supervised model visualizes features.",
+          ? "Demo analiz simülasyonuna hoş geldiniz. Şu an analiz panelindeyiz. Gördüğünüz bu grafik alanı, denetimli makine öğrenimi modelinizin öznitelik ağırlıklarını ve kararlarını canlı olarak görselleştirir."
+          : "Welcome to the demo analysis simulation. We are currently in the analysis panel. This chart area you see visualizes your supervised machine learning model's feature weights and decisions live.",
         selector: '.visualizer-card'
       },
       {
         text: currentLang === 'tr'
-          ? "Metrikleri gözlemleyin: Doğruluk ve Duyarlılık değerleri, verilerinizin tahmin gücünü göstermektedir."
-          : "Observe the Metrics: Accuracy and Recall show you the predictive strength of your data.",
+          ? "Hemen sol taraftaki metrikler paneli, modelimizin doğruluk ve duyarlılık skorlarını ölçümleyerek tahmin kalitesini doğrular."
+          : "The metrics panel on the left validates the prediction quality by measuring the accuracy and recall scores of our model.",
         selector: '.performance-metrics-box'
       },
       {
         text: currentLang === 'tr'
-          ? "Yapay Zeka Eylem Merkezine bakın: Aura AI, almanız gereken acil stratejik eylemleri ve önerileri burada sunar."
-          : "Look at the AI Action Center: This is where Aura AI presents immediate strategic business actions you should take.",
+          ? "Alt kısımda yer alan Aksiyon Merkezi ise, Aura AI'ın bu analiz sonuçlarına göre işletmeniz için hazırladığı stratejik ticari eylemleri ve geri bildirimleri listeler."
+          : "The Action Center located at the bottom lists the strategic business actions and feedback prepared by Aura AI for your business based on these analysis results.",
         selector: '.dashboard-actions-card'
       }
     ];
@@ -13016,12 +13023,13 @@ document.addEventListener('DOMContentLoaded', () => {
         // Re-setup to empty state
         setupSectorDashboard();
         
-        // Invite user to upload custom file
-        if (currentLang === 'tr') {
-          alert("Aura AI Canlı Rehber Turu tamamlandı! Şimdi kendi .csv veya .xlsx veri kümenizi yükleyebilir ve platformu test edebilirsiniz.");
-        } else {
-          alert("Aura AI Live Guided Tour completed! You can now upload your own .csv or .xlsx dataset to test the platform.");
-        }
+        // Custom completion toast notification inviting user to upload their own file
+        showTourToast(
+          currentLang === 'tr' 
+            ? "Aura AI Canlı Rehber Turu tamamlandı! Platformu tam kapasite test etmek için kendi .csv veya .xlsx veri setinizi yükleyebilirsiniz." 
+            : "Aura AI Live Guided Tour completed! You can now upload your own .csv or .xlsx dataset to test the platform.",
+          "success"
+        );
         return;
       }
       
