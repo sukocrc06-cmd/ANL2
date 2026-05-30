@@ -12581,7 +12581,6 @@ document.addEventListener('DOMContentLoaded', () => {
     sessionStorage.setItem('sessionActive', 'true');
     const cardData = {
       username: 'AuraAI_Guest',
-      password: 'demo_password',
       company: 'Yapay Zeka Demo Vakfı',
       sector: 'vakif',
       userId: 'AuraAI_Guest',
@@ -12590,28 +12589,63 @@ document.addEventListener('DOMContentLoaded', () => {
       remember: false
     };
     localStorage.setItem('userCardData', JSON.stringify(cardData));
-    if (typeof currentCompany !== 'undefined') {
-      currentCompany = cardData.company;
-    }
-    if (typeof currentSector !== 'undefined') {
-      currentSector = cardData.sector;
+    if (typeof currentCompany !== 'undefined') currentCompany = cardData.company;
+    if (typeof currentSector !== 'undefined') currentSector = cardData.sector;
+
+    // Inject a dummy record so setupSectorDashboard() shows the grid, not the empty state
+    if (typeof databases !== 'undefined') {
+      databases['vakif'] = [{ id: 1 }];
     }
 
-    // Update theme color
-    if (typeof updateThemeColor === 'function') {
-      updateThemeColor('vakif');
+    if (typeof updateThemeColor === 'function') updateThemeColor('vakif');
+    if (typeof hideLoginModal === 'function') hideLoginModal();
+
+    // ── STEP 1: Instant page layout switch (Welcome → Dashboard) ──────────────
+    const pageWelcome = document.getElementById('page-welcome');
+    if (pageWelcome) pageWelcome.style.setProperty('display', 'none', 'important');
+
+    const pageDashboard = document.getElementById('page-dashboard');
+    if (pageDashboard) pageDashboard.style.setProperty('display', 'flex', 'important');
+
+    // Activate the insights section panel
+    const insightsSection = document.getElementById('dashboard-insights-section');
+    if (insightsSection) {
+      document.querySelectorAll('.dashboard-section').forEach(s => {
+        s.classList.remove('active');
+        s.style.display = 'none';
+      });
+      insightsSection.classList.add('active');
+      insightsSection.style.display = 'block';
     }
 
-    // Hide login modal if open
-    if (typeof hideLoginModal === 'function') {
-      hideLoginModal();
-    }
+    window.history.replaceState(null, null, '#dashboard');
 
-    // Sync header company and sector badge
+    // ── STEP 2: Load schema, then inject simulation data INSIDE the callback ──
+    // loadSectorSchema fires its callback after a 600ms setTimeout, so any mock
+    // data written before that callback would be wiped by setupSectorDashboard().
+    // By placing ALL injection inside the callback (after setupSectorDashboard),
+    // we guarantee our HTML is never overwritten.
+    loadSectorSchema('vakif', function() {
+      setupSectorDashboard();      // renders grid, builds form — may overwrite DOM
+      _injectSimulationData();     // immediately overrides with our mock data
+    });
+  }
+
+  // All simulation mock data injection — runs synchronously after setupSectorDashboard()
+  function _injectSimulationData() {
+    // ── 1. Hide Empty Dropzone Layer ──────────────────────────────────────────
+    const emptyState = document.getElementById('dashboard-empty-state');
+    if (emptyState) emptyState.style.setProperty('display', 'none', 'important');
+
+    const gridEl = document.querySelector('.dashboard-grid');
+    if (gridEl) gridEl.style.setProperty('display', 'grid', 'important');
+
+    // ── 2. Ingest Presentation Demo Meta Information ──────────────────────────
+    const dashTitle = document.getElementById('dash-title');
+    if (dashTitle) dashTitle.textContent = "Vakıf/Dernek Bağış Sınıflandırma Paneli";
+
     const dashCompName = document.getElementById('dash-company-name');
-    if (dashCompName) {
-      dashCompName.textContent = cardData.company.toUpperCase();
-    }
+    if (dashCompName) dashCompName.textContent = "YAPAY ZEKA DEMO VAKFI";
 
     const sectorBadge = document.getElementById('dash-sector-badge');
     if (sectorBadge) {
@@ -12619,52 +12653,7 @@ document.addEventListener('DOMContentLoaded', () => {
       sectorBadge.setAttribute('data-sector', 'vakif');
     }
 
-    const dashTitle = document.getElementById('dash-title');
-    if (dashTitle) {
-      dashTitle.textContent = "Vakıf/Dernek Bağış Sınıflandırma Paneli";
-    }
-
-    // Sync route registry
-    window.location.hash = 'dashboard';
-    if (typeof App !== 'undefined' && typeof App.initializeDashboardAfterLogin === 'function') {
-      App.initializeDashboardAfterLogin();
-    } else if (typeof switchPage === 'function') {
-      switchPage('dashboard', false);
-    }
-
-    // 2. Immediate Explicit UI Layout Shift
-    // Hide Welcome view completely:
-    const pageWelcome = document.getElementById('page-welcome');
-    if (pageWelcome) {
-      pageWelcome.style.setProperty('display', 'none', 'important');
-    }
-
-    // Unhide Dashboard container:
-    const pageDashboard = document.getElementById('page-dashboard');
-    if (pageDashboard) {
-      pageDashboard.style.setProperty('display', 'flex', 'important');
-    }
-
-    // Make sure the main workspace insights active view tab is selected:
-    const activeViewTab = document.getElementById('dashboard-insights-section');
-    if (activeViewTab) {
-      activeViewTab.classList.add('active');
-    }
-
-    // Temporarily remove the empty spreadsheet dropzone layer:
-    const emptyState = document.getElementById('dashboard-empty-state');
-    if (emptyState) {
-      emptyState.style.setProperty('display', 'none', 'important');
-    }
-
-    // Make sure the dashboard grid is displayed
-    const gridEl = document.querySelector('.dashboard-grid');
-    if (gridEl) {
-      gridEl.style.setProperty('display', 'grid', 'important');
-    }
-
-    // 3. Populate Premium Demo Mock Streams & Component Values
-    // Live Metrics
+    // ── 3a. Live Metrics ──────────────────────────────────────────────────────
     const accuracyEl = document.getElementById('metric-accuracy-val');
     const precisionEl = document.getElementById('metric-precision-val');
     const recallEl = document.getElementById('metric-recall-val');
@@ -12672,79 +12661,55 @@ document.addEventListener('DOMContentLoaded', () => {
     if (precisionEl) precisionEl.textContent = "92.80%";
     if (recallEl) recallEl.textContent = "95.10%";
 
-    // Clear and append 4 corporate training rows into the table body element
+    // ── 3b. Ingest Table Rows ─────────────────────────────────────────────────
     const tableBody = document.getElementById('table-body');
     if (tableBody) {
       tableBody.innerHTML = `
-        <tr>
-          <td><strong>Ahmet Yılmaz</strong></td>
-          <td>5000 TL</td>
-          <td>850</td>
-          <td><span class="badge badge-success" style="background: rgba(16, 185, 129, 0.15); color: #10b981; border: 1px solid #10b981;">Düzenli Bağışçı</span></td>
-          <td><button class="btn-primary" style="padding: 0.3rem 0.6rem; font-size: 0.85rem;">✉️</button></td>
-        </tr>
-        <tr>
-          <td><strong>Mehmet Demir</strong></td>
-          <td>1200 TL</td>
-          <td>420</td>
-          <td><span class="badge badge-danger" style="background: rgba(239, 68, 68, 0.15); color: #ef4444; border: 1px solid #ef4444;">Düzensiz Bağışçı</span></td>
-          <td><button class="btn-primary" style="padding: 0.3rem 0.6rem; font-size: 0.85rem;">✉️</button></td>
-        </tr>
-        <tr>
-          <td><strong>Canan Kaya</strong></td>
-          <td>10000 TL</td>
-          <td>910</td>
-          <td><span class="badge badge-success" style="background: rgba(16, 185, 129, 0.15); color: #10b981; border: 1px solid #10b981;">Düzenli Bağışçı</span></td>
-          <td><button class="btn-primary" style="padding: 0.3rem 0.6rem; font-size: 0.85rem;">✉️</button></td>
-        </tr>
-        <tr>
-          <td><strong>Elif Şahin</strong></td>
-          <td>3500 TL</td>
-          <td>680</td>
-          <td><span class="badge badge-warning" style="background: rgba(245, 158, 11, 0.15); color: #f59e0b; border: 1px solid #f59e0b;">Potansiyel Bağışçı</span></td>
-          <td><button class="btn-primary" style="padding: 0.3rem 0.6rem; font-size: 0.85rem;">✉️</button></td>
-        </tr>
+        <tr><td>Ahmet Yılmaz</td><td>5,000 TL</td><td>850 Score</td><td class="badge badge-success">Düzenli Bağışçı</td><td>✉️</td></tr>
+        <tr><td>Mehmet Demir</td><td>1,200 TL</td><td>420 Score</td><td class="badge badge-danger">Düzensiz Bağışçı</td><td>✉️</td></tr>
+        <tr><td>Canan Kaya</td><td>10,000 TL</td><td>910 Score</td><td class="badge badge-success">Düzenli Bağışçı</td><td>✉️</td></tr>
       `;
     }
 
-    // Sentezleyin dynamic colorful progress bars or indicator meters inside #xai-bar-chart-container
+    // ── 3c. Ingest Colorful Weight Bars ───────────────────────────────────────
     const xaiContainer = document.getElementById('xai-bar-chart-container');
     if (xaiContainer) {
       xaiContainer.innerHTML = `
-        <div class="xai-bar-item" style="margin-bottom: 12px;">
-          <div class="xai-bar-label" style="font-size: 0.85rem; margin-bottom: 4px; color: var(--text-primary);" title="Ziyaret Sıklığı">Ziyaret Sıklığı</div>
-          <div class="xai-bar-track" style="background: rgba(255, 255, 255, 0.1); border-radius: 4px; height: 10px; overflow: hidden; position: relative;">
-            <div class="xai-bar-fill" style="width: 75%; height: 100%; background: linear-gradient(90deg, #3b82f6, #0ea5e9); border-radius: 4px; transition: width 1s ease-in-out;"></div>
+        <div class="xai-bar-item" style="margin-bottom:12px;">
+          <div style="font-size:0.85rem;margin-bottom:4px;color:var(--text-primary);">Ziyaret Sıklığı (%80)</div>
+          <div style="background:rgba(255,255,255,0.1);border-radius:4px;height:10px;overflow:hidden;">
+            <div style="width:80%;height:100%;background:linear-gradient(90deg,#3b82f6,#0ea5e9);border-radius:4px;transition:width 1s ease-in-out;"></div>
           </div>
-          <div class="xai-bar-value" style="font-size: 0.75rem; text-align: right; margin-top: 2px; color: #0ea5e9;">75%</div>
+          <div style="font-size:0.75rem;text-align:right;margin-top:2px;color:#0ea5e9;">80%</div>
         </div>
-        <div class="xai-bar-item" style="margin-bottom: 12px;">
-          <div class="xai-bar-label" style="font-size: 0.85rem; margin-bottom: 4px; color: var(--text-primary);" title="Geçmiş Destek Skoru">Geçmiş Destek Skoru</div>
-          <div class="xai-bar-track" style="background: rgba(255, 255, 255, 0.1); border-radius: 4px; height: 10px; overflow: hidden; position: relative;">
-            <div class="xai-bar-fill" style="width: 60%; height: 100%; background: linear-gradient(90deg, #10b981, #34d399); border-radius: 4px; transition: width 1s ease-in-out;"></div>
+        <div class="xai-bar-item" style="margin-bottom:12px;">
+          <div style="font-size:0.85rem;margin-bottom:4px;color:var(--text-primary);">Geçmiş Katılım (%65)</div>
+          <div style="background:rgba(255,255,255,0.1);border-radius:4px;height:10px;overflow:hidden;">
+            <div style="width:65%;height:100%;background:linear-gradient(90deg,#10b981,#34d399);border-radius:4px;transition:width 1s ease-in-out;"></div>
           </div>
-          <div class="xai-bar-value" style="font-size: 0.75rem; text-align: right; margin-top: 2px; color: #10b981;">60%</div>
+          <div style="font-size:0.75rem;text-align:right;margin-top:2px;color:#10b981;">65%</div>
+        </div>
+        <div class="xai-bar-item" style="margin-bottom:12px;">
+          <div style="font-size:0.85rem;margin-bottom:4px;color:var(--text-primary);">Bağış Tutarı (%72)</div>
+          <div style="background:rgba(255,255,255,0.1);border-radius:4px;height:10px;overflow:hidden;">
+            <div style="width:72%;height:100%;background:linear-gradient(90deg,#f97316,#fbbf24);border-radius:4px;transition:width 1s ease-in-out;"></div>
+          </div>
+          <div style="font-size:0.75rem;text-align:right;margin-top:2px;color:#f97316;">72%</div>
+        </div>
+        <div class="xai-bar-item" style="margin-bottom:12px;">
+          <div style="font-size:0.85rem;margin-bottom:4px;color:var(--text-primary);">Sadakat Skoru (%91)</div>
+          <div style="background:rgba(255,255,255,0.1);border-radius:4px;height:10px;overflow:hidden;">
+            <div style="width:91%;height:100%;background:linear-gradient(90deg,#8b5cf6,#a78bfa);border-radius:4px;transition:width 1s ease-in-out;"></div>
+          </div>
+          <div style="font-size:0.75rem;text-align:right;margin-top:2px;color:#8b5cf6;">91%</div>
         </div>
       `;
     }
 
-    // Inject Recommended Actions
-    const actionsBox = document.getElementById('recommended-actions-box');
-    if (actionsBox) {
-      actionsBox.innerHTML = `
-        <li style="margin-bottom: 8px; font-size: 0.85rem; color: var(--text-primary);">
-          <strong>Aura AI Önerisi:</strong> Düzenli bağış yapma ihtimali yüksek olan donörlere özel sadakat e-postası gönderin.
-        </li>
-        <li style="margin-bottom: 8px; font-size: 0.85rem; color: var(--text-primary);">
-          <strong>Aura AI Önerisi:</strong> Kayıp riski orta seviyede olan bağışçılar için bilgilendirici sosyal sorumluluk kampanyası planlayın.
-        </li>
-      `;
-    }
-
-    // Set #dash-output-result text dynamically to "Düşük Risk / Düzenli Bağışçı" and style its parent card with successful green tones
+    // Set Output Box: Update #dash-output-result text to "Düzenli Bağışçı Olma İhtimali Yüksek" and add a short overview description
     const dashOutputResult = document.getElementById('dash-output-result');
     if (dashOutputResult) {
-      dashOutputResult.textContent = "Düşük Risk / Düzenli Bağışçı";
+      dashOutputResult.textContent = "Düzenli Bağışçı Olma İhtimali Yüksek";
       dashOutputResult.style.setProperty('color', '#10b981', 'important');
       const parentCard = dashOutputResult.closest('.output-card') || document.getElementById('dash-output-card');
       if (parentCard) {
@@ -12756,12 +12721,22 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const outSummary = document.getElementById('dash-output-summary');
     if (outSummary) {
-      outSummary.textContent = "Aura AI simülasyonu çalışıyor. Yüksek doğruluk derecesinde düşük riskli profil tespit edilmiştir.";
+      outSummary.textContent = "Bağışçının geçmiş etkinlik sıklığı ve sadakat puanı göz önüne alındığında, düzenli destek verme ihtimali yüksek olarak hesaplanmıştır.";
+    }
+
+    // Ingest Action Center: Clear #recommended-actions-box and append customized recommendation
+    const actionsBox = document.getElementById('recommended-actions-box');
+    if (actionsBox) {
+      actionsBox.innerHTML = `
+        <li style="margin-bottom: 8px; font-size: 0.85rem; color: var(--text-primary);">
+          Aura AI Stratejik Önerisi: Sadakat skoru yüksek olan bu kitleye yönelik özel bağış kampanyaları planlayın.
+        </li>
+      `;
     }
 
     const dbCount = document.getElementById('database-count');
     if (dbCount) {
-      dbCount.textContent = `4 Kayıt`;
+      dbCount.textContent = `3 Kayıt`;
     }
 
     if (typeof updatePerformanceMetrics === 'function') {
@@ -12831,7 +12806,7 @@ document.addEventListener('DOMContentLoaded', () => {
     banner.appendChild(stopBtn);
     document.body.appendChild(banner);
 
-    // 4. Resilient Turkish Vocalization Framework (Web Speech API)
+    // ── 5. Play Sequential Audio Walkthrough (Web Speech API) ─────────────────
     if ('speechSynthesis' in window) {
       window.speechSynthesis.cancel();
 
@@ -12840,46 +12815,47 @@ document.addEventListener('DOMContentLoaded', () => {
       const utterance = new SpeechSynthesisUtterance(tourText);
       utterance.lang = 'tr-TR';
 
-      const voices = window.speechSynthesis.getVoices();
-      const trVoice = voices.find(v => v.lang.includes('TR') || v.lang.includes('tr'));
-      if (trVoice) {
-        utterance.voice = trVoice;
-      }
-
-      // 5. Synchronization Visual Element Glowing Tracker
+      // ── Sequential glow highlights synchronized to narration ──────────────
       utterance.onstart = () => {
         applyHighlight('#xai-bar-chart-container');
 
         tourTimelineTimers.push(setTimeout(() => {
-          if (isTourRunning) {
-            applyHighlight('.performance-metrics-box');
-          }
+          if (isTourRunning) applyHighlight('.performance-metrics-box');
         }, 12000));
 
         tourTimelineTimers.push(setTimeout(() => {
-          if (isTourRunning) {
-            applyHighlight('#recommended-actions-box');
-          }
+          if (isTourRunning) applyHighlight('#recommended-actions-box');
         }, 22000));
       };
 
-      // 6. Complete Automation Teardown Cleanup
       utterance.onend = () => {
-        if (isTourRunning) {
-          teardownSimulationEngine();
-        }
+        if (isTourRunning) teardownSimulationEngine();
       };
 
       utterance.onerror = (e) => {
         console.error("SpeechSynthesis error during simulation tour:", e);
-        if (isTourRunning) {
-          teardownSimulationEngine();
-        }
+        if (isTourRunning) teardownSimulationEngine();
       };
 
-      window.speechSynthesis.speak(utterance);
+      // ── Prefer Turkish voice; handle async voice list loading ──────────────
+      const speakWithVoice = () => {
+        const voices = window.speechSynthesis.getVoices();
+        const trVoice = voices.find(v => v.lang.includes('TR') || v.lang.includes('tr'));
+        if (trVoice) utterance.voice = trVoice;
+        window.speechSynthesis.speak(utterance);
+      };
+
+      if (window.speechSynthesis.getVoices().length > 0) {
+        speakWithVoice();
+      } else {
+        window.speechSynthesis.onvoiceschanged = () => {
+          window.speechSynthesis.onvoiceschanged = null;
+          speakWithVoice();
+        };
+      }
+
     } else {
-      // Fallback visual flow if speech synthesis is not supported
+      // ── Fallback: visual-only tour when speech synthesis is unsupported ────
       applyHighlight('#xai-bar-chart-container');
 
       tourTimelineTimers.push(setTimeout(() => {
@@ -12895,6 +12871,7 @@ document.addEventListener('DOMContentLoaded', () => {
       }, 30000));
     }
   }
+
 
   function teardownSimulationEngine() {
     isTourRunning = false;
