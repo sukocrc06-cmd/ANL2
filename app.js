@@ -11157,8 +11157,24 @@ document.addEventListener('DOMContentLoaded', () => {
       // Initialize navigation event listeners (does not trigger routing immediately)
       initializeNavigation();
 
+      // 1. Force the absolute default layout view on a fresh load to be the Welcome Page:
+      const pageWelcome = document.getElementById('page-welcome');
+      const pageDashboard = document.getElementById('page-dashboard');
+      if (pageWelcome) {
+        pageWelcome.style.setProperty('display', 'flex', 'important');
+      }
+      if (pageDashboard) {
+        pageDashboard.style.setProperty('display', 'none', 'important');
+      }
+
+      // 2. Clear or reset any residual URL hash fragments like #dashboard on a fresh session start
+      if (window.location.hash) {
+        window.history.replaceState(null, null, window.location.pathname + window.location.search);
+      }
+
       // Force unauthenticated state on app start to prevent auto-opening the dashboard
       localStorage.setItem('isLoggedIn', 'false');
+      sessionStorage.removeItem('sessionActive');
       
       // QR Login parameters in URL check
       const urlParams = new URLSearchParams(window.location.search);
@@ -11167,7 +11183,18 @@ document.addEventListener('DOMContentLoaded', () => {
       } else {
         this.restoreSession();
         checkAndRestoreTemporaryCard();
-        this.checkAuthentication();
+        
+        // Ensure that the dashboard workflow only becomes visible after explicit login action
+        localStorage.setItem('isLoggedIn', 'false');
+        this.showLoginScreen();
+
+        // Re-enforce explicit default display properties
+        if (pageWelcome) {
+          pageWelcome.style.setProperty('display', 'flex', 'important');
+        }
+        if (pageDashboard) {
+          pageDashboard.style.setProperty('display', 'none', 'important');
+        }
       }
     },
 
