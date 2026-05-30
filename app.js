@@ -2049,8 +2049,59 @@ document.addEventListener('DOMContentLoaded', () => {
       body: JSON.stringify({ username })
     }).catch(err => console.error('Error activating card on server:', err));
 
-    // Trigger navigation transition to dashboard
-    transitionToDashboard();
+    // 1. State Switch Logic: Instantly toggle container visibilities
+    const pageWelcomeEl = document.getElementById('page-welcome');
+    const pageDashboardEl = document.getElementById('page-dashboard');
+    if (pageWelcomeEl) pageWelcomeEl.style.display = 'none';
+    if (pageDashboardEl) pageDashboardEl.style.display = 'flex';
+    hideLoginModal();
+
+    // Set globals
+    currentCompany = company;
+    currentSector = sector;
+
+    // 2. Dashboard Initialization: Display empty, fresh file ingestion layout
+    databases[sector] = []; // Clear in-memory data for clean login entry
+
+    // 3. Apply variables to dashboard sidebar widgets
+    const dashCompName = document.getElementById('dash-company-name');
+    if (dashCompName) {
+      dashCompName.textContent = company.toUpperCase();
+    }
+
+    const dashSectorBadge = document.getElementById('dash-sector-badge');
+    if (dashSectorBadge) {
+      const sectorLabels = {
+        tr: {
+          vakif: 'DERNEKLER VE VAKIFLAR',
+          egitim: 'EĞİTİM SEKTÖRÜ',
+          gida: 'GIDA SEKTÖRÜ',
+          lojistik: 'ULAŞIM VE LOJİSTİK',
+          tekstil: 'TEKSTİL PERAKENDE'
+        },
+        en: {
+          vakif: 'ASSOCIATIONS AND CHARITIES',
+          egitim: 'EDUCATION SECTOR',
+          gida: 'FOOD SECTOR',
+          lojistik: 'TRANSPORT AND LOGISTICS',
+          tekstil: 'TEXTILE RETAIL'
+        }
+      };
+      const safeLang = (currentLang === 'en' || currentLang === 'tr') ? currentLang : 'tr';
+      dashSectorBadge.textContent = sectorLabels[safeLang][sector] || sector.toUpperCase();
+      dashSectorBadge.setAttribute('data-sector', sector);
+    }
+
+    // Explicitly update URL hash to #dashboard on login transition
+    window.location.hash = 'dashboard';
+
+    // Refresh theme colors, texts, and dashboard states
+    updateThemeColor(sector);
+    updateDashboardLanguageSpecifics();
+
+    loadSectorSchema(sector, () => {
+      setupSectorDashboard();
+    });
   });
 
   // Action: Expire Credentials Card
@@ -13031,22 +13082,6 @@ document.addEventListener('DOMContentLoaded', () => {
     playNextStep();
   }
 
-  // Sync access card form onboarding highlight
-  if (accessCardForm) {
-    accessCardForm.addEventListener('submit', () => {
-      setTimeout(() => {
-        const guideText = document.getElementById('sandbox-guide-text');
-        if (guideText) {
-          guideText.style.fontStyle = 'normal';
-          guideText.style.color = 'var(--primary)';
-          guideText.innerHTML = currentLang === 'tr'
-            ? `🔑 <strong>Giriş Kartınız Hazır!</strong> Sektörünüze özel modeli simüle etmek için sağdaki sürgülerle oynayabilir veya <strong>Aura AI Sesli Rehberi</strong>'ni başlatabilirsiniz.`
-            : `🔑 <strong>Your Entry Card is Ready!</strong> You can play with the sliders to simulate your model or start the <strong>Aura AI Voice Guide</strong>.`;
-        }
-      }, 100);
-    });
-  }
-
   // Initialize Welcome Sandbox
   WelcomeSandbox.init();
 
@@ -13054,3 +13089,4 @@ document.addEventListener('DOMContentLoaded', () => {
   App.init();
 
 });
+
