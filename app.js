@@ -12555,7 +12555,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const cardData = {
       username: 'AuraAI_Guest',
       password: 'demo_password',
-      company: 'Vertex Simulation Corp',
+      company: 'Yapay Zeka Demo Vakfı',
       sector: 'vakif',
       userId: 'AuraAI_Guest',
       sessionToken: 'token_guest_' + Date.now(),
@@ -12590,6 +12590,11 @@ document.addEventListener('DOMContentLoaded', () => {
     if (sectorBadge) {
       sectorBadge.textContent = 'DERNEKLER VE VAKIFLAR';
       sectorBadge.setAttribute('data-sector', 'vakif');
+    }
+
+    const dashTitle = document.getElementById('dash-title');
+    if (dashTitle) {
+      dashTitle.textContent = "Vakıf/Dernek Bağış Sınıflandırma Paneli";
     }
 
     // Sync route registry
@@ -12631,37 +12636,45 @@ document.addEventListener('DOMContentLoaded', () => {
       gridEl.style.setProperty('display', 'grid', 'important');
     }
 
-    // 3. Populate Premium Demo Mock Streams
+    // 3. Populate Premium Demo Mock Streams & Component Values
+    // Live Metrics
+    const accuracyEl = document.getElementById('metric-accuracy-val');
+    const precisionEl = document.getElementById('metric-precision-val');
+    const recallEl = document.getElementById('metric-recall-val');
+    if (accuracyEl) accuracyEl.textContent = "94.20%";
+    if (precisionEl) precisionEl.textContent = "92.80%";
+    if (recallEl) recallEl.textContent = "95.10%";
+
     // Clear and append 4 corporate training rows into the table body element
     const tableBody = document.getElementById('table-body');
     if (tableBody) {
       tableBody.innerHTML = `
         <tr>
-          <td><strong>Kızılay Eğitim Derneği</strong></td>
-          <td>$540,000</td>
-          <td>%8</td>
-          <td><span class="badge badge-success" style="background: rgba(16, 185, 129, 0.15); color: #10b981; border: 1px solid #10b981;">Düşük Risk / Düzenli Bağışçı</span></td>
+          <td><strong>Ahmet Yılmaz</strong></td>
+          <td>5000 TL</td>
+          <td>850</td>
+          <td><span class="badge badge-success" style="background: rgba(16, 185, 129, 0.15); color: #10b981; border: 1px solid #10b981;">Düzenli Bağışçı</span></td>
           <td><button class="btn-primary" style="padding: 0.3rem 0.6rem; font-size: 0.85rem;">✉️</button></td>
         </tr>
         <tr>
-          <td><strong>Yeşilay Genel Merkez</strong></td>
-          <td>$320,000</td>
-          <td>%15</td>
-          <td><span class="badge badge-success" style="background: rgba(16, 185, 129, 0.15); color: #10b981; border: 1px solid #10b981;">Düşük Risk / Düzenli Bağışçı</span></td>
+          <td><strong>Mehmet Demir</strong></td>
+          <td>1200 TL</td>
+          <td>420</td>
+          <td><span class="badge badge-danger" style="background: rgba(239, 68, 68, 0.15); color: #ef4444; border: 1px solid #ef4444;">Düzensiz Bağışçı</span></td>
           <td><button class="btn-primary" style="padding: 0.3rem 0.6rem; font-size: 0.85rem;">✉️</button></td>
         </tr>
         <tr>
-          <td><strong>Tema Vakfı Bağışçı Ağı</strong></td>
-          <td>$710,000</td>
-          <td>%5</td>
-          <td><span class="badge badge-success" style="background: rgba(16, 185, 129, 0.15); color: #10b981; border: 1px solid #10b981;">Düşük Risk / Düzenli Bağışçı</span></td>
+          <td><strong>Canan Kaya</strong></td>
+          <td>10000 TL</td>
+          <td>910</td>
+          <td><span class="badge badge-success" style="background: rgba(16, 185, 129, 0.15); color: #10b981; border: 1px solid #10b981;">Düzenli Bağışçı</span></td>
           <td><button class="btn-primary" style="padding: 0.3rem 0.6rem; font-size: 0.85rem;">✉️</button></td>
         </tr>
         <tr>
-          <td><strong>Darüşşafaka Cemiyeti</strong></td>
-          <td>$420,000</td>
-          <td>%12</td>
-          <td><span class="badge badge-success" style="background: rgba(16, 185, 129, 0.15); color: #10b981; border: 1px solid #10b981;">Düşük Risk / Düzenli Bağışçı</span></td>
+          <td><strong>Elif Şahin</strong></td>
+          <td>3500 TL</td>
+          <td>680</td>
+          <td><span class="badge badge-warning" style="background: rgba(245, 158, 11, 0.15); color: #f59e0b; border: 1px solid #f59e0b;">Potansiyel Bağışçı</span></td>
           <td><button class="btn-primary" style="padding: 0.3rem 0.6rem; font-size: 0.85rem;">✉️</button></td>
         </tr>
       `;
@@ -12672,33 +12685,32 @@ document.addEventListener('DOMContentLoaded', () => {
     if (xaiContainer) {
       xaiContainer.innerHTML = `
         <div class="xai-bar-item" style="margin-bottom: 12px;">
-          <div class="xai-bar-label" style="font-size: 0.85rem; margin-bottom: 4px; color: var(--text-primary);" title="Aylık Katılım Sıklığı">Aylık Katılım Sıklığı</div>
+          <div class="xai-bar-label" style="font-size: 0.85rem; margin-bottom: 4px; color: var(--text-primary);" title="Ziyaret Sıklığı">Ziyaret Sıklığı</div>
           <div class="xai-bar-track" style="background: rgba(255, 255, 255, 0.1); border-radius: 4px; height: 10px; overflow: hidden; position: relative;">
-            <div class="xai-bar-fill" style="width: 88%; height: 100%; background: linear-gradient(90deg, #3b82f6, #0ea5e9); border-radius: 4px; transition: width 1s ease-in-out;"></div>
+            <div class="xai-bar-fill" style="width: 75%; height: 100%; background: linear-gradient(90deg, #3b82f6, #0ea5e9); border-radius: 4px; transition: width 1s ease-in-out;"></div>
           </div>
-          <div class="xai-bar-value" style="font-size: 0.75rem; text-align: right; margin-top: 2px; color: #0ea5e9;">88%</div>
+          <div class="xai-bar-value" style="font-size: 0.75rem; text-align: right; margin-top: 2px; color: #0ea5e9;">75%</div>
         </div>
         <div class="xai-bar-item" style="margin-bottom: 12px;">
-          <div class="xai-bar-label" style="font-size: 0.85rem; margin-bottom: 4px; color: var(--text-primary);" title="Geçmiş Bağış Tutarı">Geçmiş Bağış Tutarı</div>
+          <div class="xai-bar-label" style="font-size: 0.85rem; margin-bottom: 4px; color: var(--text-primary);" title="Geçmiş Destek Skoru">Geçmiş Destek Skoru</div>
           <div class="xai-bar-track" style="background: rgba(255, 255, 255, 0.1); border-radius: 4px; height: 10px; overflow: hidden; position: relative;">
-            <div class="xai-bar-fill" style="width: 72%; height: 100%; background: linear-gradient(90deg, #10b981, #34d399); border-radius: 4px; transition: width 1s ease-in-out;"></div>
+            <div class="xai-bar-fill" style="width: 60%; height: 100%; background: linear-gradient(90deg, #10b981, #34d399); border-radius: 4px; transition: width 1s ease-in-out;"></div>
           </div>
-          <div class="xai-bar-value" style="font-size: 0.75rem; text-align: right; margin-top: 2px; color: #10b981;">72%</div>
+          <div class="xai-bar-value" style="font-size: 0.75rem; text-align: right; margin-top: 2px; color: #10b981;">60%</div>
         </div>
-        <div class="xai-bar-item" style="margin-bottom: 12px;">
-          <div class="xai-bar-label" style="font-size: 0.85rem; margin-bottom: 4px; color: var(--text-primary);" title="E-Posta Etkileşim Skoru">E-Posta Etkileşim Skoru</div>
-          <div class="xai-bar-track" style="background: rgba(255, 255, 255, 0.1); border-radius: 4px; height: 10px; overflow: hidden; position: relative;">
-            <div class="xai-bar-fill" style="width: 61%; height: 100%; background: linear-gradient(90deg, #f59e0b, #fbbf24); border-radius: 4px; transition: width 1s ease-in-out;"></div>
-          </div>
-          <div class="xai-bar-value" style="font-size: 0.75rem; text-align: right; margin-top: 2px; color: #f59e0b;">61%</div>
-        </div>
-        <div class="xai-bar-item" style="margin-bottom: 12px;">
-          <div class="xai-bar-label" style="font-size: 0.85rem; margin-bottom: 4px; color: var(--text-primary);" title="Üyelik Süresi">Üyelik Süresi</div>
-          <div class="xai-bar-track" style="background: rgba(255, 255, 255, 0.1); border-radius: 4px; height: 10px; overflow: hidden; position: relative;">
-            <div class="xai-bar-fill" style="width: 45%; height: 100%; background: linear-gradient(90deg, #ec4899, #f472b6); border-radius: 4px; transition: width 1s ease-in-out;"></div>
-          </div>
-          <div class="xai-bar-value" style="font-size: 0.75rem; text-align: right; margin-top: 2px; color: #ec4899;">45%</div>
-        </div>
+      `;
+    }
+
+    // Inject Recommended Actions
+    const actionsBox = document.getElementById('recommended-actions-box');
+    if (actionsBox) {
+      actionsBox.innerHTML = `
+        <li style="margin-bottom: 8px; font-size: 0.85rem; color: var(--text-primary);">
+          <strong>Aura AI Önerisi:</strong> Düzenli bağış yapma ihtimali yüksek olan donörlere özel sadakat e-postası gönderin.
+        </li>
+        <li style="margin-bottom: 8px; font-size: 0.85rem; color: var(--text-primary);">
+          <strong>Aura AI Önerisi:</strong> Kayıp riski orta seviyede olan bağışçılar için bilgilendirici sosyal sorumluluk kampanyası planlayın.
+        </li>
       `;
     }
 
@@ -12885,6 +12897,26 @@ document.addEventListener('DOMContentLoaded', () => {
     const xaiContainer = document.getElementById('xai-bar-chart-container');
     if (xaiContainer) {
       xaiContainer.innerHTML = '';
+    }
+
+    // Clear actions box
+    const actionsBox = document.getElementById('recommended-actions-box');
+    if (actionsBox) {
+      actionsBox.innerHTML = '';
+    }
+
+    // Reset metrics values
+    const accuracyEl = document.getElementById('metric-accuracy-val');
+    const precisionEl = document.getElementById('metric-precision-val');
+    const recallEl = document.getElementById('metric-recall-val');
+    if (accuracyEl) accuracyEl.textContent = '-';
+    if (precisionEl) precisionEl.textContent = '-';
+    if (recallEl) recallEl.textContent = '-';
+
+    // Reset dash title
+    const dashTitle = document.getElementById('dash-title');
+    if (dashTitle) {
+      dashTitle.textContent = "Finansal Kredi Karar Analizi";
     }
 
     // Remove leftover glowing focus states
